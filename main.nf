@@ -190,6 +190,7 @@ def helpMSG() {
     -profile                 standard (local, pure docker) [default]
                              conda (mixes conda and docker)
                              lsf (HPC w/ LSF, singularity/docker)
+                             ebi (HPC w/ LSF, singularity/docker, preconfigured for the EBI cluster)
                              gcloudMartin (googlegenomics and docker)
                              ${c_reset}
     """.stripIndent()
