@@ -83,9 +83,8 @@ if (params.fasta && params.list) { fasta_input_ch = Channel
 
 /* Comment section: */
 
-include './modules/get_db' params(cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
-include './modules/module1' params(output: params.output, variable1: params.variable1)
-include './modules/module2' params(output: params.output, variable2: params.variable2)
+include './modules/get_host' params(phix: params.phix, species: params.species, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
+include './modules/minimap2' params(output: params.output)
 
 
 /************************** 
@@ -97,15 +96,19 @@ The Database Section is designed to "auto-get" pre prepared databases.
 It is written for local use and cloud use via params.cloudProcess.
 */
 
-workflow download_db {
+workflow download_genomes {
   main:
     // local storage via storeDir
-    if (!params.cloudProcess) { example_db(); db = example_db.out }
+    if (!params.cloudProcess) { get_host(); db = get_host.out }
     // cloud storage via db_preload.exists()
     if (params.cloudProcess) {
-      db_preload = file("${params.cloudDatabase}/test_db/Chlamydia_gallinacea_08_1274_3.ASM47102v2.dna.toplevel.fa.gz")
+      if (params.phix) {
+        db_preload = file("${params.cloudDatabase}/hosts/${params.species}_phix.fa.gz")
+      } else {
+        db_preload = file("${params.cloudDatabase}/hosts/${params.species}.fa.gz")
+      }
       if (db_preload.exists()) { db = db_preload }
-      else  { example_db(); db = example_db.out } 
+      else  { get_host(); db = get_host.out } 
     }
   emit: db
 }
@@ -117,14 +120,24 @@ workflow download_db {
 
 /* Comment section: */
 
-workflow subworkflow_1 {
+workflow clean_fasta {
+  get: 
+    fasta_input_ch
+    db
+
+  main:
+    minimap2_fasta(fasta_input_ch, db)
+} 
+
+workflow clean_nano {
   get: 
     nano_input_ch
     db
 
   main:
-    module2(module1(nano_input_ch, db))
+    minimap2_nano(nano_input_ch, db)
 } 
+
 
 /************************** 
 * WORKFLOW ENTRY POINT
@@ -133,11 +146,17 @@ workflow subworkflow_1 {
 /* Comment section: */
 
 workflow {
-      download_db()
-      db = download_db.out
-      if (params.nano && !params.illumina) { 
-        subworkflow_1(nano_input_ch, db)
+      download_genomes()
+      db = download_genomes.out
+
+      if (params.fasta && !params.nano && !params.illumina) { 
+        clean_fasta(fasta_input_ch, db)
       }
+
+      if (!params.fasta && params.nano && !params.illumina) { 
+        clean_nano(nano_input_ch, db)
+      }
+
 }
 
 
@@ -170,9 +189,12 @@ def helpMSG() {
     --memory            max memory for local use [default: $params.memory]
     --output            name of the result folder [default: $params.output]
 
-    ${c_yellow}Parameters:${c_reset}
-    --variable1             a variable [default: $params.variable1]
-    --variable2             a variable [default: $params.variable2]
+    ${c_green}--species${c_reset}       reference genome and annotation are selected based on this parameter [default: $params.species]
+                                        ${c_dim}Currently supported are:
+                                        - hsa [Ensembl: Homo_sapiens.GRCh38.dna.primary_assembly]
+                                        - eco [Ensembl: Escherichia_coli_k_12.ASM80076v1.dna.toplevel]${c_reset}
+    ${c_green}--phix${c_reset}          add this flag to download and add phiX genome for decontamination [default: $params.phix]
+
 
     ${c_dim}Nextflow options:
     -with-report rep.html    cpu / ram usage (may cause errors)
