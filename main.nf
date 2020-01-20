@@ -2,8 +2,8 @@
 nextflow.preview.dsl=2
 
 /*
-Nextflow -- Analysis Pipeline
-Author: someone@gmail.com
+Nextflow -- Decontamination Pipeline
+Author: hoelzer.martin@gmail.com
 */
 
 /************************** 
@@ -35,7 +35,7 @@ println "Output dir name: $params.output\u001B[0m"
 println " "}
 
 if (params.profile) { exit 1, "--profile is WRONG use -profile" }
-if (params.nano == '' &&  params.illumina == '' ) { exit 1, "input missing, use [--nano] or [--illumina]"}
+if (params.nano == '' &&  params.illumina == '' && params.fasta == '' ) { exit 1, "input missing, use [--nano] or [--illumina] or [--fasta]"}
 
 /************************** 
 * INPUT CHANNELS 
@@ -49,7 +49,7 @@ if (params.nano && params.list) { nano_input_ch = Channel
   .view() }
   else if (params.nano) { nano_input_ch = Channel
     .fromPath( params.nano, checkIfExists: true)
-    .map { file -> tuple(file.baseName, file) }
+    .map { file -> tuple(file.simpleName, file) }
     .view()
 }
 
@@ -63,6 +63,19 @@ if (params.illumina && params.list) { illumina_input_ch = Channel
   .fromFilePairs( params.illumina , checkIfExists: true )
   .view() 
 }
+
+// assembly fasta input & --list support
+if (params.fasta && params.list) { fasta_input_ch = Channel
+  .fromPath( params.fasta, checkIfExists: true )
+  .splitCsv()
+  .map { row -> ["${row[0]}", file("${row[1]}", checkIfExists: true)] }
+  .view() }
+  else if (params.fasta) { fasta_input_ch = Channel
+    .fromPath( params.fasta, checkIfExists: true)
+    .map { file -> tuple(file.simpleName, file) }
+    .view()
+}
+
 
 /************************** 
 * MODULES
@@ -149,6 +162,7 @@ def helpMSG() {
     ${c_yellow}Input:${c_reset}
     ${c_green} --nano ${c_reset}            '*.fasta' or '*.fastq.gz'   -> one sample per file
     ${c_green} --illumina ${c_reset}        '*.R{1,2}.fastq.gz'         -> file pairs
+    ${c_green} --fasta ${c_reset}           '*.fasta.gz'                -> one sample per file
     ${c_dim}  ..change above input to csv:${c_reset} ${c_green}--list ${c_reset}            
 
     ${c_yellow}Options:${c_reset}
@@ -176,9 +190,6 @@ def helpMSG() {
     -profile                 standard (local, pure docker) [default]
                              conda (mixes conda and docker)
                              lsf (HPC w/ LSF, singularity/docker)
-                             nanozoo (googlegenomics and docker)  
-                             gcloudAdrian (googlegenomics and docker)
-                             gcloudChris (googlegenomics and docker)
                              gcloudMartin (googlegenomics and docker)
                              ${c_reset}
     """.stripIndent()
