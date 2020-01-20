@@ -1,0 +1,6 @@
+name: label
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - bioawk=1.0
