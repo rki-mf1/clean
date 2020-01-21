@@ -136,7 +136,16 @@ workflow clean_nano {
 
   main:
     minimap2_nano(nano_input_ch, db)
-    minimap2_illumina_ebi_extraction(nano_input_ch, db)
+} 
+
+workflow clean_illumina {
+  get: 
+    illumina_input_ch
+    db
+
+  main:
+    minimap2_illumina(illumina_input_ch, db)
+    minimap2_illumina_ebi_extraction(illumina_input_ch, db)
 } 
 
 
