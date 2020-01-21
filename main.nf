@@ -125,9 +125,9 @@ workflow bowtie2_index {
     // cloud storage via db_preload.exists()
     if (params.cloudProcess) {
       if (params.phix) {
-        db_preload = file("${params.cloudDatabase}/hosts/${params.species}_phix.*.bt2")
+        db_preload = file("${params.cloudDatabase}/hosts/${params.species}_phix/*.bt2")
       } else {
-        db_preload = file("${params.cloudDatabase}/hosts/${params.species}.*.bt2")
+        db_preload = file("${params.cloudDatabase}/hosts/${params.species}/*.bt2")
       }
       if (db_preload.exists()) { db = db_preload }
       else  { build_bowtie2_index(genome); db = build_bowtie2_index.out } 
@@ -184,24 +184,24 @@ workflow clean_illumina {
 
 workflow {
       download_genomes()
-      db = download_genomes.out
+      genomes = download_genomes.out
 
       index = false
       if (params.bowtie) {
-        bowtie2_index(db)
+        bowtie2_index(genomes)
         index = bowtie2_index.out
       }
 
       if (params.fasta && !params.nano && !params.illumina) { 
-        clean_fasta(fasta_input_ch, db)
+        clean_fasta(fasta_input_ch, genomes)
       }
 
       if (!params.fasta && params.nano && !params.illumina) { 
-        clean_nano(nano_input_ch, db)
+        clean_nano(nano_input_ch, genomes)
       }
 
       if (!params.fasta && !params.nano && params.illumina) { 
-        clean_illumina(illumina_input_ch, db, index)
+        clean_illumina(illumina_input_ch, genomes, index)
       }
 }
 
