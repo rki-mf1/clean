@@ -136,6 +136,7 @@ workflow clean_nano {
 
   main:
     minimap2_nano(nano_input_ch, db)
+    minimap2_illumina_ebi_extraction(nano_input_ch, db)
 } 
 
 
@@ -195,6 +196,7 @@ def helpMSG() {
     ${c_green}--species${c_reset}       reference genome and annotation are selected based on this parameter [default: $params.species]
                                         ${c_dim}Currently supported are:
                                         - hsa [Ensembl: Homo_sapiens.GRCh38.dna.primary_assembly]
+                                        - mmu [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly]
                                         - eco [Ensembl: Escherichia_coli_k_12.ASM80076v1.dna.toplevel]${c_reset}
     ${c_green}--phix${c_reset}          add this flag to download and add phiX genome for decontamination [default: $params.phix]
 
