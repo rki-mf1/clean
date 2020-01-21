@@ -59,7 +59,7 @@ process minimap2_illumina {
   publishDir "${params.output}/${name}/ill_martin_extraction", mode: 'copy', pattern: "*.gz" 
 
   input: 
-    tuple val(name), file(r1), file(r2)
+    tuple val(name), file(reads)
     file(db)
 
   output:
@@ -68,19 +68,19 @@ process minimap2_illumina {
   script:
     """
     # replace the space in the header to retain the full read IDs after mapping (the mapper would split the ID otherwise after the first space) 
-    if [[ ${r1} =~ \\.gz\$ ]]; then
-      zcat ${r1} | sed 's/ /DECONTAMINATE/g' > ${name}.R1.id.fastq
+    if [[ ${reads[0]} =~ \\.gz\$ ]]; then
+      zcat ${reads[0]} | sed 's/ /DECONTAMINATE/g' > ${name}.R1.id.fastq
     else
-      sed 's/ /DECONTAMINATE/g' ${r1} > ${name}.R1.id.fastq
+      sed 's/ /DECONTAMINATE/g' ${reads[0]} > ${name}.R1.id.fastq
     fi
-    if [[ ${r2} =~ \\.gz\$ ]]; then
-      zcat ${r2} | sed 's/ /DECONTAMINATE/g' > ${name}.R2.id.fastq
+    if [[ ${reads[1]} =~ \\.gz\$ ]]; then
+      zcat ${reads[1]} | sed 's/ /DECONTAMINATE/g' > ${name}.R2.id.fastq
     else
-      sed 's/ /DECONTAMINATE/g' ${r2} > ${name}.R2.id.fastq
+      sed 's/ /DECONTAMINATE/g' ${reads[1]} > ${name}.R2.id.fastq
     fi
 
     # Use samtools -F 2 to discard only reads mapped in proper pair:
-    minimap2 -ax sr -t ${task.cpus} -o ${name}.sam ${db} ${r1}.R1.id.fastq ${r2}.R2.id.fastq
+    minimap2 -ax sr -t ${task.cpus} -o ${name}.sam ${db} ${name}.R1.id.fastq ${name}.R2.id.fastq
     samtools fastq -F 2 -1 ${name}.clean.R1.id.fastq -2 ${name}.clean.R2.id.fastq ${name}.sam
     samtools fastq -f 2 -1 ${name}.contamination.R1.id.fastq -2 ${name}.contamination.R2.id.fastq ${name}.sam
 
@@ -110,21 +110,21 @@ process minimap2_illumina_ebi_extraction {
   script:
     """
     # replace the space in the header to retain the full read IDs after mapping (the mapper would split the ID otherwise after the first space) 
-    if [[ ${r1} =~ \\.gz\$ ]]; then
-      zcat ${r1} | sed 's/ /DECONTAMINATE/g' > ${name}.R1.id.fastq
+   if [[ ${reads[0]} =~ \\.gz\$ ]]; then
+      zcat ${reads[0]} | sed 's/ /DECONTAMINATE/g' > ${name}.R1.id.fastq
     else
-      sed 's/ /DECONTAMINATE/g' ${r1} > ${name}.R1.id.fastq
+      sed 's/ /DECONTAMINATE/g' ${reads[0]} > ${name}.R1.id.fastq
     fi
-    if [[ ${r2} =~ \\.gz\$ ]]; then
-      zcat ${r2} | sed 's/ /DECONTAMINATE/g' > ${name}.R2.id.fastq
+    if [[ ${reads[1]} =~ \\.gz\$ ]]; then
+      zcat ${reads[1]} | sed 's/ /DECONTAMINATE/g' > ${name}.R2.id.fastq
     else
-      sed 's/ /DECONTAMINATE/g' ${r2} > ${name}.R2.id.fastq
+      sed 's/ /DECONTAMINATE/g' ${reads[1]} > ${name}.R2.id.fastq
     fi
 
     # mapping and unmapped/mapped read extraction 
     #-f 12    Extract only (-f) alignments with both reads unmapped: <read unmapped><mate unmapped>
     #-F 256   Do not(-F) extract alignments which are: <not primary alignment>    
-    minimap2 -ax sr -t ${task.cpus} -o ${name}.sam ${db} ${r1}.R1.id.fastq ${r2}.R2.id.fastq
+    minimap2 -ax sr -t ${task.cpus} -o ${name}.sam ${db} ${name}.R1.id.fastq ${name}.R2.id.fastq
     samtools fastq -f 12 -F 256 -1 ${name}.clean.R1.id.fastq -2 ${name}.clean.R2.id.fastq ${name}.sam
     samtools fastq -f 2 -1 ${name}.contamination.R1.id.fastq -2 ${name}.contamination.R2.id.fastq ${name}.sam
 
