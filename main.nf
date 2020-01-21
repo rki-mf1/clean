@@ -157,6 +157,9 @@ workflow {
         clean_nano(nano_input_ch, db)
       }
 
+      if (!params.fasta && !params.nano && params.illumina) { 
+        clean_illumina(illumina_input_ch, db)
+      }
 }
 
 
