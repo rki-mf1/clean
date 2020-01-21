@@ -14,13 +14,12 @@ process bowtie2_illumina {
 
   script:
     """
-    NAME=${genome.simpleName}
-
-    bowtie2 -x \${NAME} -1 ${reads[0]} -2 ${reads[1]} -S ${name}.sam
+    cp bt2/*.bt2 .
+    bowtie2 -x ${genome.simpleName} -1 ${reads[0]} -2 ${reads[1]} -S ${name}.sam
 
     samtools fastq -F 2 -1 ${name}.clean.R1.fastq -2 ${name}.clean.R2.fastq ${name}.sam
 
-    rm *.gz
+    rm *.gz *.bt2
     gzip ${name}.clean.R1.fastq
     gzip ${name}.clean.R2.fastq
 
@@ -41,13 +40,12 @@ process bowtie2_illumina_ebi_extraction {
 
   script:
     """
-    NAME=${genome.simpleName}
-
-    bowtie2 -x \${NAME} -1 ${reads[0]} -2 ${reads[1]} -S ${name}.sam
+    cp bt2/*.bt2 .
+    bowtie2 -x ${genome.simpleName} -1 ${reads[0]} -2 ${reads[1]} -S ${name}.sam
 
     samtools fastq -f 12 -F 256 -1 ${name}.clean.R1.fastq -2 ${name}.clean.R2.fastq ${name}.sam
 
-    rm *.gz
+    rm *.gz *.bt2
     gzip ${name}.clean.R1.fastq
     gzip ${name}.clean.R2.fastq
 

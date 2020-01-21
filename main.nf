@@ -125,9 +125,9 @@ workflow bowtie2_index {
     // cloud storage via db_preload.exists()
     if (params.cloudProcess) {
       if (params.phix) {
-        db_preload = file("${params.cloudDatabase}/hosts/${params.species}_phix/*.bt2")
+        db_preload = file("${params.cloudDatabase}/hosts/${params.species}_phix/bt2")
       } else {
-        db_preload = file("${params.cloudDatabase}/hosts/${params.species}/*.bt2")
+        db_preload = file("${params.cloudDatabase}/hosts/${params.species}/bt2")
       }
       if (db_preload.exists()) { db = db_preload }
       else  { build_bowtie2_index(genome); db = build_bowtie2_index.out } 
