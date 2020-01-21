@@ -45,7 +45,7 @@ if (params.nano == '' &&  params.illumina == '' && params.fasta == '' ) { exit 1
 if (params.nano && params.list) { nano_input_ch = Channel
   .fromPath( params.nano, checkIfExists: true )
   .splitCsv()
-  .map { row -> ["${row[0]}", file("${row[1]}", checkIfExists: true)] }
+  .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
   .view() }
   else if (params.nano) { nano_input_ch = Channel
     .fromPath( params.nano, checkIfExists: true)
@@ -57,7 +57,7 @@ if (params.nano && params.list) { nano_input_ch = Channel
 if (params.illumina && params.list) { illumina_input_ch = Channel
   .fromPath( params.illumina, checkIfExists: true )
   .splitCsv()
-  .map { row -> ["${row[0]}", [file("${row[1]}", checkIfExists: true), file("${row[2]}", checkIfExists: true)]] }
+  .map { row -> [row[0], [file("${row[1]}", checkIfExists: true), file("${row[2]}", checkIfExists: true)]] }
   .view() }
   else if (params.illumina) { illumina_input_ch = Channel
   .fromFilePairs( params.illumina , checkIfExists: true )
@@ -68,7 +68,7 @@ if (params.illumina && params.list) { illumina_input_ch = Channel
 if (params.fasta && params.list) { fasta_input_ch = Channel
   .fromPath( params.fasta, checkIfExists: true )
   .splitCsv()
-  .map { row -> ["${row[0]}", file("${row[1]}", checkIfExists: true)] }
+  .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
   .view() }
   else if (params.fasta) { fasta_input_ch = Channel
     .fromPath( params.fasta, checkIfExists: true)
@@ -85,6 +85,7 @@ if (params.fasta && params.list) { fasta_input_ch = Channel
 
 include './modules/get_host' params(phix: params.phix, species: params.species, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
 include './modules/build_bowtie2_index' params(phix: params.phix, species: params.species, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
+
 include './modules/minimap2' params(output: params.output)
 include './modules/bowtie2' params(output: params.output, phix: params.phix)
 

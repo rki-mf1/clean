@@ -14,7 +14,7 @@ process bowtie2_illumina {
 
   script:
     """
-    cp bt2/*.bt2 .
+    #cp bt2/*.bt2 .
     bowtie2 -x ${genome.simpleName} -1 ${reads[0]} -2 ${reads[1]} -S ${name}.sam
 
     samtools fastq -F 2 -1 ${name}.clean.R1.fastq -2 ${name}.clean.R2.fastq ${name}.sam
@@ -40,7 +40,7 @@ process bowtie2_illumina_ebi_extraction {
 
   script:
     """
-    cp bt2/*.bt2 .
+    #cp bt2/*.bt2 .
     bowtie2 -x ${genome.simpleName} -1 ${reads[0]} -2 ${reads[1]} -S ${name}.sam
 
     samtools fastq -f 12 -F 256 -1 ${name}.clean.R1.fastq -2 ${name}.clean.R2.fastq ${name}.sam
