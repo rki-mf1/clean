@@ -14,10 +14,7 @@ process bowtie2_illumina {
 
   script:
     """
-    NAME=${name}
-    if [ "${params.phix}" != "false" ]; then
-      NAME=${name}_phix
-    fi
+    NAME=${genome.simpleName}
 
     bowtie2 -x \${NAME} -1 ${reads[0]} -2 ${reads[1]} -S ${name}.sam
 
@@ -36,17 +33,15 @@ process bowtie2_illumina_ebi_extraction {
 
   input: 
     tuple val(name), file(reads)
-    file(db)
+    file(genome)
+    file(index)
 
   output:
     file("*.gz")
 
   script:
     """
-    NAME=${name}
-    if [ "${params.phix}" != "false" ]; then
-      NAME=${name}_phix
-    fi
+    NAME=${genome.simpleName}
 
     bowtie2 -x \${NAME} -1 ${reads[0]} -2 ${reads[1]} -S ${name}.sam
 
