@@ -121,7 +121,9 @@ process minimap2_illumina_ebi_extraction {
       sed 's/ /DECONTAMINATE/g' ${r2} > ${name}.R2.id.fastq
     fi
 
-    # Use samtools -F 2 to discard only reads mapped in proper pair:
+    # mapping and unmapped/mapped read extraction 
+    #-f 12    Extract only (-f) alignments with both reads unmapped: <read unmapped><mate unmapped>
+    #-F 256   Do not(-F) extract alignments which are: <not primary alignment>    
     minimap2 -ax sr -t ${task.cpus} -o ${name}.sam ${db} ${r1}.R1.id.fastq ${r2}.R2.id.fastq
     samtools fastq -f 12 -F 256 -1 ${name}.clean.R1.id.fastq -2 ${name}.clean.R2.id.fastq ${name}.sam
     samtools fastq -f 2 -1 ${name}.contamination.R1.id.fastq -2 ${name}.contamination.R2.id.fastq ${name}.sam
