@@ -84,7 +84,9 @@ if (params.fasta && params.list) { fasta_input_ch = Channel
 /* Comment section: */
 
 include './modules/get_host' params(phix: params.phix, species: params.species, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
+include './modules/build_bowtie2_index' params(phix: params.phix, species: params.species, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
 include './modules/minimap2' params(output: params.output)
+include './modules/bowtie2' params(output: params.output, phix: params.phix)
 
 
 /************************** 
@@ -113,6 +115,25 @@ workflow download_genomes {
   emit: db
 }
 
+workflow bowtie2_index {
+  get:
+    genome
+
+  main:
+    // local storage via storeDir
+    if (!params.cloudProcess) { build_bowtie2_index(genome); db = build_bowtie2_index.out }
+    // cloud storage via db_preload.exists()
+    if (params.cloudProcess) {
+      if (params.phix) {
+        db_preload = file("${params.cloudDatabase}/hosts/${params.species}_phix.*.bt2")
+      } else {
+        db_preload = file("${params.cloudDatabase}/hosts/${params.species}.*.bt2")
+      }
+      if (db_preload.exists()) { db = db_preload }
+      else  { build_bowtie2_index(genome); db = build_bowtie2_index.out } 
+    }
+  emit: db
+}
 
 /************************** 
 * SUB WORKFLOWS
@@ -127,6 +148,7 @@ workflow clean_fasta {
 
   main:
     minimap2_fasta(fasta_input_ch, db)
+
 } 
 
 workflow clean_nano {
@@ -142,10 +164,15 @@ workflow clean_illumina {
   get: 
     illumina_input_ch
     db
+    index
 
   main:
     minimap2_illumina(illumina_input_ch, db)
     minimap2_illumina_ebi_extraction(illumina_input_ch, db)
+    if (params.bowtie){
+      bowtie2_illumina(illumina_input_ch, db, index)
+      bowtie2_illumina_ebi_extraction(illumina_input_ch, db, index)
+    }
 } 
 
 
@@ -159,6 +186,12 @@ workflow {
       download_genomes()
       db = download_genomes.out
 
+      index = false
+      if (params.bowtie) {
+        bowtie2_index(db)
+        index = bowtie2_index.out
+      }
+
       if (params.fasta && !params.nano && !params.illumina) { 
         clean_fasta(fasta_input_ch, db)
       }
@@ -168,7 +201,7 @@ workflow {
       }
 
       if (!params.fasta && !params.nano && params.illumina) { 
-        clean_illumina(illumina_input_ch, db)
+        clean_illumina(illumina_input_ch, db, index)
       }
 }
 
@@ -208,6 +241,7 @@ def helpMSG() {
                                         - mmu [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly]
                                         - eco [Ensembl: Escherichia_coli_k_12.ASM80076v1.dna.toplevel]${c_reset}
     ${c_green}--phix${c_reset}          add this flag to download and add phiX genome for decontamination [default: $params.phix]
+    ${c_green}--bowtie${c_reset}        add this flag to build a bowtie2 index and use this in addition for decontamination [default: $params.bowtie]
 
 
     ${c_dim}Nextflow options:

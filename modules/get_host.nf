@@ -3,7 +3,11 @@
 process get_host {
   label 'basics'
   if (params.cloudProcess) { 
-    publishDir "${params.cloudDatabase}/hosts/", mode: 'copy', pattern: "*.fa.gz" 
+    if (params.phix) {
+      publishDir "${params.cloudDatabase}/hosts/${params.species}_phix", mode: 'copy', pattern: "*.fa.gz" 
+    } else {
+      publishDir "${params.cloudDatabase}/hosts/${params.species}", mode: 'copy', pattern: "*.fa.gz" 
+    }
   }
   else { 
     if (params.phix) {
@@ -14,7 +18,7 @@ process get_host {
   }  
 
   output:
-    file("*.fa.gz")
+      file("*.fa.gz")
 
   script:
     """
