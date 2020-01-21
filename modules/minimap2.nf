@@ -101,7 +101,7 @@ process minimap2_illumina_ebi_extraction {
   publishDir "${params.output}/${name}/ill_ebi_extraction", mode: 'copy', pattern: "*.gz" 
 
   input: 
-    tuple val(name), file(r1), file(r2)
+    tuple val(name), file(reads)
     file(db)
 
   output:
