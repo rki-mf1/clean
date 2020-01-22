@@ -67,16 +67,24 @@ process minimap2_illumina {
 
   script:
     """
-    # replace the space in the header to retain the full read IDs after mapping (the mapper would split the ID otherwise after the first space) 
-    if [[ ${reads[0]} =~ \\.gz\$ ]]; then
-      zcat ${reads[0]} | sed 's/ /DECONTAMINATE/g' > ${name}.R1.id.fastq
+    # replace the space in the header to retain the full read IDs after mapping (the mapper would split the ID otherwise after the first space)
+    # this is working for ENA reads that have at the end of a read id '/1' or '/2'
+    EXAMPLE_ID=\$(zcat ${reads[0]} | head -1)
+    if [[ \$EXAMPLE_ID == */1 ]]; then 
+      if [[ ${reads[0]} =~ \\.gz\$ ]]; then
+        zcat ${reads[0]} | sed 's/ /DECONTAMINATE/g' > ${name}.R1.id.fastq
+      else
+       sed 's/ /DECONTAMINATE/g' ${reads[0]} > ${name}.R1.id.fastq
+     fi
+     if [[ ${reads[1]} =~ \\.gz\$ ]]; then
+       zcat ${reads[1]} | sed 's/ /DECONTAMINATE/g' > ${name}.R2.id.fastq
+     else
+       sed 's/ /DECONTAMINATE/g' ${reads[1]} > ${name}.R2.id.fastq
+     fi
     else
-      sed 's/ /DECONTAMINATE/g' ${reads[0]} > ${name}.R1.id.fastq
-    fi
-    if [[ ${reads[1]} =~ \\.gz\$ ]]; then
-      zcat ${reads[1]} | sed 's/ /DECONTAMINATE/g' > ${name}.R2.id.fastq
-    else
-      sed 's/ /DECONTAMINATE/g' ${reads[1]} > ${name}.R2.id.fastq
+      # this is for paried-end SRA reads that don't follow the ENA pattern
+      cp ${reads[0]} ${name}.R1.id.fastq
+      cp ${reads[1]} ${name}.R2.id.fastq
     fi
 
     # Use samtools -F 2 to discard only reads mapped in proper pair:

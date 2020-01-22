@@ -170,10 +170,8 @@ workflow clean_illumina {
   main:
     if (params.bowtie){
       bowtie2_illumina(illumina_input_ch, db, index)
-      bowtie2_illumina_f12(illumina_input_ch, db, index)
     } else {
       minimap2_illumina(illumina_input_ch, db)
-      minimap2_illumina_f12(illumina_input_ch, db)
     }
 } 
 
