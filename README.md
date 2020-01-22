@@ -1,4 +1,5 @@
-# Workflow template
+# Clean your data!
+A decontamination workflow for short reads, long reads and assemblies. 
 
 ![](https://img.shields.io/badge/nextflow-19.10.0-brightgreen)
 ![](https://img.shields.io/badge/uses-docker-blue.svg)
