@@ -83,8 +83,13 @@ process minimap2_illumina {
      fi
     else
       # this is for paried-end SRA reads that don't follow the ENA pattern
-      cp ${reads[0]} ${name}.R1.id.fastq
-      cp ${reads[1]} ${name}.R2.id.fastq
+      if [[ ${reads[0]} =~ \\.gz\$ ]]; then
+        zcat ${reads[0]} > ${name}.R1.id.fastq
+        zcat ${reads[1]} > ${name}.R2.id.fastq
+      else
+        cp ${reads[0]} ${name}.R1.id.fastq
+        cp ${reads[1]} ${name}.R2.id.fastq
+      fi
     fi
 
     # Use samtools -F 2 to discard only reads mapped in proper pair:
