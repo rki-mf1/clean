@@ -30,6 +30,10 @@ process get_host {
       wget ftp://ftp.ensembl.org/pub/release-99/fasta/mus_musculus/dna/Mus_musculus.GRCm38.dna.primary_assembly.fa.gz
       mv *.fa.gz ${params.species}.fa.gz
     fi
+    if [ ${params.species} == 'cli' ]; then
+      wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/337/935/GCF_000337935.1_Cliv_1.0/GCF_000337935.1_Cliv_1.0_genomic.fna.gz
+      mv *.fna.gz ${params.species}.fa.gz
+    fi
     if [ ${params.species} == 'eco' ]; then
       wget ftp://ftp.ensemblgenomes.org/pub/release-45/bacteria//fasta/bacteria_90_collection/escherichia_coli_k_12/dna/Escherichia_coli_k_12.ASM80076v1.dna.toplevel.fa.gz
       mv *.fa.gz ${params.species}.fa.gz

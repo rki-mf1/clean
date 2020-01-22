@@ -243,6 +243,7 @@ def helpMSG() {
                                         ${c_dim}Currently supported are:
                                         - hsa [Ensembl: Homo_sapiens.GRCh38.dna.primary_assembly]
                                         - mmu [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly]
+                                        - cli [NCBI: GCF_000337935.1_Cliv_1.0_genomic]
                                         - eco [Ensembl: Escherichia_coli_k_12.ASM80076v1.dna.toplevel]${c_reset}
     ${c_green}--phix${c_reset}          add this flag to download and add phiX genome for decontamination [default: $params.phix]
     ${c_green}--bowtie${c_reset}        add this flag to use bowtie2 instead of minimap2 for decontamination of short reads [default: $params.bowtie]
