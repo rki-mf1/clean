@@ -241,6 +241,8 @@ def helpMSG() {
                                         ${c_dim}Currently supported are:
                                         - hsa [Ensembl: Homo_sapiens.GRCh38.dna.primary_assembly]
                                         - mmu [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly]
+                                        - csa [NCBI: GCF_000409795.2_Chlorocebus_sabeus_1.1_genomic]
+                                        - gga [NCBI: Gallus_gallus.GRCg6a.dna.toplevel]
                                         - cli [NCBI: GCF_000337935.1_Cliv_1.0_genomic]
                                         - eco [Ensembl: Escherichia_coli_k_12.ASM80076v1.dna.toplevel]${c_reset}
     ${c_green}--phix${c_reset}          add this flag to download and add phiX genome for decontamination [default: $params.phix]
