@@ -76,6 +76,10 @@ if (params.fasta && params.list) { fasta_input_ch = Channel
     .view()
 }
 
+// host genome fasta
+if (params.host) {
+  host = file(params.host, checkIfExists: true)
+}
 
 /************************** 
 * MODULES
@@ -84,7 +88,11 @@ if (params.fasta && params.list) { fasta_input_ch = Channel
 /* Comment section: */
 
 include './modules/get_host' params(phix: params.phix, species: params.species, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
-include './modules/build_bowtie2_index' params(phix: params.phix, species: params.species, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
+if (params.host) {
+  include './modules/build_bowtie2_index' params(phix: params.phix, species: host.simpleName, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
+} else {
+  include './modules/build_bowtie2_index' params(phix: params.phix, species: params.species, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
+}
 
 include './modules/minimap2' params(output: params.output)
 include './modules/bowtie2' params(output: params.output, phix: params.phix)
@@ -183,25 +191,27 @@ workflow clean_illumina {
 /* Comment section: */
 
 workflow {
-      download_genomes()
-      genomes = download_genomes.out
+      if (!params.host) {
+        download_genomes()
+        host = download_genomes.out
+      } 
 
       index = false
       if (params.bowtie) {
-        bowtie2_index(genomes)
+        bowtie2_index(host)
         index = bowtie2_index.out
       }
 
       if (params.fasta && !params.nano && !params.illumina) { 
-        clean_fasta(fasta_input_ch, genomes)
+        clean_fasta(fasta_input_ch, host)
       }
 
       if (!params.fasta && params.nano && !params.illumina) { 
-        clean_nano(nano_input_ch, genomes)
+        clean_nano(nano_input_ch, host)
       }
 
       if (!params.fasta && !params.nano && params.illumina) { 
-        clean_illumina(illumina_input_ch, genomes, index)
+        clean_illumina(illumina_input_ch, host, index)
       }
 }
 
@@ -230,6 +240,7 @@ def helpMSG() {
     ${c_green} --nano ${c_reset}            '*.fasta' or '*.fastq.gz'   -> one sample per file
     ${c_green} --illumina ${c_reset}        '*.R{1,2}.fastq.gz'         -> file pairs
     ${c_green} --fasta ${c_reset}           '*.fasta.gz'                -> one sample per file
+    ${c_green} --host ${c_reset}            host.fasta.gz               -> one host file
     ${c_dim}  ..change above input to csv:${c_reset} ${c_green}--list ${c_reset}            
 
     ${c_yellow}Options:${c_reset}
@@ -237,7 +248,7 @@ def helpMSG() {
     --memory            max memory for local use [default: $params.memory]
     --output            name of the result folder [default: $params.output]
 
-    ${c_green}--species${c_reset}       reference genome for decontamination is selected based on this parameter [default: $params.species]
+    ${c_green}--species${c_reset}       reference genome for decontamination is downloaded based on this parameter [default: $params.species]
                                         ${c_dim}Currently supported are:
                                         - hsa [Ensembl: Homo_sapiens.GRCh38.dna.primary_assembly]
                                         - mmu [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly]

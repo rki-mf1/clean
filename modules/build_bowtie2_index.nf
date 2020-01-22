@@ -26,8 +26,6 @@ process build_bowtie2_index {
   script:
     """
     bowtie2-build ${genome} ${genome.simpleName}
-    #mkdir bt2
-    #mv *.bt2 bt2/
     """
 }
 
