@@ -106,9 +106,9 @@ workflow download_genomes {
     // cloud storage via db_preload.exists()
     if (params.cloudProcess) {
       if (params.phix) {
-        db_preload = file("${params.cloudDatabase}/hosts/${params.species}_phix.fa.gz")
+        db_preload = file("${params.cloudDatabase}/hosts/${params.species}_phix/${params.species}_phix.fa.gz")
       } else {
-        db_preload = file("${params.cloudDatabase}/hosts/${params.species}.fa.gz")
+        db_preload = file("${params.cloudDatabase}/hosts/${params.species}/${params.species}.fa.gz")
       }
       if (db_preload.exists()) { db = db_preload }
       else  { get_host(); db = get_host.out } 
@@ -126,9 +126,9 @@ workflow bowtie2_index {
     // cloud storage via db_preload.exists()
     if (params.cloudProcess) {
       if (params.phix) {
-        db_preload = file("${params.cloudDatabase}/hosts/${params.species}_phix/bt2")
+        db_preload = file("${params.cloudDatabase}/hosts/${params.species}_phix/${params.species}_phix/bt2")
       } else {
-        db_preload = file("${params.cloudDatabase}/hosts/${params.species}/bt2")
+        db_preload = file("${params.cloudDatabase}/hosts/${params.species}/${params.species}/bt2")
       }
       if (db_preload.exists()) { db = db_preload }
       else  { build_bowtie2_index(genome); db = build_bowtie2_index.out } 
@@ -239,7 +239,7 @@ def helpMSG() {
     --memory            max memory for local use [default: $params.memory]
     --output            name of the result folder [default: $params.output]
 
-    ${c_green}--species${c_reset}       reference genome and annotation are selected based on this parameter [default: $params.species]
+    ${c_green}--species${c_reset}       reference genome for decontamination is selected based on this parameter [default: $params.species]
                                         ${c_dim}Currently supported are:
                                         - hsa [Ensembl: Homo_sapiens.GRCh38.dna.primary_assembly]
                                         - mmu [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly]

@@ -44,8 +44,8 @@ process minimap2_nano {
     fi
 
     minimap2 -ax map-ont -t ${task.cpus} -o ${name}.sam ${db} ${name}.id.fastq
-    samtools fasta -f 4 -0 ${name}.clean.id.fastq ${name}.sam
-    samtools fasta -F 4 -0 ${name}.contamination.id.fastq ${name}.sam
+    samtools fastq -f 4 -0 ${name}.clean.id.fastq ${name}.sam
+    samtools fastq -F 4 -0 ${name}.contamination.id.fastq ${name}.sam
 
     sed 's/DECONTAMINATE/ /g' ${name}.clean.id.fastq | gzip > ${name}.clean.fastq.gz
     sed 's/DECONTAMINATE/ /g' ${name}.contamination.id.fastq | gzip > ${name}.contamination.fastq.gz
