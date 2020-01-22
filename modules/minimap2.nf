@@ -2,7 +2,7 @@
 
 process minimap2_fasta {
   label 'minimap2'
-  publishDir "${params.output}/${name}/", mode: 'copy', pattern: "*.gz" 
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz" 
 
   input: 
     tuple val(name), file(fasta)
@@ -24,7 +24,7 @@ process minimap2_fasta {
 
 process minimap2_nano {
   label 'minimap2'
-  publishDir "${params.output}/${name}/", mode: 'copy', pattern: "*.gz" 
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz" 
 
   input: 
     tuple val(name), file(fastq)
@@ -56,7 +56,7 @@ process minimap2_nano {
 
 process minimap2_illumina {
   label 'minimap2'
-  publishDir "${params.output}/${name}/ill_martin_extraction", mode: 'copy', pattern: "*.gz" 
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz" 
 
   input: 
     tuple val(name), file(reads)
@@ -96,9 +96,9 @@ process minimap2_illumina {
     """
 }
 
-process minimap2_illumina_ebi_extraction {
+process minimap2_illumina_f12 {
   label 'minimap2'
-  publishDir "${params.output}/${name}/ill_ebi_extraction", mode: 'copy', pattern: "*.gz" 
+  publishDir "${params.output}/${name}/minimap2_f12", mode: 'copy', pattern: "*.gz" 
 
   input: 
     tuple val(name), file(reads)

@@ -168,11 +168,12 @@ workflow clean_illumina {
     index
 
   main:
-    minimap2_illumina(illumina_input_ch, db)
-    minimap2_illumina_ebi_extraction(illumina_input_ch, db)
     if (params.bowtie){
       bowtie2_illumina(illumina_input_ch, db, index)
-      bowtie2_illumina_ebi_extraction(illumina_input_ch, db, index)
+      bowtie2_illumina_f12(illumina_input_ch, db, index)
+    } else {
+      minimap2_illumina(illumina_input_ch, db)
+      minimap2_illumina_f12(illumina_input_ch, db)
     }
 } 
 
@@ -220,10 +221,12 @@ def helpMSG() {
     log.info """
     ____________________________________________________________________________________________
     
-    Workflow: Template
+    Workflow: Decontamination
     
     ${c_yellow}Usage example:${c_reset}
-    nextflow run wf_template --nano '*/*.fastq' 
+    nextflow run main.nf --nano '*/*.fastq' --species mmu --phix 
+    or
+    nextflow run main.nf --illumina '*/*.R{1,2}.fastq' --species eco --bowtie 
 
     ${c_yellow}Input:${c_reset}
     ${c_green} --nano ${c_reset}            '*.fasta' or '*.fastq.gz'   -> one sample per file
@@ -242,7 +245,7 @@ def helpMSG() {
                                         - mmu [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly]
                                         - eco [Ensembl: Escherichia_coli_k_12.ASM80076v1.dna.toplevel]${c_reset}
     ${c_green}--phix${c_reset}          add this flag to download and add phiX genome for decontamination [default: $params.phix]
-    ${c_green}--bowtie${c_reset}        add this flag to build a bowtie2 index and use this in addition for decontamination [default: $params.bowtie]
+    ${c_green}--bowtie${c_reset}        add this flag to use bowtie2 instead of minimap2 for decontamination of short reads [default: $params.bowtie]
 
 
     ${c_dim}Nextflow options:
