@@ -21,4 +21,4 @@ nextflow run main.nf
 ````
 
 # Flowchart
-![chart](figures/chart.png)
+![chart](figures/dag.png)
