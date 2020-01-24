@@ -3,13 +3,14 @@
 process minimap2_fasta {
   label 'minimap2'
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz" 
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "log.txt" 
 
   input: 
     tuple val(name), file(fasta)
     file(db)
 
   output:
-    file("*.gz")
+    tuple file("*.gz"), file('log.txt')
 
   script:
     """
@@ -19,19 +20,31 @@ process minimap2_fasta {
     gzip -f ${name}.clean.fasta
     gzip -f ${name}.contamination.fasta
     rm ${name}.sam
+
+    touch log.txt
+    cat <<EOF >> log.txt
+Input:\t${fasta} 
+Host:\t${db}
+
+Clean:\t\t${params.output}/${name}/minimap2/${name}.clean.fasta.gz
+Contaminated:\t${params.output}/${name}/minimap2/${name}.contamination.fasta.gz
+
+# Stay clean!
+EOF
     """
 }
 
 process minimap2_nano {
   label 'minimap2'
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz" 
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "log.txt" 
 
   input: 
     tuple val(name), file(fastq)
     file(db)
 
   output:
-    file("*.gz")
+    tuple file("*.gz"), file('log.txt')
 
   script:
     """
@@ -51,19 +64,31 @@ process minimap2_nano {
     sed 's/DECONTAMINATE/ /g' ${name}.contamination.id.fastq | gzip > ${name}.contamination.fastq.gz
      
     rm ${name}.sam ${name}.clean.id.fastq ${name}.contamination.id.fastq ${name}.id.fastq
+
+    touch log.txt
+    cat <<EOF >> log.txt
+Input:\t${fastq} 
+Host:\t${db}
+
+Clean:\t\t${params.output}/${name}/minimap2/${name}.clean.fastq.gz
+Contaminated:\t${params.output}/${name}/minimap2/${name}.contamination.fastq.gz
+
+# Stay clean!
+EOF
     """
 }
 
 process minimap2_illumina {
   label 'minimap2'
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz" 
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "log.txt" 
 
   input: 
     tuple val(name), file(reads)
     file(db)
 
   output:
-    file("*.gz")
+    tuple file("*.gz"), file('log.txt')
 
   script:
     """
@@ -106,19 +131,32 @@ process minimap2_illumina {
     # remove intermediate files
     rm ${name}.R1.id.fastq ${name}.R2.id.fastq ${name}.clean.R1.id.fastq ${name}.clean.R2.id.fastq ${name}.contamination.R1.id.fastq ${name}.contamination.R2.id.fastq ${name}.sam
 
+    touch log.txt
+    cat <<EOF >> log.txt
+Input:\t${reads[0]}, ${reads[1]} 
+Host:\t${db}
+
+Clean:\t\t${params.output}/${name}/minimap2/${name}.clean.R1.fastq.gz
+\t\t${params.output}/${name}/minimap2/${name}.clean.R2.fastq.gz
+Contaminated:\t${params.output}/${name}/minimap2/${name}.contamination.R1.fastq.gz
+\t\t${params.output}/${name}/minimap2/${name}.contamination.R2.fastq.gz
+
+# Stay clean!
+EOF
     """
 }
 
 process minimap2_illumina_f12 {
   label 'minimap2'
   publishDir "${params.output}/${name}/minimap2_f12", mode: 'copy', pattern: "*.gz" 
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "log.txt" 
 
   input: 
     tuple val(name), file(reads)
     file(db)
 
   output:
-    file("*.gz")
+    tuple file("*.gz"), file('log.txt')
 
   script:
     """
@@ -150,5 +188,17 @@ process minimap2_illumina_f12 {
     # remove intermediate files
     rm ${name}.R1.id.fastq ${name}.R2.id.fastq ${name}.clean.R1.id.fastq ${name}.clean.R2.id.fastq ${name}.contamination.R1.id.fastq ${name}.contamination.R2.id.fastq ${name}.sam
 
+    touch log.txt
+    cat <<EOF >> log.txt
+Input:\t${reads[0]}, ${reads[1]} 
+Host:\t${db}
+
+Clean:\t\t${params.output}/${name}/minimap2/${name}.clean.R1.fastq.gz
+\t\t${params.output}/${name}/minimap2/${name}.clean.R2.fastq.gz
+Contaminated:\t${params.output}/${name}/minimap2/${name}.contamination.R1.fastq.gz
+\t\t${params.output}/${name}/minimap2/${name}.contamination.R2.fastq.gz
+
+# Stay clean!
+EOF
     """
 }

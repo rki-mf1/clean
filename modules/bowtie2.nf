@@ -3,6 +3,7 @@
 process bowtie2_illumina {
   label 'bowtie2'
   publishDir "${params.output}/${name}/bowtie", mode: 'copy', pattern: "*.gz" 
+  publishDir "${params.output}/${name}/bowtie", mode: 'copy', pattern: "log.txt" 
 
   input: 
     tuple val(name), file(reads)
@@ -10,7 +11,7 @@ process bowtie2_illumina {
     file(index)
 
   output:
-    file("*.gz")
+    tuple file("*.gz"), file('log.txt')
 
   script:
     """
@@ -26,12 +27,25 @@ process bowtie2_illumina {
     gzip ${name}.contamination.R1.fastq
     gzip ${name}.contamination.R2.fastq
 
+    touch log.txt
+    cat <<EOF >> log.txt
+Input:\t${reads[0]}, ${reads[1]} 
+Host:\t${genome}
+
+Clean:\t\t${params.output}/${name}/minimap2/${name}.clean.R1.fastq.gz
+\t\t${params.output}/${name}/minimap2/${name}.clean.R2.fastq.gz
+Contaminated:\t${params.output}/${name}/minimap2/${name}.contamination.R1.fastq.gz
+\t\t${params.output}/${name}/minimap2/${name}.contamination.R2.fastq.gz
+
+# Stay clean!
+EOF
     """
 }
 
 process bowtie2_illumina_f12 {
   label 'bowtie2'
   publishDir "${params.output}/${name}/bowtie_f12", mode: 'copy', pattern: "*.gz" 
+  publishDir "${params.output}/${name}/bowtie", mode: 'copy', pattern: "log.txt" 
 
   input: 
     tuple val(name), file(reads)
@@ -39,7 +53,7 @@ process bowtie2_illumina_f12 {
     file(index)
 
   output:
-    file("*.gz")
+    tuple file("*.gz"), file('log.txt')
 
   script:
     """
@@ -52,5 +66,17 @@ process bowtie2_illumina_f12 {
     gzip ${name}.clean.R1.fastq
     gzip ${name}.clean.R2.fastq
 
+    touch log.txt
+    cat <<EOF >> log.txt
+Input:\t${reads[0]}, ${reads[1]} 
+Host:\t${genome}
+
+Clean:\t\t${params.output}/${name}/minimap2/${name}.clean.R1.fastq.gz
+\t\t${params.output}/${name}/minimap2/${name}.clean.R2.fastq.gz
+Contaminated:\t${params.output}/${name}/minimap2/${name}.contamination.R1.fastq.gz
+\t\t${params.output}/${name}/minimap2/${name}.contamination.R2.fastq.gz
+
+# Stay clean!
+EOF
     """
 }

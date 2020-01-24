@@ -36,6 +36,8 @@ println " "}
 
 if (params.profile) { exit 1, "--profile is WRONG use -profile" }
 if (params.nano == '' &&  params.illumina == '' && params.fasta == '' ) { exit 1, "input missing, use [--nano] or [--illumina] or [--fasta]"}
+if (params.control) {if (params.control != 'phix' &&  params.control != 'dcs') { exit 1, "wrong control defined, use [phix] or [dcs]"}}
+if (!params.host && !params.own && !params.control) { exit 1, "please provide a control (--control), a host tag (--host) or a FASTA file (--own) for the clean up. A control can be combined with eiter --host or --own."}
 
 /************************** 
 * INPUT CHANNELS 
@@ -50,7 +52,6 @@ if (params.nano && params.list) { nano_input_ch = Channel
   else if (params.nano) { nano_input_ch = Channel
     .fromPath( params.nano, checkIfExists: true)
     .map { file -> tuple(file.simpleName, file) }
-    .view()
 }
 
 // illumina reads input & --list support
@@ -61,7 +62,6 @@ if (params.illumina && params.list) { illumina_input_ch = Channel
   .view() }
   else if (params.illumina) { illumina_input_ch = Channel
   .fromFilePairs( params.illumina , checkIfExists: true )
-  .view() 
 }
 
 // assembly fasta input & --list support
@@ -73,12 +73,12 @@ if (params.fasta && params.list) { fasta_input_ch = Channel
   else if (params.fasta) { fasta_input_ch = Channel
     .fromPath( params.fasta, checkIfExists: true)
     .map { file -> tuple(file.simpleName, file) }
-    .view()
 }
 
-// host genome fasta
-if (params.host) {
-  host = file(params.host, checkIfExists: true)
+// user defined host genome fasta
+host = false
+if (params.own) {
+  host = file(params.own, checkIfExists: true)
 }
 
 /************************** 
@@ -87,15 +87,19 @@ if (params.host) {
 
 /* Comment section: */
 
-include './modules/get_host' params(phix: params.phix, species: params.species, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
-if (params.host) {
-  include './modules/build_bowtie2_index' params(phix: params.phix, species: host.simpleName, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
+if (params.own) {
+  include './modules/get_host' params(control: params.control, host: host.simpleName, own: params.own, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
 } else {
-  include './modules/build_bowtie2_index' params(phix: params.phix, species: params.species, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
+  include './modules/get_host' params(control: params.control, host: params.host, own: params.own, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
+}
+if (params.own) {
+  include './modules/build_bowtie2_index' params(control: params.control, host: host.simpleName, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
+} else {
+ include './modules/build_bowtie2_index' params(control: params.control, host: params.host, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
 }
 
 include './modules/minimap2' params(output: params.output)
-include './modules/bowtie2' params(output: params.output, phix: params.phix)
+include './modules/bowtie2' params(output: params.output, control: params.control)
 
 
 /************************** 
@@ -107,19 +111,23 @@ The Database Section is designed to "auto-get" pre prepared databases.
 It is written for local use and cloud use via params.cloudProcess.
 */
 
-workflow download_genomes {
+workflow prepare_host {
   main:
     // local storage via storeDir
-    if (!params.cloudProcess) { get_host(); db = get_host.out }
+    if (!params.cloudProcess) { get_host(host); db = get_host.out }
     // cloud storage via db_preload.exists()
     if (params.cloudProcess) {
-      if (params.phix) {
-        db_preload = file("${params.cloudDatabase}/hosts/${params.species}_phix/${params.species}_phix.fa.gz")
+      if (params.control) {
+        if (params.host) {
+          db_preload = file("${params.cloudDatabase}/hosts/${params.host}_${params.control}/${params.host}_${params.control}.fa.gz")
+        } else {
+          db_preload = file("${params.cloudDatabase}/hosts/${params.control}/${params.control}.fa.gz")
+        }
       } else {
-        db_preload = file("${params.cloudDatabase}/hosts/${params.species}/${params.species}.fa.gz")
+        db_preload = file("${params.cloudDatabase}/hosts/${params.host}/${params.host}.fa.gz")
       }
       if (db_preload.exists()) { db = db_preload }
-      else  { get_host(); db = get_host.out } 
+      else  { get_host(host); db = get_host.out } 
     }
   emit: db
 }
@@ -133,10 +141,10 @@ workflow bowtie2_index {
     if (!params.cloudProcess) { build_bowtie2_index(genome); db = build_bowtie2_index.out }
     // cloud storage via db_preload.exists()
     if (params.cloudProcess) {
-      if (params.phix) {
-        db_preload = file("${params.cloudDatabase}/hosts/${params.species}_phix/${params.species}_phix/bt2")
+      if (params.control) {
+        db_preload = file("${params.cloudDatabase}/hosts/${params.host}_${params.control}/${params.host}_${params.control}/bt2")
       } else {
-        db_preload = file("${params.cloudDatabase}/hosts/${params.species}/${params.species}/bt2")
+        db_preload = file("${params.cloudDatabase}/hosts/${params.host}/${params.host}/bt2")
       }
       if (db_preload.exists()) { db = db_preload }
       else  { build_bowtie2_index(genome); db = build_bowtie2_index.out } 
@@ -191,10 +199,8 @@ workflow clean_illumina {
 /* Comment section: */
 
 workflow {
-      if (!params.host) {
-        download_genomes()
-        host = download_genomes.out
-      } 
+      prepare_host()
+      host = prepare_host.out
 
       index = false
       if (params.bowtie) {
@@ -202,17 +208,19 @@ workflow {
         index = bowtie2_index.out
       }
 
-      if (params.fasta && !params.nano && !params.illumina) { 
+      if (params.fasta) { 
         clean_fasta(fasta_input_ch, host)
       }
 
-      if (!params.fasta && params.nano && !params.illumina) { 
+      if (params.nano) { 
         clean_nano(nano_input_ch, host)
       }
 
-      if (!params.fasta && !params.nano && params.illumina) { 
+      if (params.illumina) { 
         clean_illumina(illumina_input_ch, host, index)
       }
+
+
 }
 
 
@@ -230,25 +238,28 @@ def helpMSG() {
     ____________________________________________________________________________________________
     
     Workflow: Decontamination
+
+    Clean your Illumina, Nanopore or any FASTA-formated sequence date. The output are the clean 
+    and as contaminated identified sequences. Per default minimap2 is used for aligning your sequences
+    to a host but we recommend using the ${c_dim}--bowtie${c_reset} flag to switch to Bowtie2 to clean short-read data.  
+
+    Use the ${c_dim}--host${c_reset} and ${c_dim}--control${c_reset} flag to download a host database or specify your ${c_dim}--own${c_reset} FASTA. 
     
     ${c_yellow}Usage example:${c_reset}
-    nextflow run main.nf --nano '*/*.fastq' --species mmu --phix 
+    nextflow run clean.nf --nano '*/*.fastq' --host eco --control dcs 
     or
-    nextflow run main.nf --illumina '*/*.R{1,2}.fastq' --species eco --bowtie 
+    nextflow run clean.nf --illumina '*/*.R{1,2}.fastq' --own some_host.fasta --bowtie 
+    or
+    nextflow run clean.nf --illumina 'data/illumina*.R{1,2}.fastq.gz' --nano data/nanopore.fastq.gz --fasta data/assembly.fasta --host eco --control phix
 
     ${c_yellow}Input:${c_reset}
     ${c_green} --nano ${c_reset}            '*.fasta' or '*.fastq.gz'   -> one sample per file
     ${c_green} --illumina ${c_reset}        '*.R{1,2}.fastq.gz'         -> file pairs
     ${c_green} --fasta ${c_reset}           '*.fasta.gz'                -> one sample per file
-    ${c_green} --host ${c_reset}            host.fasta.gz               -> one host file
     ${c_dim}  ..change above input to csv:${c_reset} ${c_green}--list ${c_reset}            
 
-    ${c_yellow}Options:${c_reset}
-    --cores             max cores for local use [default: $params.cores]
-    --memory            max memory for local use [default: $params.memory]
-    --output            name of the result folder [default: $params.output]
-
-    ${c_green}--species${c_reset}       reference genome for decontamination is downloaded based on this parameter [default: $params.species]
+    ${c_yellow}Decontamination options:${c_reset}
+    ${c_green}--host${c_reset}       reference genome for decontamination is downloaded based on this parameter [default: $params.host]
                                         ${c_dim}Currently supported are:
                                         - hsa [Ensembl: Homo_sapiens.GRCh38.dna.primary_assembly]
                                         - mmu [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly]
@@ -256,9 +267,18 @@ def helpMSG() {
                                         - gga [NCBI: Gallus_gallus.GRCg6a.dna.toplevel]
                                         - cli [NCBI: GCF_000337935.1_Cliv_1.0_genomic]
                                         - eco [Ensembl: Escherichia_coli_k_12.ASM80076v1.dna.toplevel]${c_reset}
-    ${c_green}--phix${c_reset}          add this flag to download and add phiX genome for decontamination [default: $params.phix]
+    ${c_green}--control${c_reset}       use one of these flags to remove commom controls used in Illumina or Nanopore sequencing [default: $params.control]
+                                        ${c_dim}Currently supported are:
+                                        - phix [Illumina: enterobacteria_phage_phix174_sensu_lato_uid14015, NC_001422]
+                                        - dcs [ONT DNA-Seq: a positive control (3.6 kb standard amplicon mapping the 3' end of the Lambda genome)]${c_reset}
+                                        - eno [ONT RNA-Seq: a positive control (yeast ENO2 Enolase II of strain S288C, YHR174W)]${c_reset}
+    ${c_green}--own ${c_reset}          use your own FASTA sequence for decontamination, host.fasta.gz [default: $params.own]
     ${c_green}--bowtie${c_reset}        add this flag to use bowtie2 instead of minimap2 for decontamination of short reads [default: $params.bowtie]
 
+    ${c_yellow}Compute options:${c_reset}
+    --cores             max cores for local use [default: $params.cores]
+    --memory            max memory for local use [default: $params.memory]
+    --output            name of the result folder [default: $params.output]
 
     ${c_dim}Nextflow options:
     -with-report rep.html    cpu / ram usage (may cause errors)
@@ -272,7 +292,7 @@ def helpMSG() {
     --cachedir          defines the path where images (singularity) are cached [default: $params.cachedir] 
 
 
-    Profile:
+    ${c_yellow}Profile:${c_reset}
     -profile                 standard (local, pure docker) [default]
                              conda (mixes conda and docker)
                              lsf (HPC w/ LSF, singularity/docker)
