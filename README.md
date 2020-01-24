@@ -28,6 +28,15 @@ You can simply specify provided hosts and controls for the cleanup or use your o
 * this means all programs are automatically pulled via `docker` or `conda`
 * only `docker` or `conda` and `nextflow` need to be installed (per default `docker` is used)
 
+### Nextflow
+Needed in both cases (`conda`, `docker`)
+```bash
+sudo apt-get update
+sudo apt install -y default-jre
+curl -s https://get.nextflow.io | bash 
+sudo mv nextflow /bin/
+```
+
 ### Using Conda
 
 Just copy the commands and follow the installation instructions. Let the installer configure conda for you. 
@@ -43,20 +52,11 @@ See [here](https://docs.conda.io/en/latest/miniconda.html) if you need a differe
 #### Easy 
 If you dont have experience with bioinformatic tools just copy the commands into your terminal to set everything up:
 ```bash
-sudo apt-get update
-sudo apt install -y default-jre
-curl -s https://get.nextflow.io | bash 
-sudo mv nextflow /bin/
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 sudo usermod -a -G docker $USER
 ```
-
 * restart your computer
 * try out the installation by entering the following
-
-```bash
-nextflow run hoelzer/clean --nano ~/.nextflow/assets/hoelzer/clean/data/nanopore.fastq.gz --host eco
-```
 
 #### Experienced
 
