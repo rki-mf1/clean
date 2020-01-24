@@ -143,7 +143,11 @@ workflow bowtie2_index {
     // cloud storage via db_preload.exists()
     if (params.cloudProcess) {
       if (params.control) {
-        db_preload = file("${params.cloudDatabase}/hosts/${params.host}_${params.control}/${params.host}_${params.control}/bt2")
+        if (params.host) {
+          db_preload = file("${params.cloudDatabase}/hosts/${params.host}_${params.control}/${params.host}_${params.control}/bt2")
+        } else {
+          db_preload = file("${params.cloudDatabase}/hosts/${params.control}/${params.control}/bt2")
+        }
       } else {
         db_preload = file("${params.cloudDatabase}/hosts/${params.host}/${params.host}/bt2")
       }
