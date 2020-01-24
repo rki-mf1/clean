@@ -3,19 +3,20 @@ A decontamination workflow for short reads, long reads and assemblies.
 
 ![](https://img.shields.io/badge/nextflow-19.10.0-brightgreen)
 ![](https://img.shields.io/badge/uses-docker-blue.svg)
-
-Maintainer: Martin
+![](https://img.shields.io/badge/uses-conda-yellow.svg)
 
 Email: hoelzer.martin@gmail.com
 
 # Objective
 Sequencing data is often contaminated with DNA or RNA from other species. These, normally unwanted, material occurs for biological 
 reasons or can be also spiked in as a control. For example, this is often the case for Illumina data ([phiX phage](https://environmentalmicrobiome.biomedcentral.com/articles/10.1186/1944-3277-10-18)) or Oxford Nanopore
-Technologies ([DNA CS (DCS)](https://assets.ctfassets.net/hkzaxo8a05x5/2IX56YmF5ug0kAQYoAg2Uk/159523e326b1b791e3b842c4791420a6/DNA_CS.txt)) 
+Technologies ([DNA CS (DCS)](https://assets.ctfassets.net/hkzaxo8a05x5/2IX56YmF5ug0kAQYoAg2Uk/159523e326b1b791e3b842c4791420a6/DNA_CS.txt), [yeast ENO2](https://www.yeastgenome.org/locus/S000001217)). Most tools don't 
+take care of such contaminations and thus we can find them in sequence collections and asssemblies ([Mukherjee _et al_. (2015)](https://environmentalmicrobiome.biomedcentral.com/articles/10.1186/1944-3277-10-18)). 
 
 # What this workflow does for you
-With this workflow you can clean your Illumina, Nanopore or any FASTA-formated sequence date. The output are the clean and as contaminated identified sequences. 
-Per default [minimap2](https://github.com/lh3/minimap2) is used for aligning your sequences to a host but I recommend using the [Bowtie2](https://github.com/BenLangmead/bowtie2) to clean short-read data (_--bowtie_).  
+With this workflow you can screen and clean your Illumina, Nanopore or any FASTA-formated sequence date. The results are the clean sequences and the sequences identified as contaminated. 
+Per default [minimap2](https://github.com/lh3/minimap2) is used for aligning your sequences to reference sequences but I recommend using [Bowtie2](https://github.com/BenLangmead/bowtie2) 
+to clean short-read data (_--bowtie_).   
 
 You can simply specify provided hosts and controls for the cleanup or use your own FASTA.    
 
@@ -24,10 +25,22 @@ You can simply specify provided hosts and controls for the cleanup or use your o
 ## Installation
 
 * runs with the workflow manager `nextflow` using `docker` or `conda`
-* this means all programs are automatically pulled via docker or conda
-* only `docker` and `nextflow` need to be installed
+* this means all programs are automatically pulled via `docker` or `conda`
+* only `docker` or `conda` and `nextflow` need to be installed (per default `docker` is used)
 
-### Easy 
+### Using Conda
+
+Just copy the commands and follow the installation instructions. Let the installer configure conda for you. 
+```bash
+cd
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+```
+See [here](https://docs.conda.io/en/latest/miniconda.html) if you need a different installer besides Linux used above. 
+
+### Using Docker
+
+#### Easy 
 If you dont have experience with bioinformatic tools just copy the commands into your terminal to set everything up:
 ```bash
 sudo apt-get update
@@ -45,7 +58,7 @@ sudo usermod -a -G docker $USER
 nextflow run hoelzer/clean --nano ~/.nextflow/assets/hoelzer/clean/data/nanopore.fastq.gz --host eco
 ```
 
-### Experienced
+#### Experienced
 
 **Dependencies**
 

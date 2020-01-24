@@ -96,6 +96,21 @@ process get_host {
         mv ${params.host}_${params.control}.fa.gz.1 ${params.host}_${params.control}.fa.gz
       fi
     fi
+
+    if [ "${params.control}" == "eno" ]; then
+      wget https://raw.githubusercontent.com/hoelzer/clean/master/controls/S288C_YHR174W_ENO2_coding.fsa
+      echo "" >> S288C_YHR174W_ENO2_coding.fsa
+      mv S288C_YHR174W_ENO2_coding.fsa S288C_YHR174W_ENO2_coding.fa
+      gzip -f S288C_YHR174W_ENO2_coding.fa
+      if [ ${params.host} == 'false' ]; then
+        mv S288C_YHR174W_ENO2_coding.fa.gz ${params.control}.fa.gz
+      else
+        cat *.gz > ${params.host}_${params.control}.fa.gz.1
+        rm *.gz
+        mv ${params.host}_${params.control}.fa.gz.1 ${params.host}_${params.control}.fa.gz
+      fi
+    fi
+
     """
 }
 

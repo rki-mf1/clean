@@ -36,8 +36,9 @@ println " "}
 
 if (params.profile) { exit 1, "--profile is WRONG use -profile" }
 if (params.nano == '' &&  params.illumina == '' && params.fasta == '' ) { exit 1, "input missing, use [--nano] or [--illumina] or [--fasta]"}
-if (params.control) {if (params.control != 'phix' &&  params.control != 'dcs') { exit 1, "wrong control defined, use [phix] or [dcs]"}}
+if (params.control) {if (params.control != 'phix' &&  params.control != 'dcs' &&  params.control != 'eno') { exit 1, "wrong control defined, use [phix], [dcs] or [eno]"}}
 if (!params.host && !params.own && !params.control) { exit 1, "please provide a control (--control), a host tag (--host) or a FASTA file (--own) for the clean up. A control can be combined with eiter --host or --own."}
+if (params.host && params.own) {print "Attention, you provided a host via the --host flag (${params.host})\n and your own reference sequence via --own (${params.own}). Only your own file will be used.\n If you provided a control via --control (${params.control}) this will be added to your --own sequence.\n\n"}
 
 /************************** 
 * INPUT CHANNELS 
