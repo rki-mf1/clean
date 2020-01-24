@@ -39,7 +39,7 @@ sudo mv nextflow /bin/
 
 ### Using Conda
 
-Just copy the commands and follow the installation instructions. Let the installer configure conda for you. 
+Just copy the commands and follow the installation instructions. Let the installer configure `conda` for you. You need to specify `-profile conde` to run the pipeline with conda support.  
 ```bash
 cd
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
