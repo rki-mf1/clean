@@ -75,6 +75,11 @@ nextflow run hoelzer/clean --nano ~/.nextflow/assets/hoelzer/clean/data/nanopore
 
 # Execution examples
 
+Get or update the workflow:
+```bash
+nextflow pull hoelzer/clean
+```
+
 Get help:
 ```bash
 nextflow run hoelzer/clean --help
@@ -82,17 +87,21 @@ nextflow run hoelzer/clean --help
 
 Clean Nanopore data by filtering against a combined reference of the _E. coli_ genome and the Nanopore DNA CS spike-in.  
 ```bash
-nextflow run hoelzer/clean --nano '*/*.fastq.gz' --host eco --control dcs 
+# uses Docker per default
+nextflow run hoelzer/clean --nano ~/.nextflow/assets/hoelzer/clean/data/nanopore.fastq.gz --host eco --control dcs 
+
+# use conda instead of Docker
+nextflow run hoelzer/clean --nano ~/.nextflow/assets/hoelzer/clean/data/nanopore.fastq.gz --host eco --control dcs -profile conda
 ```
 
 Clean Illumina paired-end data against your own reference FASTA using Bowtie2 instead of minimap2. 
 ```bash
-nextflow run hoelzer/clean --illumina '*/*.R{1,2}.fastq' --own some_host.fasta --bowtie 
+nextflow run hoelzer/clean --illumina '~/.nextflow/assets/hoelzer/clean/data/illumina*.R{1,2}.fastq.gz' --own ~/.nextflow/assets/hoelzer/clean/data/ref.fasta.gz --bowtie 
 ```
 
 Clean some Illumina, Nanopore, and assembly files against the mouse and phiX genomes.  
 ```bash
-nextflow run hoelzer/clean --illumina 'data/illumina*.R{1,2}.fastq.gz' --nano data/nanopore.fastq.gz --fasta data/assembly.fasta --host mmu --control phix
+nextflow run hoelzer/clean --illumina '~/.nextflow/assets/hoelzer/clean/data/illumina*.R{1,2}.fastq.gz' --nano ~/.nextflow/assets/hoelzer/clean/data/nanopore.fastq.gz --fasta ~/.nextflow/assets/hoelzer/clean/data/assembly.fasta --host mmu --control phix
 ```
 
 # Supported species
