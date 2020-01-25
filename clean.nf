@@ -99,7 +99,7 @@ if (params.own) {
  include './modules/build_bowtie2_index' params(control: params.control, host: params.host, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
 }
 
-include './modules/minimap2' params(output: params.output)
+include './modules/minimap2' params(output: params.output, rna: params.rna)
 include './modules/bowtie2' params(output: params.output, control: params.control)
 
 
@@ -279,6 +279,7 @@ def helpMSG() {
                                         - eno [ONT RNA-Seq: a positive control (yeast ENO2 Enolase II of strain S288C, YHR174W)]${c_reset}
     ${c_green}--own ${c_reset}          use your own FASTA sequence for decontamination, host.fasta.gz [default: $params.own]
     ${c_green}--bowtie${c_reset}        add this flag to use bowtie2 instead of minimap2 for decontamination of short reads [default: $params.bowtie]
+    ${c_green}--rna${c_reset}           add this flag for noisy direct RNA-Seq Nanopore data [default: $params.rna]
 
     ${c_yellow}Compute options:${c_reset}
     --cores             max cores for local use [default: $params.cores]
