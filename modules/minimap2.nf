@@ -50,26 +50,25 @@ process minimap2_nano {
     """
 
     # remove spaces in read IDs to keep them in the later cleaned output
-    #if [[ ${fastq} =~ \\.gz\$ ]]; then
-    #  zcat ${fastq} | sed 's/ /DECONTAMINATE/g' > ${name}.id.fastq
-    #else
-    #  sed 's/ /DECONTAMINATE/g' ${fastq} > ${name}.id.fastq
-    #fi
+    if [[ ${fastq} =~ \\.gz\$ ]]; then
+      zcat ${fastq} | sed 's/ /DECONTAMINATE/g' > ${name}.id.fastq
+    else
+      sed 's/ /DECONTAMINATE/g' ${fastq} > ${name}.id.fastq
+    fi
 
     PARAMS="-ax map-ont"
     if [[ ${params.rna} != 'false' ]]; then
       PARAMS="-ax splice -uf -k14"
     fi
 
-    #minimap2 \$PARAMS -t ${task.cpus} -o ${name}.sam ${db} ${name}.id.fastq
-    minimap2 \$PARAMS -t ${task.cpus} -o ${name}.sam ${db} ${fastq}
+    minimap2 \$PARAMS -t ${task.cpus} -o ${name}.sam ${db} ${name}.id.fastq
     samtools fastq -f 4 -0 ${name}.clean.id.fastq ${name}.sam
     samtools fastq -F 4 -0 ${name}.contamination.id.fastq ${name}.sam
 
-    #sed 's/DECONTAMINATE/ /g' ${name}.clean.id.fastq | gzip > ${name}.clean.fastq.gz
-    #sed 's/DECONTAMINATE/ /g' ${name}.contamination.id.fastq | gzip > ${name}.contamination.fastq.gz
-    gzip -f ${name}.clean.id.fastq; mv ${name}.clean.id.fastq.gz ${name}.clean.fastq.gz
-    gzip -f ${name}.contamination.id.fastq; mv ${name}.contamination.id.fastq.gz ${name}.contamination.fastq.gz
+    sed 's/DECONTAMINATE/ /g' ${name}.clean.id.fastq | gzip > ${name}.clean.fastq.gz
+    sed 's/DECONTAMINATE/ /g' ${name}.contamination.id.fastq | gzip > ${name}.contamination.fastq.gz
+    #gzip -f ${name}.clean.id.fastq; mv ${name}.clean.id.fastq.gz ${name}.clean.fastq.gz
+    #gzip -f ${name}.contamination.id.fastq; mv ${name}.contamination.id.fastq.gz ${name}.contamination.fastq.gz
      
     rm ${name}.sam ${name}.clean.id.fastq ${name}.contamination.id.fastq ${name}.id.fastq
 
