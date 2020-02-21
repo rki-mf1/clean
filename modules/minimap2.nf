@@ -71,7 +71,8 @@ process minimap2_nano {
     gzip -f ${name}.clean.id.fastq; mv ${name}.clean.id.fastq.gz ${name}.clean.fastq.gz
     gzip -f ${name}.contamination.id.fastq; mv ${name}.contamination.id.fastq.gz ${name}.contamination.fastq.gz
      
-    rm ${name}.sam ${name}.clean.id.fastq ${name}.contamination.id.fastq ${name}.id.fastq
+    #rm ${name}.sam ${name}.clean.id.fastq ${name}.contamination.id.fastq ${name}.id.fastq
+    rm ${name}.sam
 
     touch log.txt
     cat <<EOF >> log.txt
