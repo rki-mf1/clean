@@ -2,8 +2,8 @@
 
 process bowtie2_illumina {
   label 'bowtie2'
-  publishDir "${params.output}/${name}/bowtie", mode: 'copy', pattern: "*.gz" 
-  publishDir "${params.output}/${name}/bowtie", mode: 'copy', pattern: "log.txt" 
+  publishDir "${params.output}/${name}/bowtie2", mode: 'copy', pattern: "*.gz" 
+  publishDir "${params.output}/${name}/bowtie2", mode: 'copy', pattern: "log.txt" 
 
   input: 
     tuple val(name), file(reads)
@@ -32,10 +32,10 @@ process bowtie2_illumina {
 Input:\t${reads[0]}, ${reads[1]} 
 Host:\t${genome}
 
-Clean:\t\t${params.output}/${name}/minimap2/${name}.clean.R1.fastq.gz
-\t\t${params.output}/${name}/minimap2/${name}.clean.R2.fastq.gz
-Contaminated:\t${params.output}/${name}/minimap2/${name}.contamination.R1.fastq.gz
-\t\t${params.output}/${name}/minimap2/${name}.contamination.R2.fastq.gz
+Clean:\t\t${params.output}/${name}/bowtie2/${name}.clean.R1.fastq.gz
+\t\t${params.output}/${name}/bowtie2/${name}.clean.R2.fastq.gz
+Contaminated:\t${params.output}/${name}/bowtie2/${name}.contamination.R1.fastq.gz
+\t\t${params.output}/${name}/bowtie2/${name}.contamination.R2.fastq.gz
 
 # Stay clean!
 EOF
