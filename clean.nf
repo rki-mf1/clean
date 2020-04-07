@@ -93,20 +93,11 @@ if (params.own) {
 
 /* Comment section: */
 
-if (params.own) {
-  include './modules/get_host' params(control: params.control, host: host.simpleName, own: params.own, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
-} else {
-  include './modules/get_host' params(control: params.control, host: params.host, own: params.own, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
-}
-if (params.own) {
-  include './modules/build_bowtie2_index' params(control: params.control, host: host.simpleName, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
-} else {
- include './modules/build_bowtie2_index' params(control: params.control, host: params.host, cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
-}
+include get_host from './modules/get_host'
+include build_bowtie2_index from './modules/build_bowtie2_index'
 
-include './modules/minimap2' params(output: params.output, rna: params.rna)
-include './modules/bowtie2' params(output: params.output, control: params.control)
-
+include {minimap2_fasta; minimap2_nano; minimap2_illumina} from './modules/minimap2'
+include {bowtie2_illumina} from './modules/bowtie2'
 
 /************************** 
 * DATABASES
@@ -139,7 +130,7 @@ workflow prepare_host {
 }
 
 workflow bowtie2_index {
-  get:
+  take:
     genome
 
   main:
@@ -169,7 +160,7 @@ workflow bowtie2_index {
 /* Comment section: */
 
 workflow clean_fasta {
-  get: 
+  take: 
     fasta_input_ch
     db
 
@@ -179,7 +170,7 @@ workflow clean_fasta {
 } 
 
 workflow clean_nano {
-  get: 
+  take: 
     nano_input_ch
     db
 
@@ -188,7 +179,7 @@ workflow clean_nano {
 } 
 
 workflow clean_illumina {
-  get: 
+  take: 
     illumina_input_ch
     db
     index
