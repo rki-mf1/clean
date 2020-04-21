@@ -137,7 +137,7 @@ workflow prepare_host {
         check_own(ownFastaChannel)
         checkedOwn = check_own.out
       }
-      concat_contamination(host.mix(controlFastaChannel).mix(checkedOwn).collect().view())
+      concat_contamination(host.mix(controlFastaChannel).mix(checkedOwn).collect())
 
       db = concat_contamination.out
     // }
