@@ -39,12 +39,14 @@ if( !nextflow.version.matches('20.01+') ) {
     exit 1
 }
 
-if (params.profile) { exit 1, "--profile is WRONG use -profile" }
-if (params.nano == '' &&  params.illumina == '' && params.fasta == '' ) { exit 1, "input missing, use [--nano] or [--illumina] or [--fasta]"}
-if (params.control) {if (params.control != 'phix' &&  params.control != 'dcs' &&  params.control != 'eno') { exit 1, "wrong control defined, use [phix], [dcs] or [eno]"}}
-if (!params.host && !params.own && !params.control) { exit 1, "please provide a control (--control), a host tag (--host) or a FASTA file (--own) for the clean up. A control can be combined with either --host or --own."}
-if (params.host && params.own) {print "Attention, you provided a host via the --host flag (${params.host})\n and your own reference sequence via --own (${params.own}). Only your own file will be used.\n If you provided a control via --control (${params.control}) this will be added to your --own sequence.\n\n"}
-if (params.bbduk_kmer && !params.bbduk) { print "parameter --bbduk_kmer is ignored. Use --bbduk to switch from minimap2 to bbduk for illumina reads.\n\n" }
+Set controls = ['phix', 'dcs', 'eno']
+Set hosts = ['hsa', 'mmu', 'cli', 'csa', 'gga', 'eco']
+
+if (params.profile) { exit 1, "--profile is wrong, use -profile" }
+if (params.nano == '' &&  params.illumina == '' && params.fasta == '' ) { exit 1, "Read files missing, use [--nano] or [--illumina] or [--fasta]"}
+if (params.control) { if ( ! (params.control in controls) ) { exit 1, "Wrong control defined, use one of these: " + controls } }
+if (params.host) { if ( ! (params.host in hosts) ) { exit 1, "Wrong host defined, use one of these: " + hosts } }
+if (!params.host && !params.own && !params.control) { exit 1, "Please provide a control (--control), a host tag (--host) or a FASTA file (--own) for the clean up."}
 
 /************************** 
 * INPUT CHANNELS 
@@ -82,10 +84,21 @@ if (params.fasta && params.list) { fasta_input_ch = Channel
     .map { file -> tuple(file.simpleName, file) }
 }
 
-// user defined host genome fasta
-host = false
+// load control fasta sequence
+if (params.control) {
+  controlFastaChannel = Channel.fromPath( params.controldir + '/' + params.control + '.fa.gz', checkIfExists: true )
+}
+else {
+  controlFastaChannel = Channel.empty()
+}
+
+// user defined fasta sequence
 if (params.own) {
-  host = file(params.own, checkIfExists: true)
+  //TODO funzt auch mit * und so was?
+  ownFastaChannel = Channel.from( params.own ).splitCsv().flatten().map{ it -> file( it, checkIfExists: true ) }
+}
+else {
+  ownFastaChannel = Channel.empty()
 }
 
 /************************** 
@@ -94,7 +107,7 @@ if (params.own) {
 
 /* Comment section: */
 
-include get_host from './modules/get_host'
+include {download_host; check_own; concat_contamination} from './modules/get_host'
 
 include {minimap2_fasta; minimap2_nano; minimap2_illumina} from './modules/minimap2'
 include {bbduk} from './modules/bbmap'
@@ -109,23 +122,41 @@ It is written for local use and cloud use via params.cloudProcess.
 */
 
 workflow prepare_host {
+
   main:
     // local storage via storeDir
-    if (!params.cloudProcess) { get_host(host); db = get_host.out }
-    // cloud storage via db_preload.exists()
-    if (params.cloudProcess) {
-      if (params.control) {
-        if (params.host) {
-          db_preload = file("${params.cloudDatabase}/hosts/${params.host}_${params.control}/${params.host}_${params.control}.fa.gz")
-        } else {
-          db_preload = file("${params.cloudDatabase}/hosts/${params.control}/${params.control}.fa.gz")
-        }
-      } else {
-        db_preload = file("${params.cloudDatabase}/hosts/${params.host}/${params.host}.fa.gz")
+    // if (!params.cloudProcess) {
+      if (params.host) {
+        download_host(params.host)
+        host = download_host.out
       }
-      if (db_preload.exists()) { db = db_preload }
-      else  { get_host(host); db = get_host.out } 
-    }
+      else {
+        host = Channel.empty()
+      }
+      if (params.own) {
+        check_own(ownFastaChannel)
+        checkedOwn = check_own.out
+      }
+      concat_contamination(host.mix(controlFastaChannel).mix(checkedOwn).collect().view())
+
+      db = concat_contamination.out
+    // }
+    // cloud storage via db_preload.exists()
+    // if (params.cloudProcess) {
+
+      // TODO is this necessary?
+      // if (params.control) {
+      //   if (params.host) {
+      //     db_preload = file("${params.cloudDatabase}/hosts/${params.host}_${params.control}/${params.host}_${params.control}.fa.gz")
+      //   } else {
+      //     db_preload = file("${params.cloudDatabase}/hosts/${params.control}/${params.control}.fa.gz")
+      //   }
+      // } else {
+      //   db_preload = file("${params.cloudDatabase}/hosts/${params.host}/${params.host}.fa.gz")
+      // }
+      // if (db_preload.exists()) { db = db_preload }
+      // else  { get_host(host, controlFasta); db = get_host.out } 
+    // }
   emit: db
 }
 
