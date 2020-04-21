@@ -268,12 +268,12 @@ def helpMSG() {
                                         - gga [NCBI: Gallus_gallus.GRCg6a.dna.toplevel]
                                         - cli [NCBI: GCF_000337935.1_Cliv_1.0_genomic]
                                         - eco [Ensembl: Escherichia_coli_k_12.ASM80076v1.dna.toplevel]${c_reset}
-    ${c_green}--control${c_reset}       use one of these flags to remove commom controls used in Illumina or Nanopore sequencing [default: $params.control]
+    ${c_green}--control${c_reset}       use one of these flags to remove common controls used in Illumina or Nanopore sequencing [default: $params.control]
                                         ${c_dim}Currently supported are:
                                         - phix [Illumina: enterobacteria_phage_phix174_sensu_lato_uid14015, NC_001422]
                                         - dcs [ONT DNA-Seq: a positive control (3.6 kb standard amplicon mapping the 3' end of the Lambda genome)]
                                         - eno [ONT RNA-Seq: a positive control (yeast ENO2 Enolase II of strain S288C, YHR174W)]${c_reset}
-    ${c_green}--own ${c_reset}          use your own FASTA sequence for decontamination, host.fasta.gz [default: $params.own]
+    ${c_green}--own ${c_reset}          use your own FASTA sequences (comma separated list of files) for decontamination, e.g. host.fasta.gz,spike.fasta [default: $params.own]
     ${c_green}--bbduk${c_reset}         add this flag to use bbduk instead of minimap2 for decontamination of short reads [default: $params.bbduk]
     ${c_green}--bbduk_kmer${c_reset}    set kmer for bbduk [default: $params.bbduk_kmer]
     ${c_green}--rna${c_reset}           add this flag for noisy direct RNA-Seq Nanopore data [default: $params.rna]

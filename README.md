@@ -18,7 +18,7 @@ Technologies ([DNA CS (DCS)](https://assets.ctfassets.net/hkzaxo8a05x5/2IX56YmF5
 With this workflow you can screen and clean your Illumina, Nanopore or any FASTA-formated sequence date. The results are the clean sequences and the sequences identified as contaminated.
 Per default [minimap2](https://github.com/lh3/minimap2) is used for aligning your sequences to reference sequences but I recommend using `bbduk`, part of [BBTools](https://github.com/BioInfoTools/BBMap), to clean short-read data (_--bbduk_).
 
-You can simply specify provided hosts and controls for the cleanup or use your own FASTA.
+You can simply specify provided hosts and controls for the cleanup or use your own FASTA files.
 
 ## How does it work?
 
@@ -53,9 +53,9 @@ See [here](https://docs.conda.io/en/latest/miniconda.html) if you need a differe
 
 #### Using Docker
 
-##### Easy 
+##### Easy
 
-If you dont have experience with bioinformatic tools just copy the commands into your terminal to set everything up:
+If you don't have experience with bioinformatic tools just copy the commands into your terminal to set everything up:
 
 ```bash
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io
@@ -98,11 +98,11 @@ Clean Nanopore data by filtering against a combined reference of the _E. coli_ g
 
 ```bash
 # uses Docker per default
-nextflow run hoelzer/clean --nano ~/.nextflow/assets/hoelzer/clean/data/nanopore.fastq.gz \
+nextflow run hoelzer/clean --nano ~/.nextflow/assets/hoelzer/clean/test/nanopore.fastq.gz \
 --host eco --control dcs
 
 # use conda instead of Docker
-nextflow run hoelzer/clean --nano ~/.nextflow/assets/hoelzer/clean/data/nanopore.fastq.gz \
+nextflow run hoelzer/clean --nano ~/.nextflow/assets/hoelzer/clean/test/nanopore.fastq.gz \
 --host eco --control dcs -profile conda
 ```
 
@@ -111,7 +111,7 @@ Clean Illumina paired-end data against your own reference FASTA using bbduk inst
 ```bash
 # enter your home dir!
 nextflow run hoelzer/clean --illumina '/home/martin/.nextflow/assets/hoelzer/clean/data/illumina*.R{1,2}.fastq.gz' \
---own ~/.nextflow/assets/hoelzer/clean/data/ref.fasta.gz --bbduk
+--own ~/.nextflow/assets/hoelzer/clean/test/ref.fasta.gz --bbduk
 ```
 
 Clean some Illumina, Nanopore, and assembly files against the mouse and phiX genomes.  
@@ -119,12 +119,12 @@ Clean some Illumina, Nanopore, and assembly files against the mouse and phiX gen
 ```bash
 # enter your home dir!
 nextflow run hoelzer/clean --illumina '/home/martin/.nextflow/assets/hoelzer/clean/data/illumina*.R{1,2}.fastq.gz' \
---nano ~/.nextflow/assets/hoelzer/clean/data/nanopore.fastq.gz \
---fasta ~/.nextflow/assets/hoelzer/clean/data/assembly.fasta \
+--nano ~/.nextflow/assets/hoelzer/clean/test/nanopore.fastq.gz \
+--fasta ~/.nextflow/assets/hoelzer/clean/test/assembly.fasta \
 --host mmu --control phix
 ```
 
-## Supported species
+## Supported species and control sequences
 
 Currently supported are:
 
@@ -136,6 +136,14 @@ Currently supported are:
 |gga  | _Gallus gallus_      | [NCBI: Gallus_gallus.GRCg6a.dna.toplevel] |
 |cli  | _Columba livia_      | [NCBI: GCF_000337935.1_Cliv_1.0_genomic] |
 |eco  | _Escherichia coli_   | [Ensembl: Escherichia_coli_k_12.ASM80076v1.dna.toplevel] |
+
+Included in this repository are:
+
+|flag | control/spike | source |
+|-----|---------|-------|
+| dcs |3.6 kb standard amplicon mapping the 3' end of the Lambda genome| https://assets.ctfassets.net/hkzaxo8a05x5/2IX56YmF5ug0kAQYoAg2Uk/159523e326b1b791e3b842c4791420a6/DNA_CS.txt |
+| eno |yeast ENO2 Enolase II of strain S288C, YHR174W| https://raw.githubusercontent.com/hoelzer/clean/master/controls/S288C_YHR174W_ENO2_coding.fsa |
+| phix|enterobacteria_phage_phix174_sensu_lato_uid14015, NC_001422| ftp://ftp.ncbi.nlm.nih.gov/genomes/Viruses/enterobacteria_phage_phix174_sensu_lato_uid14015/NC_001422.fna |
 
 ... for reasons. More can be easily added! Just write me, add an issue or make a pull request.
 
