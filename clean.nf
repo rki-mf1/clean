@@ -284,7 +284,7 @@ def helpMSG() {
 
     ${c_yellow}Compute options:${c_reset}
     --cores             max cores for local use [default: $params.cores]
-    --memory            max memory for local use [default: $params.memory]
+    --memory            max memory for local use, enter in this format '8.GB' [default: $params.memory]
     --output            name of the result folder [default: $params.output]
 
     ${c_dim}Nextflow options:
