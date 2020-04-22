@@ -46,7 +46,7 @@ Set hosts = ['hsa', 'mmu', 'cli', 'csa', 'gga', 'eco']
 if (params.profile) { exit 1, "--profile is wrong, use -profile" }
 if (params.nano == '' &&  params.illumina == '' && params.fasta == '' ) { exit 1, "Read files missing, use [--nano] or [--illumina] or [--fasta]"}
 if (params.control) { for( String ctr : params.control.split(',') ) if ( ! (ctr in controls ) ) { exit 1, "Wrong control defined (" + ctr + "), use one of these: " + controls } }
-if (params.host) { if ( ! (params.host in hosts) ) { exit 1, "Wrong host defined, use one of these: " + hosts } }
+if (params.host) { for( String hst : params.host.split(',') ) if ( ! (hst in hosts ) ) { exit 1, "Wrong host defined (" + hst + "), use one of these: " + hosts } }
 if (!params.host && !params.own && !params.control) { exit 1, "Please provide a control (--control), a host tag (--host) or a FASTA file (--own) for the clean up."}
 
 /************************** 
@@ -93,6 +93,10 @@ else {
   controlFastaChannel = Channel.empty()
 }
 
+if (params.host) {
+  hostNameChannel = Channel.from( params.host ).splitCsv().flatten()
+}
+
 // user defined fasta sequence
 if (params.own) {
   //TODO funzt auch mit * und so was?
@@ -125,7 +129,7 @@ workflow prepare_host {
     // local storage via storeDir
     // if (!params.cloudProcess) {
       if (params.host) {
-        download_host(params.host)
+        download_host(hostNameChannel)
         host = download_host.out
       }
       else {
@@ -138,7 +142,7 @@ workflow prepare_host {
       else {
         checkedOwn = Channel.empty()
       }
-      concat_contamination(host.mix(controlFastaChannel.collect()).mix(checkedOwn).collect())
+      concat_contamination(host.collect().mix(controlFastaChannel.collect()).mix(checkedOwn).collect())
 
       db = concat_contamination.out
     // }
@@ -261,7 +265,7 @@ def helpMSG() {
     ${c_dim}  ..change above input to csv:${c_reset} ${c_green}--list ${c_reset}            
 
     ${c_yellow}Decontamination options:${c_reset}
-    ${c_green}--host${c_reset}       reference genome for decontamination is downloaded based on this parameter [default: $params.host]
+    ${c_green}--host${c_reset}         comma separated list of reference genomes for decontamination, downloaded based on this parameter [default: $params.host]
                                         ${c_dim}Currently supported are:
                                         - hsa [Ensembl: Homo_sapiens.GRCh38.dna.primary_assembly]
                                         - mmu [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly]
