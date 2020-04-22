@@ -110,7 +110,7 @@ Clean Illumina paired-end data against your own reference FASTA using bbduk inst
 
 ```bash
 # enter your home dir!
-nextflow run hoelzer/clean --illumina '/home/martin/.nextflow/assets/hoelzer/clean/data/illumina*.R{1,2}.fastq.gz' \
+nextflow run hoelzer/clean --illumina '/home/martin/.nextflow/assets/hoelzer/clean/test/illumina*.R{1,2}.fastq.gz' \
 --own ~/.nextflow/assets/hoelzer/clean/test/ref.fasta.gz --bbduk
 ```
 
@@ -118,7 +118,7 @@ Clean some Illumina, Nanopore, and assembly files against the mouse and phiX gen
 
 ```bash
 # enter your home dir!
-nextflow run hoelzer/clean --illumina '/home/martin/.nextflow/assets/hoelzer/clean/data/illumina*.R{1,2}.fastq.gz' \
+nextflow run hoelzer/clean --illumina '/home/martin/.nextflow/assets/hoelzer/clean/test/illumina*.R{1,2}.fastq.gz' \
 --nano ~/.nextflow/assets/hoelzer/clean/test/nanopore.fastq.gz \
 --fasta ~/.nextflow/assets/hoelzer/clean/test/assembly.fasta \
 --host mmu --control phix
