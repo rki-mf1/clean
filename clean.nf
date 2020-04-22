@@ -3,6 +3,7 @@ nextflow.preview.dsl=2
 
 /*
 Nextflow -- Decontamination Pipeline
+Author: marie.lataretu@uni-jena.de
 Author: hoelzer.martin@gmail.com
 */
 
@@ -136,6 +137,9 @@ workflow prepare_host {
       if (params.own) {
         check_own(ownFastaChannel)
         checkedOwn = check_own.out
+      }
+      else {
+        checkedOwn = Channel.empty()
       }
       concat_contamination(host.mix(controlFastaChannel).mix(checkedOwn).collect())
 
