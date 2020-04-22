@@ -45,7 +45,7 @@ Set hosts = ['hsa', 'mmu', 'cli', 'csa', 'gga', 'eco']
 
 if (params.profile) { exit 1, "--profile is wrong, use -profile" }
 if (params.nano == '' &&  params.illumina == '' && params.fasta == '' ) { exit 1, "Read files missing, use [--nano] or [--illumina] or [--fasta]"}
-if (params.control) { if ( ! (params.control in controls) ) { exit 1, "Wrong control defined, use one of these: " + controls } }
+if (params.control) { for( String ctr : params.control.split(',') ) if ( ! (ctr in controls ) ) { exit 1, "Wrong control defined (" + ctr + "), use one of these: " + controls } }
 if (params.host) { if ( ! (params.host in hosts) ) { exit 1, "Wrong host defined, use one of these: " + hosts } }
 if (!params.host && !params.own && !params.control) { exit 1, "Please provide a control (--control), a host tag (--host) or a FASTA file (--own) for the clean up."}
 
@@ -87,7 +87,7 @@ if (params.fasta && params.list) { fasta_input_ch = Channel
 
 // load control fasta sequence
 if (params.control) {
-  controlFastaChannel = Channel.fromPath( params.controldir + '/' + params.control + '.fa.gz', checkIfExists: true )
+  controlFastaChannel = Channel.from( params.control ) .splitCsv().flatten().map{ it -> file( params.controldir + '/' + it + '.fa.gz', checkIfExists: true ) }
 }
 else {
   controlFastaChannel = Channel.empty()
@@ -138,7 +138,7 @@ workflow prepare_host {
       else {
         checkedOwn = Channel.empty()
       }
-      concat_contamination(host.mix(controlFastaChannel).mix(checkedOwn).collect())
+      concat_contamination(host.mix(controlFastaChannel.collect()).mix(checkedOwn).collect())
 
       db = concat_contamination.out
     // }
@@ -269,7 +269,7 @@ def helpMSG() {
                                         - gga [NCBI: Gallus_gallus.GRCg6a.dna.toplevel]
                                         - cli [NCBI: GCF_000337935.1_Cliv_1.0_genomic]
                                         - eco [Ensembl: Escherichia_coli_k_12.ASM80076v1.dna.toplevel]${c_reset}
-    ${c_green}--control${c_reset}       use one of these flags to remove common controls used in Illumina or Nanopore sequencing [default: $params.control]
+    ${c_green}--control${c_reset}       comma separated list of common controls used in Illumina or Nanopore sequencing [default: $params.control]
                                         ${c_dim}Currently supported are:
                                         - phix [Illumina: enterobacteria_phage_phix174_sensu_lato_uid14015, NC_001422]
                                         - dcs [ONT DNA-Seq: a positive control (3.6 kb standard amplicon mapping the 3' end of the Lambda genome)]
