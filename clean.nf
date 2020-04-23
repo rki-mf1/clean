@@ -46,6 +46,7 @@ Set hosts = ['hsa', 'mmu', 'cli', 'csa', 'gga', 'eco']
 if (params.profile) { exit 1, "--profile is wrong, use -profile" }
 if (params.nano == '' &&  params.illumina == '' && params.fasta == '' ) { exit 1, "Read files missing, use [--nano] or [--illumina] or [--fasta]"}
 if (params.control) { for( String ctr : params.control.split(',') ) if ( ! (ctr in controls ) ) { exit 1, "Wrong control defined (" + ctr + "), use one of these: " + controls } }
+if (params.nano && params.control && 'dcs' in params.control.split(',') && 'eno' in params.control.split(',')) { exit 1, "Please choose either eno (for ONT dRNA-Seq) or dcs (for ONT DNA-Seq)." }
 if (params.host) { for( String hst : params.host.split(',') ) if ( ! (hst in hosts ) ) { exit 1, "Wrong host defined (" + hst + "), use one of these: " + hosts } }
 if (!params.host && !params.own && !params.control) { exit 1, "Please provide a control (--control), a host tag (--host) or a FASTA file (--own) for the clean up."}
 
@@ -87,10 +88,17 @@ if (params.fasta && params.list) { fasta_input_ch = Channel
 
 // load control fasta sequence
 if (params.control) {
-  controlFastaChannel = Channel.from( params.control ) .splitCsv().flatten().map{ it -> file( params.controldir + '/' + it + '.fa.gz', checkIfExists: true ) }
-}
-else {
-  controlFastaChannel = Channel.empty()
+
+  if ( 'phix' in params.control.split(',') ) {
+    illuminaControlFastaChannel = Channel.fromPath(params.controldir + '/phix.fa.gz' , checkIfExists: true )
+  } else { illuminaControlFastaChannel = Channel.empty() }
+  if ( 'dcs' in params.control.split(',') ) {
+    nanoControlFastaChannel = Channel.fromPath(params.controldir + '/dcs.fa.gz' , checkIfExists: true )
+  } else if ( 'eno' in params.control.split(',') ) {
+    nanoControlFastaChannel = Channel.fromPath(params.controldir + '/eno.fa.gz' , checkIfExists: true )
+  } else { nanoControlFastaChannel = Channel.empty() }
+
+  // controlFastaChannel = Channel.from( params.control ) .splitCsv().flatten().map{ it -> file( params.controldir + '/' + it + '.fa.gz', checkIfExists: true ) }
 }
 
 if (params.host) {
@@ -123,46 +131,25 @@ The Database Section is designed to "auto-get" pre prepared databases.
 It is written for local use and cloud use via params.cloudProcess.
 */
 
-workflow prepare_host {
-
+workflow prepare {
   main:
-    // local storage via storeDir
-    // if (!params.cloudProcess) {
-      if (params.host) {
-        download_host(hostNameChannel)
-        host = download_host.out
-      }
-      else {
-        host = Channel.empty()
-      }
-      if (params.own) {
-        check_own(ownFastaChannel)
-        checkedOwn = check_own.out
-      }
-      else {
-        checkedOwn = Channel.empty()
-      }
-      concat_contamination(host.collect().mix(controlFastaChannel.collect()).mix(checkedOwn).collect())
-
-      db = concat_contamination.out
-    // }
-    // cloud storage via db_preload.exists()
-    // if (params.cloudProcess) {
-
-      // TODO is this necessary?
-      // if (params.control) {
-      //   if (params.host) {
-      //     db_preload = file("${params.cloudDatabase}/hosts/${params.host}_${params.control}/${params.host}_${params.control}.fa.gz")
-      //   } else {
-      //     db_preload = file("${params.cloudDatabase}/hosts/${params.control}/${params.control}.fa.gz")
-      //   }
-      // } else {
-      //   db_preload = file("${params.cloudDatabase}/hosts/${params.host}/${params.host}.fa.gz")
-      // }
-      // if (db_preload.exists()) { db = db_preload }
-      // else  { get_host(host, controlFasta); db = get_host.out } 
-    // }
-  emit: db
+    if (params.host) {
+      download_host(hostNameChannel)
+      host = download_host.out
+    }
+    else {
+      host = Channel.empty()
+    }
+    if (params.own) {
+      check_own(ownFastaChannel)
+      checkedOwn = check_own.out
+    }
+    else {
+      checkedOwn = Channel.empty()
+    }
+  emit:
+    host = host
+    checkedOwn = checkedOwn
 }
 
 /************************** 
@@ -174,32 +161,47 @@ workflow prepare_host {
 workflow clean_fasta {
   take: 
     fasta_input_ch
-    db
+    host
+    checkedOwn
 
   main:
-    minimap2_fasta(fasta_input_ch, db)
-
+    concat_contamination(
+      host.collect()
+      .mix(illuminaControlFastaChannel)
+      .mix(nanoControlFastaChannel)
+      .mix(checkedOwn).collect())
+    minimap2_fasta(fasta_input_ch, concat_contamination.out)
+  
 } 
 
 workflow clean_nano {
   take: 
     nano_input_ch
-    db
+    host
+    checkedOwn
 
   main:
-    minimap2_nano(nano_input_ch, db)
+    concat_contamination(
+      host.collect()
+      .mix(nanoControlFastaChannel)
+      .mix(checkedOwn).collect())
+    minimap2_nano(nano_input_ch, concat_contamination.out)
 } 
 
 workflow clean_illumina {
   take: 
     illumina_input_ch
-    db
+    host
+    checkedOwn
 
   main:
+    concat_contamination(host.collect()
+    .mix(illuminaControlFastaChannel)
+    .mix(checkedOwn).collect())
     if (params.bbduk){
-      bbduk(illumina_input_ch, db)
+      bbduk(illumina_input_ch, concat_contamination.out)
     } else {
-      minimap2_illumina(illumina_input_ch, db)
+      minimap2_illumina(illumina_input_ch, concat_contamination.out)
     }
 } 
 
@@ -211,22 +213,19 @@ workflow clean_illumina {
 /* Comment section: */
 
 workflow {
-      prepare_host()
-      host = prepare_host.out
+  prepare()
 
-      if (params.fasta) { 
-        clean_fasta(fasta_input_ch, host)
-      }
+  if (params.fasta) {
+    clean_fasta(fasta_input_ch, prepare.out.host, prepare.out.checkedOwn)
+  }
 
-      if (params.nano) { 
-        clean_nano(nano_input_ch, host)
-      }
+  if (params.nano) { 
+    clean_nano(nano_input_ch, prepare.out.host, prepare.out.checkedOwn)
+  }
 
-      if (params.illumina) { 
-        clean_illumina(illumina_input_ch, host)
-      }
-
-
+  if (params.illumina) { 
+    clean_illumina(illumina_input_ch, prepare.out.host, prepare.out.checkedOwn)
+  }
 }
 
 
