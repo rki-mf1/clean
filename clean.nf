@@ -3,6 +3,7 @@ nextflow.preview.dsl=2
 
 /*
 Nextflow -- Decontamination Pipeline
+Author: marie.lataretu@uni-jena.de
 Author: hoelzer.martin@gmail.com
 */
 
@@ -39,12 +40,15 @@ if( !nextflow.version.matches('20.01+') ) {
     exit 1
 }
 
-if (params.profile) { exit 1, "--profile is WRONG use -profile" }
-if (params.nano == '' &&  params.illumina == '' && params.fasta == '' ) { exit 1, "input missing, use [--nano] or [--illumina] or [--fasta]"}
-if (params.control) {if (params.control != 'phix' &&  params.control != 'dcs' &&  params.control != 'eno') { exit 1, "wrong control defined, use [phix], [dcs] or [eno]"}}
-if (!params.host && !params.own && !params.control) { exit 1, "please provide a control (--control), a host tag (--host) or a FASTA file (--own) for the clean up. A control can be combined with either --host or --own."}
-if (params.host && params.own) {print "Attention, you provided a host via the --host flag (${params.host})\n and your own reference sequence via --own (${params.own}). Only your own file will be used.\n If you provided a control via --control (${params.control}) this will be added to your --own sequence.\n\n"}
-if (params.bbduk_kmer && !params.bbduk) { print "parameter --bbduk_kmer is ignored. Use --bbduk to switch from minimap2 to bbduk for illumina reads.\n\n" }
+Set controls = ['phix', 'dcs', 'eno']
+Set hosts = ['hsa', 'mmu', 'cli', 'csa', 'gga', 'eco']
+
+if (params.profile) { exit 1, "--profile is wrong, use -profile" }
+if (params.nano == '' &&  params.illumina == '' && params.fasta == '' ) { exit 1, "Read files missing, use [--nano] or [--illumina] or [--fasta]"}
+if (params.control) { for( String ctr : params.control.split(',') ) if ( ! (ctr in controls ) ) { exit 1, "Wrong control defined (" + ctr + "), use one of these: " + controls } }
+if (params.nano && params.control && 'dcs' in params.control.split(',') && 'eno' in params.control.split(',')) { exit 1, "Please choose either eno (for ONT dRNA-Seq) or dcs (for ONT DNA-Seq)." }
+if (params.host) { for( String hst : params.host.split(',') ) if ( ! (hst in hosts ) ) { exit 1, "Wrong host defined (" + hst + "), use one of these: " + hosts } }
+if (!params.host && !params.own && !params.control) { exit 1, "Please provide a control (--control), a host tag (--host) or a FASTA file (--own) for the clean up."}
 
 /************************** 
 * INPUT CHANNELS 
@@ -82,10 +86,29 @@ if (params.fasta && params.list) { fasta_input_ch = Channel
     .map { file -> tuple(file.simpleName, file) }
 }
 
-// user defined host genome fasta
-host = false
+// load control fasta sequence
+if (params.control) {
+
+  if ( 'phix' in params.control.split(',') ) {
+    illuminaControlFastaChannel = Channel.fromPath(params.controldir + '/phix.fa.gz' , checkIfExists: true )
+  } else { illuminaControlFastaChannel = Channel.empty() }
+  if ( 'dcs' in params.control.split(',') ) {
+    nanoControlFastaChannel = Channel.fromPath(params.controldir + '/dcs.fa.gz' , checkIfExists: true )
+  } else if ( 'eno' in params.control.split(',') ) {
+    nanoControlFastaChannel = Channel.fromPath(params.controldir + '/eno.fa.gz' , checkIfExists: true )
+  } else { nanoControlFastaChannel = Channel.empty() }
+
+  // controlFastaChannel = Channel.from( params.control ) .splitCsv().flatten().map{ it -> file( params.controldir + '/' + it + '.fa.gz', checkIfExists: true ) }
+}
+
+if (params.host) {
+  hostNameChannel = Channel.from( params.host ).splitCsv().flatten()
+}
+
+// user defined fasta sequence
 if (params.own) {
-  host = file(params.own, checkIfExists: true)
+  //TODO funzt auch mit * und so was?
+  ownFastaChannel = Channel.from( params.own ).splitCsv().flatten().map{ it -> file( it, checkIfExists: true ) }
 }
 
 /************************** 
@@ -94,7 +117,7 @@ if (params.own) {
 
 /* Comment section: */
 
-include get_host from './modules/get_host'
+include {download_host; check_own; concat_contamination} from './modules/get_host'
 
 include {minimap2_fasta; minimap2_nano; minimap2_illumina} from './modules/minimap2'
 include {bbduk} from './modules/bbmap'
@@ -108,25 +131,25 @@ The Database Section is designed to "auto-get" pre prepared databases.
 It is written for local use and cloud use via params.cloudProcess.
 */
 
-workflow prepare_host {
+workflow prepare {
   main:
-    // local storage via storeDir
-    if (!params.cloudProcess) { get_host(host); db = get_host.out }
-    // cloud storage via db_preload.exists()
-    if (params.cloudProcess) {
-      if (params.control) {
-        if (params.host) {
-          db_preload = file("${params.cloudDatabase}/hosts/${params.host}_${params.control}/${params.host}_${params.control}.fa.gz")
-        } else {
-          db_preload = file("${params.cloudDatabase}/hosts/${params.control}/${params.control}.fa.gz")
-        }
-      } else {
-        db_preload = file("${params.cloudDatabase}/hosts/${params.host}/${params.host}.fa.gz")
-      }
-      if (db_preload.exists()) { db = db_preload }
-      else  { get_host(host); db = get_host.out } 
+    if (params.host) {
+      download_host(hostNameChannel)
+      host = download_host.out
     }
-  emit: db
+    else {
+      host = Channel.empty()
+    }
+    if (params.own) {
+      check_own(ownFastaChannel)
+      checkedOwn = check_own.out
+    }
+    else {
+      checkedOwn = Channel.empty()
+    }
+  emit:
+    host = host
+    checkedOwn = checkedOwn
 }
 
 /************************** 
@@ -138,32 +161,47 @@ workflow prepare_host {
 workflow clean_fasta {
   take: 
     fasta_input_ch
-    db
+    host
+    checkedOwn
 
   main:
-    minimap2_fasta(fasta_input_ch, db)
-
+    concat_contamination(
+      host.collect()
+      .mix(illuminaControlFastaChannel)
+      .mix(nanoControlFastaChannel)
+      .mix(checkedOwn).collect())
+    minimap2_fasta(fasta_input_ch, concat_contamination.out)
+  
 } 
 
 workflow clean_nano {
   take: 
     nano_input_ch
-    db
+    host
+    checkedOwn
 
   main:
-    minimap2_nano(nano_input_ch, db)
+    concat_contamination(
+      host.collect()
+      .mix(nanoControlFastaChannel)
+      .mix(checkedOwn).collect())
+    minimap2_nano(nano_input_ch, concat_contamination.out)
 } 
 
 workflow clean_illumina {
   take: 
     illumina_input_ch
-    db
+    host
+    checkedOwn
 
   main:
+    concat_contamination(host.collect()
+    .mix(illuminaControlFastaChannel)
+    .mix(checkedOwn).collect())
     if (params.bbduk){
-      bbduk(illumina_input_ch, db)
+      bbduk(illumina_input_ch, concat_contamination.out)
     } else {
-      minimap2_illumina(illumina_input_ch, db)
+      minimap2_illumina(illumina_input_ch, concat_contamination.out)
     }
 } 
 
@@ -175,22 +213,19 @@ workflow clean_illumina {
 /* Comment section: */
 
 workflow {
-      prepare_host()
-      host = prepare_host.out
+  prepare()
 
-      if (params.fasta) { 
-        clean_fasta(fasta_input_ch, host)
-      }
+  if (params.fasta) {
+    clean_fasta(fasta_input_ch, prepare.out.host, prepare.out.checkedOwn)
+  }
 
-      if (params.nano) { 
-        clean_nano(nano_input_ch, host)
-      }
+  if (params.nano) { 
+    clean_nano(nano_input_ch, prepare.out.host, prepare.out.checkedOwn)
+  }
 
-      if (params.illumina) { 
-        clean_illumina(illumina_input_ch, host)
-      }
-
-
+  if (params.illumina) { 
+    clean_illumina(illumina_input_ch, prepare.out.host, prepare.out.checkedOwn)
+  }
 }
 
 
@@ -229,7 +264,7 @@ def helpMSG() {
     ${c_dim}  ..change above input to csv:${c_reset} ${c_green}--list ${c_reset}            
 
     ${c_yellow}Decontamination options:${c_reset}
-    ${c_green}--host${c_reset}       reference genome for decontamination is downloaded based on this parameter [default: $params.host]
+    ${c_green}--host${c_reset}         comma separated list of reference genomes for decontamination, downloaded based on this parameter [default: $params.host]
                                         ${c_dim}Currently supported are:
                                         - hsa [Ensembl: Homo_sapiens.GRCh38.dna.primary_assembly]
                                         - mmu [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly]
@@ -237,19 +272,19 @@ def helpMSG() {
                                         - gga [NCBI: Gallus_gallus.GRCg6a.dna.toplevel]
                                         - cli [NCBI: GCF_000337935.1_Cliv_1.0_genomic]
                                         - eco [Ensembl: Escherichia_coli_k_12.ASM80076v1.dna.toplevel]${c_reset}
-    ${c_green}--control${c_reset}       use one of these flags to remove commom controls used in Illumina or Nanopore sequencing [default: $params.control]
+    ${c_green}--control${c_reset}       comma separated list of common controls used in Illumina or Nanopore sequencing [default: $params.control]
                                         ${c_dim}Currently supported are:
                                         - phix [Illumina: enterobacteria_phage_phix174_sensu_lato_uid14015, NC_001422]
                                         - dcs [ONT DNA-Seq: a positive control (3.6 kb standard amplicon mapping the 3' end of the Lambda genome)]
                                         - eno [ONT RNA-Seq: a positive control (yeast ENO2 Enolase II of strain S288C, YHR174W)]${c_reset}
-    ${c_green}--own ${c_reset}          use your own FASTA sequence for decontamination, host.fasta.gz [default: $params.own]
+    ${c_green}--own ${c_reset}          use your own FASTA sequences (comma separated list of files) for decontamination, e.g. host.fasta.gz,spike.fasta [default: $params.own]
     ${c_green}--bbduk${c_reset}         add this flag to use bbduk instead of minimap2 for decontamination of short reads [default: $params.bbduk]
     ${c_green}--bbduk_kmer${c_reset}    set kmer for bbduk [default: $params.bbduk_kmer]
     ${c_green}--rna${c_reset}           add this flag for noisy direct RNA-Seq Nanopore data [default: $params.rna]
 
     ${c_yellow}Compute options:${c_reset}
     --cores             max cores for local use [default: $params.cores]
-    --memory            max memory for local use [default: $params.memory]
+    --memory            max memory for local use, enter in this format '8.GB' [default: $params.memory]
     --output            name of the result folder [default: $params.output]
 
     ${c_dim}Nextflow options:
