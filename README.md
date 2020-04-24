@@ -35,13 +35,13 @@ Needed in both cases (`conda`, `docker`)
 ```bash
 sudo apt-get update
 sudo apt install -y default-jre
-curl -s https://get.nextflow.io | bash 
+curl -s https://get.nextflow.io | bash
 sudo mv nextflow /bin/
 ```
 
 #### Using Conda
 
-Just copy the commands and follow the installation instructions. Let the installer configure `conda` for you. You need to specify `-profile conde` to run the pipeline with conda support.  
+Just copy the commands and follow the installation instructions. Let the installer configure `conda` for you. You need to specify `-profile conda` to run the pipeline with conda support.  
 
 ```bash
 cd
