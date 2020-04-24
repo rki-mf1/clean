@@ -15,7 +15,7 @@ Author: hoelzer.martin@gmail.com
 Comment section: First part is a terminal print for additional user information,
 followed by some help statements (e.g. missing input) Second part is file
 channel input. This allows via --list to alter the input of --nano & --illumina
-to add csv instead. name,path   or name,pathR1,pathR2 in case of illumina 
+to add csv instead. name,path or name,pathR1,pathR2 in case of illumina 
 */
 
 // terminal prints
@@ -58,9 +58,8 @@ if (!params.host && !params.own && !params.control) { exit 1, "Please provide a 
 if (params.nano && params.list) { nano_input_ch = Channel
   .fromPath( params.nano, checkIfExists: true )
   .splitCsv()
-  .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
-  .view() }
-  else if (params.nano) { nano_input_ch = Channel
+  .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] } 
+} else if (params.nano) { nano_input_ch = Channel
     .fromPath( params.nano, checkIfExists: true)
     .map { file -> tuple(file.simpleName, file) }
 }
@@ -70,8 +69,7 @@ if (params.illumina && params.list) { illumina_input_ch = Channel
   .fromPath( params.illumina, checkIfExists: true )
   .splitCsv()
   .map { row -> [row[0], [file("${row[1]}", checkIfExists: true), file("${row[2]}", checkIfExists: true)]] }
-  .view() }
-  else if (params.illumina) { illumina_input_ch = Channel
+} else if (params.illumina) { illumina_input_ch = Channel
   .fromFilePairs( params.illumina , checkIfExists: true )
 }
 
@@ -80,8 +78,7 @@ if (params.fasta && params.list) { fasta_input_ch = Channel
   .fromPath( params.fasta, checkIfExists: true )
   .splitCsv()
   .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
-  .view() }
-  else if (params.fasta) { fasta_input_ch = Channel
+} else if (params.fasta) { fasta_input_ch = Channel
     .fromPath( params.fasta, checkIfExists: true)
     .map { file -> tuple(file.simpleName, file) }
 }
@@ -97,8 +94,6 @@ if (params.control) {
   } else if ( 'eno' in params.control.split(',') ) {
     nanoControlFastaChannel = Channel.fromPath(params.controldir + '/eno.fa.gz' , checkIfExists: true )
   } else { nanoControlFastaChannel = Channel.empty() }
-
-  // controlFastaChannel = Channel.from( params.control ) .splitCsv().flatten().map{ it -> file( params.controldir + '/' + it + '.fa.gz', checkIfExists: true ) }
 }
 
 if (params.host) {
@@ -261,7 +256,8 @@ def helpMSG() {
     ${c_green} --nano ${c_reset}            '*.fasta' or '*.fastq.gz'   -> one sample per file
     ${c_green} --illumina ${c_reset}        '*.R{1,2}.fastq.gz'         -> file pairs
     ${c_green} --fasta ${c_reset}           '*.fasta.gz'                -> one sample per file
-    ${c_dim}  ..change above input to csv:${c_reset} ${c_green}--list ${c_reset}            
+    ${c_dim} ...read above input from csv files:${c_reset} ${c_green}--list ${c_reset} 
+                         ${c_dim}required format: name,path for --nano and --fasta; name,pathR1,pathR2 for --illumina${c_reset}   
 
     ${c_yellow}Decontamination options:${c_reset}
     ${c_green}--host${c_reset}         comma separated list of reference genomes for decontamination, downloaded based on this parameter [default: $params.host]
