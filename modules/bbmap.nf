@@ -18,8 +18,8 @@ process bbdukStats {
 
   touch stats.txt
   cat <<EOF >> stats.txt
-  \$TOTAL reads; of these:
-  \t\$MNUM (\$MPER) were properly paired and mapped; of these:
+  \$TOTAL reads in total; of these:
+  \t\$MNUM (\$MPER) reads were properly mapped; of these:
   \$FA
   EOF
   """
