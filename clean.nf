@@ -195,7 +195,7 @@ workflow clean_illumina {
     .mix(checkedOwn).collect())
     if (params.bbduk){
       bbduk(illumina_input_ch, concat_contamination.out)
-      bbdukStats(bbduk.out.stats)
+      bbdukStats(bbduk.out.name, bbduk.out.stats)
     } else {
       minimap2_illumina(illumina_input_ch, concat_contamination.out)
     }

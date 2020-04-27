@@ -2,6 +2,7 @@ process bbdukStats {
   publishDir "${params.output}/${name}/bbduk", mode: 'copy', pattern: "stats.txt"
 
   input:
+  val name
   path bbdukStats
 
   output:
@@ -37,7 +38,8 @@ process bbduk {
   output:
   tuple val(name), file("*clean*.fastq.gz")
   tuple val(name), file("*contamination*.fastq.gz")
-  path "stats.txt", emit: stats
+  path "bbduk_stats.txt", emit: stats
+  val name, emit: name
   path "log.txt"
 
   shell:
@@ -70,7 +72,7 @@ process bbduk {
   # bbduk
   echo ${task.memory}
   MEM=\$(echo ${task.memory} | sed 's/ GB//g')
-  bbduk.sh -Xmx\${MEM}g ref=${db} threads=${task.cpus} stats=stats.txt ordered=t k=${params.bbduk_kmer} in=${name}.R1.id.fastq in2=${name}.R2.id.fastq out=${name}.clean.R1.id.fastq out2=${name}.clean.R2.id.fastq outm=${name}.contamination.R1.id.fastq outm2=${name}.contamination.R2.id.fastq
+  bbduk.sh -Xmx\${MEM}g ref=${db} threads=${task.cpus} stats=bbduk_stats.txt ordered=t k=${params.bbduk_kmer} in=${name}.R1.id.fastq in2=${name}.R2.id.fastq out=${name}.clean.R1.id.fastq out2=${name}.clean.R2.id.fastq outm=${name}.contamination.R1.id.fastq outm2=${name}.contamination.R2.id.fastq
 
   # restore the original read IDs
   sed 's/DECONTAMINATE/ /g' ${name}.clean.R1.id.fastq | awk 'BEGIN{LINE=0};{if(LINE % 4 == 0 || LINE == 0){print \$0"/1"}else{print \$0};LINE++;}' | gzip > ${name}.clean.R1.fastq.gz 
