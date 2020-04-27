@@ -153,6 +153,8 @@ workflow prepare {
 
 /* Comment section: */
 
+// TODO only selective control when nano and illumina
+
 workflow clean_fasta {
   take: 
     fasta_input_ch
@@ -176,10 +178,18 @@ workflow clean_nano {
     checkedOwn
 
   main:
-    concat_contamination(
-      host.collect()
-      .mix(nanoControlFastaChannel)
-      .mix(checkedOwn).collect())
+    if (params.nano && params.illumina) {
+      concat_contamination(
+        host.collect()
+        .mix(nanoControlFastaChannel)
+        .mix(checkedOwn).collect())
+    } else {
+      concat_contamination(
+        host.collect()
+        .mix(nanoControlFastaChannel)
+        .mix(illuminaControlFastaChannel)
+        .mix(checkedOwn).collect())
+    }
     minimap2_nano(nano_input_ch, concat_contamination.out)
 } 
 
@@ -190,9 +200,17 @@ workflow clean_illumina {
     checkedOwn
 
   main:
-    concat_contamination(host.collect()
-    .mix(illuminaControlFastaChannel)
-    .mix(checkedOwn).collect())
+    if (params.nano && params.illumina) {
+      concat_contamination(host.collect()
+        .mix(illuminaControlFastaChannel)
+        .mix(checkedOwn).collect())
+    } else {
+      concat_contamination(
+        host.collect()
+        .mix(nanoControlFastaChannel)
+        .mix(illuminaControlFastaChannel)
+        .mix(checkedOwn).collect())
+    }
     if (params.bbduk){
       bbduk(illumina_input_ch, concat_contamination.out)
       bbdukStats(bbduk.out.name, bbduk.out.stats)
