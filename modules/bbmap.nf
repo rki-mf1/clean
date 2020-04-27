@@ -1,8 +1,34 @@
+process bbdukStats {
+  publishDir "${params.output}/${name}/bbduk", mode: 'copy', pattern: "stats.txt"
+
+  input:
+  path bbdukStats
+
+  output:
+  path "stats.txt"
+
+  script:
+  """
+  TOTAL=\$(grep '#Total' ${bbdukStats} | awk -F '\\t' '{print \$2}')
+  MNUM=\$(grep '#Matched' ${bbdukStats} | awk -F '\\t' '{print \$2}')
+  MPER=\$(grep '#Matched' ${bbdukStats} | awk -F '\\t' '{print \$3}')
+
+  FA=\$(awk -F '\\t' '/^[^#]/ {print "\\t\\t"\$2" ("\$3") aligned to "\$1}' ${bbdukStats})
+
+  touch stats.txt
+  cat <<EOF >> stats.txt
+  \$TOTAL reads; of these:
+  \t\$MNUM (\$MPER) were properly paired and mapped; of these:
+  \$FA
+  EOF
+  """
+}
+
+
 process bbduk {
   label 'bbmap'
   publishDir "${params.output}/${name}/bbduk", mode: 'copy', pattern: "*.gz" 
   publishDir "${params.output}/${name}/bbduk", mode: 'copy', pattern: "log.txt"
-  publishDir "${params.output}/${name}/bbduk", mode: 'copy', pattern: "stats.txt"
 
   input:
   tuple val(name), file(reads)
@@ -11,8 +37,8 @@ process bbduk {
   output:
   tuple val(name), file("*clean*.fastq.gz")
   tuple val(name), file("*contamination*.fastq.gz")
-  file("stats.txt")
-  file("log.txt")
+  path "stats.txt", emit: stats
+  path "log.txt"
 
   shell:
   """

@@ -115,7 +115,7 @@ if (params.own) {
 include {download_host; check_own; concat_contamination} from './modules/get_host'
 
 include {minimap2_fasta; minimap2_nano; minimap2_illumina} from './modules/minimap2'
-include {bbduk} from './modules/bbmap'
+include {bbduk; bbdukStats} from './modules/bbmap'
 
 /************************** 
 * DATABASES
@@ -195,6 +195,7 @@ workflow clean_illumina {
     .mix(checkedOwn).collect())
     if (params.bbduk){
       bbduk(illumina_input_ch, concat_contamination.out)
+      bbdukStats(bbduk.out.stats)
     } else {
       minimap2_illumina(illumina_input_ch, concat_contamination.out)
     }
