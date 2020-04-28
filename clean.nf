@@ -114,8 +114,10 @@ if (params.own) {
 
 include {download_host; check_own; concat_contamination} from './modules/get_host'
 
-include {minimap2_fasta; minimap2_nano; minimap2_illumina; minimap2Stats} from './modules/minimap2'
-include {bbduk; bbdukStats} from './modules/bbmap'
+include {minimap2_fasta; minimap2_nano; minimap2_illumina} from './modules/minimap2'
+include {bbduk} from './modules/bbmap'
+
+include {minimap2Stats; bbdukStats; writeLog} from './modules/utils'
 
 /************************** 
 * DATABASES
@@ -160,13 +162,14 @@ workflow clean_fasta {
     checkedOwn
 
   main:
-    concat_contamination(
-      host.collect()
+    contamination = host.collect()
       .mix(illuminaControlFastaChannel)
       .mix(nanoControlFastaChannel)
-      .mix(checkedOwn).collect())
+      .mix(checkedOwn).collect()
+    concat_contamination( contamination )
     minimap2_fasta(fasta_input_ch, concat_contamination.out)
-    minimap2Stats(minimap2_fasta.out.name, minimap2_fasta.out.totalreads, minimap2_fasta.out.idxstats)
+    writeLog(fasta_input_ch.map{ it -> it[0] }, 'minimap2', fasta_input_ch.map{ it -> it[1] }, contamination)
+    minimap2Stats(fasta_input_ch.map{ it -> it[0] }, minimap2_fasta.out.totalreads, minimap2_fasta.out.idxstats)
 } 
 
 workflow clean_nano {
@@ -177,19 +180,20 @@ workflow clean_nano {
 
   main:
     if (params.nano && params.illumina) {
-      concat_contamination(
-        host.collect()
+      contamination = host.collect()
         .mix(nanoControlFastaChannel)
-        .mix(checkedOwn).collect())
+        .mix(checkedOwn).collect()
+      concat_contamination( contamination )
     } else {
-      concat_contamination(
-        host.collect()
+      contamination = host.collect()
         .mix(nanoControlFastaChannel)
         .mix(illuminaControlFastaChannel)
-        .mix(checkedOwn).collect())
+        .mix(checkedOwn).collect()
+      concat_contamination( contamination )
     }
     minimap2_nano(nano_input_ch, concat_contamination.out)
-    minimap2Stats(minimap2_nano.out.name, minimap2_nano.out.totalreads, minimap2_nano.out.idxstats)
+    writeLog(nano_input_ch.map{ it -> it[0] }, 'minimap2', nano_input_ch.map{ it -> it[1] }, contamination)
+    minimap2Stats(nano_input_ch.map{ it -> it[0] }, minimap2_nano.out.totalreads, minimap2_nano.out.idxstats)
 } 
 
 workflow clean_illumina {
@@ -200,22 +204,25 @@ workflow clean_illumina {
 
   main:
     if (params.nano && params.illumina) {
-      concat_contamination(host.collect()
+      contamination = host.collect()
         .mix(illuminaControlFastaChannel)
-        .mix(checkedOwn).collect())
+        .mix(checkedOwn).collect()
+      concat_contamination( contamination )
     } else {
-      concat_contamination(
-        host.collect()
+      contamination = host.collect()
         .mix(nanoControlFastaChannel)
         .mix(illuminaControlFastaChannel)
-        .mix(checkedOwn).collect())
+        .mix(checkedOwn).collect()
+      concat_contamination( contamination )
     }
     if (params.bbduk){
       bbduk(illumina_input_ch, concat_contamination.out)
-      bbdukStats(bbduk.out.name, bbduk.out.stats)
+      writeLog(illumina_input_ch.map{ it -> it[0] }, 'bbduk', illumina_input_ch.map{ it -> it[1] }, contamination)
+      bbdukStats(illumina_input_ch.map{ it -> it[0] }, bbduk.out.stats)
     } else {
       minimap2_illumina(illumina_input_ch, concat_contamination.out)
-      minimap2Stats(minimap2_illumina.out.name, minimap2_illumina.out.totalreads, minimap2_illumina.out.idxstats)
+      writeLog(illumina_input_ch.map{ it -> it[0] }, 'minimap2', illumina_input_ch.map{ it -> it[1] }, contamination)
+      minimap2Stats(illumina_input_ch.map{ it -> it[0] }, minimap2_illumina.out.totalreads, minimap2_illumina.out.idxstats)
     }
 } 
 

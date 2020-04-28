@@ -1,49 +1,16 @@
 /*Comment section: */
 
-process minimap2Stats {
-  label 'minimap2'
-  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "stats.txt" 
-
-  input:
-  val name
-  val totalreads
-  path idxstats
-
-  output:
-  path "stats.txt"
-
-  script:
-  """
-  MAPPEDSUM=\$(awk -F '\\t' '{sum += \$3} END {print sum}' idxstats.tsv)
-  UNPROMAPPEDSUM=\$(awk -F '\\t' '/^[^*]/ {sum += \$4} END {print sum}' idxstats.tsv)
-
-  MAP=\$(awk -v map=\$MAPPEDSUM -v unpromap=\$UNPROMAPPEDSUM -v tot=${totalreads} 'BEGIN {perc=(map-unpromap)/tot*100; print map-unpromap " ("  perc " %) reads were properly mapped; of these:"}')
-
-  FA=\$(awk -v tot=${totalreads} -F '\\t' '/^[^*]/ {propmap=\$3-\$4; print "\\t\\t" propmap " (" propmap/tot*100  "%) reads aligned to " \$1}' idxstats.tsv)
-
-  touch stats.txt
-  cat <<EOF >> stats.txt
-  ${totalreads} reads in total; of these:
-  \t\$MAP
-  \$FA
-  EOF
-  """
-}
-
 process minimap2_fasta {
   label 'minimap2'
-  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz" 
-  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "log.txt"
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz"
 
   input: 
     tuple val(name), file(fasta)
     file(db)
 
   output:
-    path "*.gz"
-    path 'log.txt'
+    path '*.gz'
     path 'idxstats.tsv', emit: idxstats
-    val name, emit: name
     env TOTALREADS, emit: totalreads
 
   script:
@@ -62,34 +29,20 @@ process minimap2_fasta {
   samtools idxstats ${name}.contamination.sorted.bam > idxstats.tsv
 
   rm ${name}.sam
-
-  touch log.txt
-  cat <<EOF >> log.txt
-  Input:\t${fasta} 
-  Host:\t${db}
-
-  Clean:\t\t${params.output}/${name}/minimap2/${name}.clean.fasta.gz
-  Contaminated:\t${params.output}/${name}/minimap2/${name}.contamination.fasta.gz
-
-  # Stay clean!
-  EOF
   """
 }
 
 process minimap2_nano {
   label 'minimap2'
-  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz" 
-  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "log.txt"
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz"
 
   input: 
     tuple val(name), file(fastq)
     file(db)
 
   output:
-    path "*.gz"
-    path 'log.txt'
+    path '*.gz'
     path 'idxstats.tsv', emit: idxstats
-    val name, emit: name
     env TOTALREADS, emit: totalreads
 
   script:
@@ -121,34 +74,20 @@ process minimap2_nano {
   samtools idxstats  ${name}.contamination.sorted.bam > idxstats.tsv
 
   rm ${name}.sam
-
-  touch log.txt
-  cat <<EOF >> log.txt
-  Input:\t${fastq} 
-  Host:\t${db}
-
-  Clean:\t\t${params.output}/${name}/minimap2/${name}.clean.fastq.gz
-  Contaminated:\t${params.output}/${name}/minimap2/${name}.contamination.fastq.gz
-
-  # Stay clean!
-  EOF
   """
 }
 
 process minimap2_illumina {
   label 'minimap2'
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz" 
-  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "log.txt"
 
   input: 
     tuple val(name), file(reads)
     file(db)
 
   output:
-    path "*.gz"
-    path 'log.txt'
+    path '*.gz'
     path 'idxstats.tsv', emit: idxstats
-    val name, emit: name
     env TOTALREADS, emit: totalreads
 
   script:
@@ -200,19 +139,6 @@ process minimap2_illumina {
 
   # remove intermediate files
   rm ${name}.R1.id.fastq ${name}.R2.id.fastq ${name}.clean.R1.id.fastq ${name}.clean.R2.id.fastq ${name}.contamination.R1.id.fastq ${name}.contamination.R2.id.fastq ${name}.sam
-
-  touch log.txt
-  cat <<EOF >> log.txt
-  Input:\t${reads[0]}, ${reads[1]} 
-  Host:\t${db}
-
-  Clean:\t\t${params.output}/${name}/minimap2/${name}.clean.R1.fastq.gz
-  \t\t${params.output}/${name}/minimap2/${name}.clean.R2.fastq.gz
-  Contaminated:\t${params.output}/${name}/minimap2/${name}.contamination.R1.fastq.gz
-  \t\t${params.output}/${name}/minimap2/${name}.contamination.R2.fastq.gz
-
-  # Stay clean!
-  EOF
   """
 }
 

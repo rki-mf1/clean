@@ -1,35 +1,6 @@
-process bbdukStats {
-  publishDir "${params.output}/${name}/bbduk", mode: 'copy', pattern: "stats.txt"
-
-  input:
-  val name
-  path bbdukStats
-
-  output:
-  path "stats.txt"
-
-  script:
-  """
-  TOTAL=\$(grep '#Total' ${bbdukStats} | awk -F '\\t' '{print \$2}')
-  MNUM=\$(grep '#Matched' ${bbdukStats} | awk -F '\\t' '{print \$2}')
-  MPER=\$(grep '#Matched' ${bbdukStats} | awk -F '\\t' '{print \$3}')
-
-  FA=\$(awk -F '\\t' '/^[^#]/ {print "\\t\\t"\$2" ("\$3") aligned to "\$1}' ${bbdukStats})
-
-  touch stats.txt
-  cat <<EOF >> stats.txt
-  \$TOTAL reads in total; of these:
-  \t\$MNUM (\$MPER) reads were properly mapped; of these:
-  \$FA
-  EOF
-  """
-}
-
-
 process bbduk {
   label 'bbmap'
-  publishDir "${params.output}/${name}/bbduk", mode: 'copy', pattern: "*.gz" 
-  publishDir "${params.output}/${name}/bbduk", mode: 'copy', pattern: "log.txt"
+  publishDir "${params.output}/${name}/bbduk", mode: 'copy', pattern: "*.gz"
 
   input:
   tuple val(name), file(reads)
@@ -39,7 +10,6 @@ process bbduk {
   tuple val(name), file("*clean*.fastq.gz")
   tuple val(name), file("*contamination*.fastq.gz")
   path "bbduk_stats.txt", emit: stats
-  val name, emit: name
   path "log.txt"
 
   shell:
@@ -80,18 +50,5 @@ process bbduk {
   sed 's/DECONTAMINATE/ /g' ${name}.contamination.R1.id.fastq | awk 'BEGIN{LINE=0};{if(LINE % 4 == 0 || LINE == 0){print \$0"/1"}else{print \$0};LINE++;}' | gzip > ${name}.contamination.R1.fastq.gz 
   sed 's/DECONTAMINATE/ /g' ${name}.contamination.R2.id.fastq | awk 'BEGIN{LINE=0};{if(LINE % 4 == 0 || LINE == 0){print \$0"/2"}else{print \$0};LINE++;}' | gzip > ${name}.contamination.R2.fastq.gz
   rm ${name}.R1.id.fastq ${name}.R2.id.fastq ${name}.clean.R1.id.fastq ${name}.clean.R2.id.fastq ${name}.contamination.R1.id.fastq ${name}.contamination.R2.id.fastq
-  
-  touch log.txt
-  cat <<EOF >> log.txt
-Input:\t${reads[0]}, ${reads[1]} 
-Host:\t${db}
-
-Clean:\t\t${params.output}/${name}/bbduk/${name}.clean.R1.fastq.gz
-\t\t${params.output}/${name}/bbduk/${name}.clean.R2.fastq.gz
-Contaminated:\t${params.output}/${name}/bbduk/${name}.contamination.R1.fastq.gz
-\t\t${params.output}/${name}/bbduk/${name}.contamination.R2.fastq.gz
-
-# Stay clean!
-EOF
-"""
+  """
 }
