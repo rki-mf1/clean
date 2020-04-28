@@ -114,7 +114,7 @@ if (params.own) {
 
 include {download_host; check_own; concat_contamination} from './modules/get_host'
 
-include {minimap2_fasta; minimap2_nano; minimap2_illumina} from './modules/minimap2'
+include {minimap2_fasta; minimap2_nano; minimap2_illumina; minimap2Stats} from './modules/minimap2'
 include {bbduk; bbdukStats} from './modules/bbmap'
 
 /************************** 
@@ -168,7 +168,7 @@ workflow clean_fasta {
       .mix(nanoControlFastaChannel)
       .mix(checkedOwn).collect())
     minimap2_fasta(fasta_input_ch, concat_contamination.out)
-  
+    minimap2Stats(minimap2_fasta.out.name, minimap2_fasta.out.totalreads, minimap2_fasta.out.idxstats)
 } 
 
 workflow clean_nano {
@@ -191,6 +191,7 @@ workflow clean_nano {
         .mix(checkedOwn).collect())
     }
     minimap2_nano(nano_input_ch, concat_contamination.out)
+    minimap2Stats(minimap2_nano.out.name, minimap2_nano.out.totalreads, minimap2_nano.out.idxstats)
 } 
 
 workflow clean_illumina {
@@ -216,6 +217,7 @@ workflow clean_illumina {
       bbdukStats(bbduk.out.name, bbduk.out.stats)
     } else {
       minimap2_illumina(illumina_input_ch, concat_contamination.out)
+      minimap2Stats(minimap2_illumina.out.name, minimap2_illumina.out.totalreads, minimap2_illumina.out.idxstats)
     }
 } 
 
