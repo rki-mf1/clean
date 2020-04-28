@@ -153,8 +153,6 @@ workflow prepare {
 
 /* Comment section: */
 
-// TODO only selective control when nano and illumina
-
 workflow clean_fasta {
   take: 
     fasta_input_ch
