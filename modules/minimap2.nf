@@ -5,8 +5,8 @@ process minimap2_fasta {
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz"
 
   input: 
-    tuple val(name), file(fasta)
-    file(db)
+    tuple val(name), path(fasta)
+    path db
 
   output:
     path '*.gz'
@@ -37,8 +37,8 @@ process minimap2_nano {
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz"
 
   input: 
-    tuple val(name), file(fastq)
-    file(db)
+    tuple val(name), path(fastq)
+    path db
 
   output:
     path '*.gz'
@@ -82,8 +82,8 @@ process minimap2_illumina {
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz" 
 
   input: 
-    tuple val(name), file(reads)
-    file(db)
+    tuple val(name), path(reads)
+    path db
 
   output:
     path '*.gz'
@@ -148,11 +148,11 @@ process minimap2_illumina_f12 {
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "log.txt" 
 
   input: 
-    tuple val(name), file(reads)
-    file(db)
+    tuple val(name), path(reads)
+    path db
 
   output:
-    tuple file("*.gz"), file('log.txt')
+    tuple path('*.gz'), path('log.txt')
 
   script:
     """

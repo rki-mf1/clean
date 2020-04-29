@@ -8,7 +8,7 @@ process minimap2Stats {
   path idxstats
 
   output:
-  path "stats.txt"
+  path 'stats.txt'
 
   script:
   """
@@ -36,7 +36,7 @@ process bbdukStats {
   path bbdukStats
 
   output:
-  path "stats.txt"
+  path 'stats.txt'
 
   script:
   """

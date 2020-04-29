@@ -63,10 +63,10 @@ process check_own {
 process concat_contamination {
 
   input:
-  path "*"
+  path '*'
 
   output:
-  path "db.fa.gz"
+  path 'db.fa.gz'
   
   script:
   """

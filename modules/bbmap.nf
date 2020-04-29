@@ -3,13 +3,13 @@ process bbduk {
   publishDir "${params.output}/${name}/bbduk", mode: 'copy', pattern: "*.gz"
 
   input:
-  tuple val(name), file(reads)
-  file(db)
+  tuple val(name), path(reads)
+  path db
 
   output:
-  tuple val(name), file("*clean*.fastq.gz")
-  tuple val(name), file("*contamination*.fastq.gz")
-  path "bbduk_stats.txt", emit: stats
+  tuple val(name), path('*clean*.fastq.gz')
+  tuple val(name), path('*contamination*.fastq.gz')
+  path 'bbduk_stats.txt', emit: stats
 
   shell:
   """
