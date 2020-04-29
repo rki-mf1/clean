@@ -10,7 +10,6 @@ process bbduk {
   tuple val(name), file("*clean*.fastq.gz")
   tuple val(name), file("*contamination*.fastq.gz")
   path "bbduk_stats.txt", emit: stats
-  path "log.txt"
 
   shell:
   """
