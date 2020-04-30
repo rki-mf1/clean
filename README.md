@@ -18,67 +18,26 @@ Technologies ([DNA CS (DCS)](https://assets.ctfassets.net/hkzaxo8a05x5/2IX56YmF5
 With this workflow you can screen and clean your Illumina, Nanopore or any FASTA-formated sequence date. The results are the clean sequences and the sequences identified as contaminated.
 Per default [minimap2](https://github.com/lh3/minimap2) is used for aligning your sequences to reference sequences but I recommend using `bbduk`, part of [BBTools](https://github.com/BioInfoTools/BBMap), to clean short-read data (_--bbduk_).
 
-You can simply specify provided hosts and controls for the cleanup or use your own FASTA files.
+You can simply specify provided hosts and controls for the cleanup or use your own FASTA files. The reads are then mapped against the specified host, control and user defined FASTA files. All reads that map are considered as contamination. In case of Illumina paired-end reads, both mates need to be aligned.
 
-## How does it work?
+If Nanopore (`--nano`) and Illumina (`--illumina`) reads and control(s) (`--control`) are set, the control is selectively concatenated with the host and own FASTA: `dcs` for Nanopore DNA-Seq, `eno` for Nanopore RNA-Seq and `phix` from Illumina data.
+Else, specified host, control and user defined FASTA files are concatenated.
 
-### Installation
+## Requirements
 
-* runs with the workflow manager `nextflow` using `docker` or `conda`
-* this means all programs are automatically pulled via `docker` or `conda`
-* only `docker` or `conda` and `nextflow` need to be installed (per default `docker` is used)
+### Workflow management
 
-#### Nextflow
+- [Nextflow](https://www.nextflow.io/docs/latest/getstarted.html#installation)
 
-Needed in both cases (`conda`, `docker`)
+### Dependencies management
 
-```bash
-sudo apt-get update
-sudo apt install -y default-jre
-curl -s https://get.nextflow.io | bash
-sudo mv nextflow /bin/
-```
+- [Conda](https://docs.conda.io/en/latest/miniconda.html) 
 
-#### Using Conda
+and/or
 
-Just copy the commands and follow the installation instructions. Let the installer configure `conda` for you. You need to specify `-profile conda` to run the pipeline with conda support.  
+- [Docker](https://docs.docker.com/get-docker/)
 
-```bash
-cd
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda3-latest-Linux-x86_64.sh
-```
-
-See [here](https://docs.conda.io/en/latest/miniconda.html) if you need a different installer besides Linux used above. 
-
-#### Using Docker
-
-##### Easy
-
-If you don't have experience with bioinformatic tools just copy the commands into your terminal to set everything up:
-
-```bash
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io
-sudo usermod -a -G docker $USER
-```
-
-* restart your computer
-* try out the installation by entering the following
-
-##### Experienced
-
-###### Dependencies
-
->   * docker (add docker to your Usergroup, so no sudo is needed)
->   * nextflow + java runtime
->   * git (should be already installed)
->   * wget (should be already installed)
->   * tar (should be already installed)
-
-* Docker installation [here](https://docs.docker.com/v17.09/engine/installation/linux/docker-ce/ubuntu/#install-docker-ce)
-* Nextflow installation [here](https://www.nextflow.io/)
-* move or add the nextflow executable to a bin path
-* add docker to your User group via `sudo usermod -a -G docker $USER`
+In default `docker` is used; tp switch to `conda`use `-profile conda`.
 
 ## Execution examples
 
@@ -139,11 +98,11 @@ Currently supported are:
 
 Included in this repository are:
 
-|flag | control/spike | source |
-|-----|---------|-------|
-| dcs |3.6 kb standard amplicon mapping the 3' end of the Lambda genome| https://assets.ctfassets.net/hkzaxo8a05x5/2IX56YmF5ug0kAQYoAg2Uk/159523e326b1b791e3b842c4791420a6/DNA_CS.txt |
-| eno |yeast ENO2 Enolase II of strain S288C, YHR174W| https://raw.githubusercontent.com/hoelzer/clean/master/controls/S288C_YHR174W_ENO2_coding.fsa |
-| phix|enterobacteria_phage_phix174_sensu_lato_uid14015, NC_001422| ftp://ftp.ncbi.nlm.nih.gov/genomes/Viruses/enterobacteria_phage_phix174_sensu_lato_uid14015/NC_001422.fna |
+|flag | recommended usage | control/spike | source |
+|-----|-|---------|-------|
+| dcs | ONT DNA-Seq reads |3.6 kb standard amplicon mapping the 3' end of the Lambda genome| https://assets.ctfassets.net/hkzaxo8a05x5/2IX56YmF5ug0kAQYoAg2Uk/159523e326b1b791e3b842c4791420a6/DNA_CS.txt |
+| eno | ONT RNA-Seq reads |yeast ENO2 Enolase II of strain S288C, YHR174W| https://raw.githubusercontent.com/hoelzer/clean/master/controls/S288C_YHR174W_ENO2_coding.fsa |
+| phix| Illumina reads |enterobacteria_phage_phix174_sensu_lato_uid14015, NC_001422| ftp://ftp.ncbi.nlm.nih.gov/genomes/Viruses/enterobacteria_phage_phix174_sensu_lato_uid14015/NC_001422.fna |
 
 ... for reasons. More can be easily added! Just write me, add an issue or make a pull request.
 
