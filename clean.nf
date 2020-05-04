@@ -87,12 +87,12 @@ if (params.fasta && params.list) { fasta_input_ch = Channel
 if (params.control) {
 
   if ( 'phix' in params.control.split(',') ) {
-    illuminaControlFastaChannel = Channel.fromPath(params.controldir + '/phix.fa.gz' , checkIfExists: true )
+    illuminaControlFastaChannel = Channel.fromPath( workflow.projectDir + '/data/controls/phix.fa.gz' , checkIfExists: true )
   } else { illuminaControlFastaChannel = Channel.empty() }
   if ( 'dcs' in params.control.split(',') ) {
-    nanoControlFastaChannel = Channel.fromPath(params.controldir + '/dcs.fa.gz' , checkIfExists: true )
+    nanoControlFastaChannel = Channel.fromPath( workflow.projectDir + '/data/controls/dcs.fa.gz' , checkIfExists: true )
   } else if ( 'eno' in params.control.split(',') ) {
-    nanoControlFastaChannel = Channel.fromPath(params.controldir + '/eno.fa.gz' , checkIfExists: true )
+    nanoControlFastaChannel = Channel.fromPath( workflow.projectDir + '/data/controls/eno.fa.gz' , checkIfExists: true )
   } else { nanoControlFastaChannel = Channel.empty() }
 }
 
