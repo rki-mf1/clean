@@ -1,5 +1,7 @@
 name: bbmap
 channels:
   - bioconda
+  - conda-forge
 dependencies: 
   - bbmap=38.79
+  - pigz=2.3.4

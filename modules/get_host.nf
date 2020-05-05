@@ -43,7 +43,7 @@ process download_host {
 }
 
 process check_own {
-
+  label 'basics'
   input:
   path fasta
 
@@ -54,7 +54,7 @@ process check_own {
   """
   # -L for following a symbolic link
   if ! ( file -L $fasta | grep -q 'gzip compressed' ); then
-    gzip -f $fasta
+    pigz -p ${task.cpus} -f $fasta
     # now $fasta'.gz'
   fi
   """

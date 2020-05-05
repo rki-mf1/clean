@@ -3,3 +3,4 @@ channels:
   - conda-forge
 dependencies:
   - wget=1.20
+  - pigz=2.3.4
