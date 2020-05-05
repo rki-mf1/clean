@@ -46,14 +46,14 @@ process minimap2_nano {
     env TOTALREADS, emit: totalreads
 
   script:
-  """
-  TOTALREADS=\$(zcat ${fastq} | echo \$((`wc -l`/4)))
-
+  """  
   # remove spaces in read IDs to keep them in the later cleaned output
   if [[ ${fastq} =~ \\.gz\$ ]]; then
     zcat ${fastq} | sed 's/ /DECONTAMINATE/g' > ${name}.id.fastq
+    TOTALREADS=\$(zcat ${fastq} | echo \$((`wc -l`/4)))
   else
     sed 's/ /DECONTAMINATE/g' ${fastq} > ${name}.id.fastq
+    TOTALREADS=\$(cat ${fastq} | echo \$((`wc -l`/4)))
   fi
 
   PARAMS="-ax map-ont"
@@ -92,34 +92,39 @@ process minimap2_illumina {
 
   script:
   """
-  TOTALREADS_1=\$(zcat ${reads[0]} | echo \$((`wc -l`/4)))
-  TOTALREADS_2=\$(zcat ${reads[1]} | echo \$((`wc -l`/4)))
-  TOTALREADS=\$(( TOTALREADS_1+TOTALREADS_2 ))
-
   # replace the space in the header to retain the full read IDs after mapping (the mapper would split the ID otherwise after the first space)
   # this is working for ENA reads that have at the end of a read id '/1' or '/2'
   EXAMPLE_ID=\$(zcat ${reads[0]} | head -1)
   if [[ \$EXAMPLE_ID == */1 ]]; then 
     if [[ ${reads[0]} =~ \\.gz\$ ]]; then
       zcat ${reads[0]} | sed 's/ /DECONTAMINATE/g' > ${name}.R1.id.fastq
+      TOTALREADS_1=\$(zcat ${reads[0]} | echo \$((`wc -l`/4)))
     else
       sed 's/ /DECONTAMINATE/g' ${reads[0]} > ${name}.R1.id.fastq
+      TOTALREADS_1=\$(cat ${reads[0]} | echo \$((`wc -l`/4)))
     fi
     if [[ ${reads[1]} =~ \\.gz\$ ]]; then
       zcat ${reads[1]} | sed 's/ /DECONTAMINATE/g' > ${name}.R2.id.fastq
+      TOTALREADS_2=\$(zcat ${reads[1]} | echo \$((`wc -l`/4)))
     else
       sed 's/ /DECONTAMINATE/g' ${reads[1]} > ${name}.R2.id.fastq
+      TOTALREADS_2=\$(cat ${reads[1]} | echo \$((`wc -l`/4)))
     fi
   else
     # this is for paried-end SRA reads that don't follow the ENA pattern
     if [[ ${reads[0]} =~ \\.gz\$ ]]; then
       zcat ${reads[0]} > ${name}.R1.id.fastq
       zcat ${reads[1]} > ${name}.R2.id.fastq
+      TOTALREADS_1=\$(zcat ${reads[0]} | echo \$((`wc -l`/4))
+      TOTALREADS_2=\$(zcat ${reads[1]} | echo \$((`wc -l`/4)))
     else
       cp ${reads[0]} ${name}.R1.id.fastq
       cp ${reads[1]} ${name}.R2.id.fastq
+      TOTALREADS_1=\$(cat ${reads[0]} | echo \$((`wc -l`/4)))
+      TOTALREADS_2=\$(cat ${reads[1]} | echo \$((`wc -l`/4)))
     fi
   fi
+  TOTALREADS=\$(( TOTALREADS_1+TOTALREADS_2 ))
 
   # Use samtools -F 2 to discard only reads mapped in proper pair:
   minimap2 -ax sr -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${name}.R1.id.fastq ${name}.R2.id.fastq
