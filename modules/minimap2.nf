@@ -17,7 +17,7 @@ process minimap2_fasta {
   """
   TOTALREADS=\$(zgrep '^>' ${fasta} | wc -l)
 
-  minimap2 -ax asm5 -N 0 -t ${task.cpus} -o ${name}.sam ${db} ${fasta}
+  minimap2 -ax asm5 -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${fasta}
 
   samtools fasta -f 4 -0 ${name}.clean.fasta ${name}.sam
   samtools fasta -F 4 -0 ${name}.contamination.fasta ${name}.sam
@@ -61,7 +61,7 @@ process minimap2_nano {
     PARAMS="-ax splice -uf -k14"
   fi
 
-  minimap2 \$PARAMS -N 0 -t ${task.cpus} -o ${name}.sam ${db} ${name}.id.fastq
+  minimap2 \$PARAMS -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${name}.id.fastq
 
   samtools fastq -f 4 -0 ${name}.clean.id.fastq ${name}.sam
   samtools fastq -F 4 -0 ${name}.contamination.id.fastq ${name}.sam
@@ -122,7 +122,7 @@ process minimap2_illumina {
   fi
 
   # Use samtools -F 2 to discard only reads mapped in proper pair:
-  minimap2 -ax sr -N 0 -t ${task.cpus} -o ${name}.sam ${db} ${name}.R1.id.fastq ${name}.R2.id.fastq
+  minimap2 -ax sr -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${name}.R1.id.fastq ${name}.R2.id.fastq
   
   samtools fastq -F 2 -1 ${name}.clean.R1.id.fastq -2 ${name}.clean.R2.id.fastq ${name}.sam
   samtools fastq -f 2 -1 ${name}.contamination.R1.id.fastq -2 ${name}.contamination.R2.id.fastq ${name}.sam
