@@ -1,5 +1,4 @@
 process minimap2Stats {
-  label 'minimap2'
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "stats.txt" 
 
   input:
