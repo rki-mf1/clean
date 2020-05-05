@@ -15,7 +15,11 @@ process minimap2_fasta {
 
   script:
   """
-  TOTALREADS=\$(zgrep '^>' ${fasta} | wc -l)
+  if [[ ${fasta} =~ \\.gz\$ ]]; then
+    TOTALREADS=\$(zgrep '^>' ${fasta} | wc -l)
+  else
+    TOTALREADS=\$(grep '^>' ${fasta} | wc -l)
+  fi
 
   minimap2 -ax asm5 -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${fasta}
 
