@@ -77,7 +77,7 @@ process minimap2_nano {
   samtools index ${name}.contamination.sorted.bam
   samtools idxstats  ${name}.contamination.sorted.bam > idxstats.tsv
 
-  rm ${name}.sam
+  rm ${name}.sam ${name}.clean.id.fastq ${name}.contamination.id.fastq
   """
 }
 
