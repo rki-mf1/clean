@@ -84,8 +84,9 @@ if (params.fasta && params.list) { fasta_input_ch = Channel
 }
 
 // load control fasta sequence
+nanoControlFastaChannel = Channel.empty()
+illuminaControlFastaChannel = Channel.empty()
 if (params.control) {
-
   if ( 'phix' in params.control.split(',') ) {
     illuminaControlFastaChannel = Channel.fromPath( workflow.projectDir + '/data/controls/phix.fa.gz' , checkIfExists: true )
   } else { illuminaControlFastaChannel = Channel.empty() }
