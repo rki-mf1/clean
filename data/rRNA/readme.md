@@ -1,0 +1,1 @@
+Fasta files downloaded from https://github.com/biocore/sortmerna/tree/master/data/rRNA_databases [2020-05-20]
