@@ -88,6 +88,7 @@ process minimap2_illumina {
   input: 
     tuple val(name), path(reads)
     path db
+    val mode
 
   output:
     path '*.gz'
@@ -95,6 +96,7 @@ process minimap2_illumina {
     env TOTALREADS, emit: totalreads
 
   script:
+  if ( mode == 'paired' ) {
   """
   # replace the space in the header to retain the full read IDs after mapping (the mapper would split the ID otherwise after the first space)
   # this is working for ENA reads that have at the end of a read id '/1' or '/2'
@@ -149,6 +151,33 @@ process minimap2_illumina {
   # remove intermediate files
   rm ${name}.R1.id.fastq ${name}.R2.id.fastq ${name}.clean.R1.id.fastq ${name}.clean.R2.id.fastq ${name}.contamination.R1.id.fastq ${name}.contamination.R2.id.fastq ${name}.sam
   """
+  } else {
+  """
+  if [[ ${reads} =~ \\.gz\$ ]]; then
+    zcat ${reads} > ${name}.id.fastq
+    TOTALREADS=\$(zcat ${reads} | echo \$((`wc -l`/4)))
+  else
+    mv ${reads} ${name}.id.fastq
+    TOTALREADS=\$(cat ${reads} | echo \$((`wc -l`/4)))
+  fi
+
+  minimap2 -ax sr -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${name}.id.fastq
+  
+  samtools fastq -f 4 -0 ${name}.clean.id.fastq ${name}.sam
+  samtools fastq -F 4 -0 ${name}.contamination.id.fastq ${name}.sam
+
+  samtools view -b -F 2052 ${name}.sam | samtools sort -o ${name}.contamination.sorted.bam --threads ${task.cpus}
+  samtools index ${name}.contamination.sorted.bam
+  samtools idxstats ${name}.contamination.sorted.bam > idxstats.tsv
+
+  # restore the original read IDs
+  sed 's/DECONTAMINATE/ /g' ${name}.clean.id.fastq | awk 'BEGIN{LINE=0};{if(LINE % 4 == 0 || LINE == 0){print \$0"/1"}else{print \$0};LINE++;}' | pigz -p ${task.cpus} > ${name}.clean.fastq.gz 
+  sed 's/DECONTAMINATE/ /g' ${name}.contamination.id.fastq | awk 'BEGIN{LINE=0};{if(LINE % 4 == 0 || LINE == 0){print \$0"/1"}else{print \$0};LINE++;}' | pigz -p ${task.cpus} > ${name}.contamination.fastq.gz 
+
+  # remove intermediate files
+  rm ${name}.id.fastq ${name}.clean.id.fastq ${name}.contamination.id.fastq ${name}.sam
+  """
+  }
 }
 
 process minimap2_illumina_f12 {

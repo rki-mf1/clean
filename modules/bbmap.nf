@@ -5,6 +5,7 @@ process bbduk {
   input:
   tuple val(name), path(reads)
   path db
+  val mode
 
   output:
   tuple val(name), path('*clean*.fastq.gz')
@@ -12,6 +13,7 @@ process bbduk {
   path 'bbduk_stats.txt', emit: stats
 
   shell:
+  if ( mode == 'paired' ) {
   """
   # replace the space in the header to retain the full read IDs after mapping (the mapper would split the ID otherwise after the first space)
   # this is working for ENA reads that have at the end of a read id '/1' or '/2'
@@ -50,4 +52,23 @@ process bbduk {
   sed 's/DECONTAMINATE/ /g' ${name}.contamination.R2.id.fastq | awk 'BEGIN{LINE=0};{if(LINE % 4 == 0 || LINE == 0){print \$0"/2"}else{print \$0};LINE++;}' | pigz -p ${task.cpus} > ${name}.contamination.R2.fastq.gz
   rm ${name}.R1.id.fastq ${name}.R2.id.fastq ${name}.clean.R1.id.fastq ${name}.clean.R2.id.fastq ${name}.contamination.R1.id.fastq ${name}.contamination.R2.id.fastq
   """
+  } else {
+  """
+  if [[ ${reads} =~ \\.gz\$ ]]; then
+    zcat ${reads} > ${name}.id.fastq
+  else
+    mv ${reads} ${name}.id.fastq
+  fi
+  
+  # bbduk
+  echo ${task.memory}
+  MEM=\$(echo ${task.memory} | sed 's/ GB//g')
+  bbduk.sh -Xmx\${MEM}g ref=${db} threads=${task.cpus} stats=bbduk_stats.txt ordered=t k=${params.bbduk_kmer} in=${name}.id.fastq out=${name}.clean.id.fastq outm=${name}.contamination.id.fastq
+
+  # restore the original read IDs
+  sed 's/DECONTAMINATE/ /g' ${name}.clean.id.fastq | awk 'BEGIN{LINE=0};{if(LINE % 4 == 0 || LINE == 0){print \$0"/1"}else{print \$0};LINE++;}' | pigz -p ${task.cpus} > ${name}.clean.fastq.gz 
+  sed 's/DECONTAMINATE/ /g' ${name}.contamination.id.fastq | awk 'BEGIN{LINE=0};{if(LINE % 4 == 0 || LINE == 0){print \$0"/1"}else{print \$0};LINE++;}' | pigz -p ${task.cpus} > ${name}.contamination.fastq.gz
+  rm ${name}.id.fastq ${name}.clean.id.fastq ${name}.contamination.id.fastq
+  """
+  }
 }
