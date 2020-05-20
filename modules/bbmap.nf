@@ -33,8 +33,8 @@ process bbduk {
       zcat ${reads[0]} > ${name}.R1.id.fastq
       zcat ${reads[1]} > ${name}.R2.id.fastq
     else
-      cp ${reads[0]} ${name}.R1.id.fastq
-      cp ${reads[1]} ${name}.R2.id.fastq
+      mv ${reads[0]} ${name}.R1.id.fastq
+      mv ${reads[1]} ${name}.R2.id.fastq
     fi
   fi
   
