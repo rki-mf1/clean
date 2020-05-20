@@ -61,7 +61,7 @@ process minimap2_nano {
   fi
 
   PARAMS="-ax map-ont"
-  if [[ ${params.rna} != 'false' ]]; then
+  if [[ ${params.reads_rna} != 'false' ]]; then
     PARAMS="-ax splice -uf -k14"
   fi
 
@@ -119,7 +119,7 @@ process minimap2_illumina {
     if [[ ${reads[0]} =~ \\.gz\$ ]]; then
       zcat ${reads[0]} > ${name}.R1.id.fastq
       zcat ${reads[1]} > ${name}.R2.id.fastq
-      TOTALREADS_1=\$(zcat ${reads[0]} | echo \$((`wc -l`/4))
+      TOTALREADS_1=\$(zcat ${reads[0]} | echo \$((`wc -l`/4)))
       TOTALREADS_2=\$(zcat ${reads[1]} | echo \$((`wc -l`/4)))
     else
       mv ${reads[0]} ${name}.R1.id.fastq

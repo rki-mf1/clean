@@ -48,7 +48,7 @@ if (params.nano == '' &&  params.illumina == '' && params.fasta == '' ) { exit 1
 if (params.control) { for( String ctr : params.control.split(',') ) if ( ! (ctr in controls ) ) { exit 1, "Wrong control defined (" + ctr + "), use one of these: " + controls } }
 if (params.nano && params.control && 'dcs' in params.control.split(',') && 'eno' in params.control.split(',')) { exit 1, "Please choose either eno (for ONT dRNA-Seq) or dcs (for ONT DNA-Seq)." }
 if (params.host) { for( String hst : params.host.split(',') ) if ( ! (hst in hosts ) ) { exit 1, "Wrong host defined (" + hst + "), use one of these: " + hosts } }
-if (!params.host && !params.own && !params.control) { exit 1, "Please provide a control (--control), a host tag (--host) or a FASTA file (--own) for the clean up."}
+if (!params.host && !params.own && !params.control && !params.rm_rrna) { exit 1, "Please provide a control (--control), a host tag (--host), a FASTA file (--own) or set --rm_rrna for rRNA removal for the clean up."}
 
 /************************** 
 * INPUT CHANNELS 
@@ -96,6 +96,13 @@ if (params.control) {
 } else {
   nanoControlFastaChannel = Channel.empty()
   illuminaControlFastaChannel = Channel.empty()
+}
+
+// load rRNA DB
+if (params.rm_rrna){
+  rRNAChannel = Channel.fromPath( workflow.projectDir + '/data/rRNA/*.fasta.gz', checkIfExists: true )
+} else{
+  rRNAChannel = Channel.empty()
 }
 
 if (params.host) {
@@ -162,12 +169,14 @@ workflow clean_fasta {
     fasta_input_ch
     host
     checkedOwn
+    rRNAChannel
 
   main:
     contamination = host.collect()
       .mix(illuminaControlFastaChannel)
       .mix(nanoControlFastaChannel)
-      .mix(checkedOwn).collect()
+      .mix(checkedOwn)
+      .mix(rRNAChannel).collect()
     concat_contamination( contamination )
     minimap2_fasta(fasta_input_ch, concat_contamination.out)
     writeLog(fasta_input_ch.map{ it -> it[0] }, 'minimap2', fasta_input_ch.map{ it -> it[1] }, contamination)
@@ -179,18 +188,21 @@ workflow clean_nano {
     nano_input_ch
     host
     checkedOwn
+    rRNAChannel
 
   main:
     if (params.nano && params.illumina) {
       contamination = host.collect()
         .mix(nanoControlFastaChannel)
-        .mix(checkedOwn).collect()
+        .mix(checkedOwn)
+        .mix(rRNAChannel).collect()
       concat_contamination( contamination )
     } else {
       contamination = host.collect()
         .mix(nanoControlFastaChannel)
         .mix(illuminaControlFastaChannel)
-        .mix(checkedOwn).collect()
+        .mix(checkedOwn)
+        .mix(rRNAChannel).collect()
       concat_contamination( contamination )
     }
     minimap2_nano(nano_input_ch, concat_contamination.out)
@@ -203,18 +215,21 @@ workflow clean_illumina {
     illumina_input_ch
     host
     checkedOwn
+    rRNAChannel
 
   main:
     if (params.nano && params.illumina) {
       contamination = host.collect()
         .mix(illuminaControlFastaChannel)
-        .mix(checkedOwn).collect()
+        .mix(checkedOwn)
+        .mix(rRNAChannel).collect()
       concat_contamination( contamination )
     } else {
       contamination = host.collect()
         .mix(nanoControlFastaChannel)
         .mix(illuminaControlFastaChannel)
-        .mix(checkedOwn).collect()
+        .mix(checkedOwn)
+        .mix(rRNAChannel).collect()
       concat_contamination( contamination )
     }
     if (params.bbduk){
@@ -239,15 +254,15 @@ workflow {
   prepare()
 
   if (params.fasta) {
-    clean_fasta(fasta_input_ch, prepare.out.host, prepare.out.checkedOwn)
+    clean_fasta(fasta_input_ch, prepare.out.host, prepare.out.checkedOwn, rRNAChannel)
   }
 
   if (params.nano) { 
-    clean_nano(nano_input_ch, prepare.out.host, prepare.out.checkedOwn)
+    clean_nano(nano_input_ch, prepare.out.host, prepare.out.checkedOwn, rRNAChannel)
   }
 
   if (params.illumina) { 
-    clean_illumina(illumina_input_ch, prepare.out.host, prepare.out.checkedOwn)
+    clean_illumina(illumina_input_ch, prepare.out.host, prepare.out.checkedOwn, rRNAChannel)
   }
 }
 
@@ -278,7 +293,7 @@ def helpMSG() {
     or
     nextflow run clean.nf --illumina '*/*.R{1,2}.fastq' --own some_host.fasta --bbduk 
     or
-    nextflow run clean.nf --illumina 'data/illumina*.R{1,2}.fastq.gz' --nano data/nanopore.fastq.gz --fasta data/assembly.fasta --host eco --control phix
+    nextflow run clean.nf --illumina 'test/illumina*.R{1,2}.fastq.gz' --nano data/nanopore.fastq.gz --fasta data/assembly.fasta --host eco --control phix
 
     ${c_yellow}Input:${c_reset}
     ${c_green} --nano ${c_reset}            '*.fasta' or '*.fastq.gz'   -> one sample per file
@@ -302,9 +317,10 @@ def helpMSG() {
                                         - dcs [ONT DNA-Seq: a positive control (3.6 kb standard amplicon mapping the 3' end of the Lambda genome)]
                                         - eno [ONT RNA-Seq: a positive control (yeast ENO2 Enolase II of strain S288C, YHR174W)]${c_reset}
     ${c_green}--own ${c_reset}          use your own FASTA sequences (comma separated list of files) for decontamination, e.g. host.fasta.gz,spike.fasta [default: $params.own]
+    ${c_green}--rm_rrna ${c_reset}      clean your data from rRNA [default: $params.rm_rrna]
     ${c_green}--bbduk${c_reset}         add this flag to use bbduk instead of minimap2 for decontamination of short reads [default: $params.bbduk]
     ${c_green}--bbduk_kmer${c_reset}    set kmer for bbduk [default: $params.bbduk_kmer]
-    ${c_green}--rna${c_reset}           add this flag for noisy direct RNA-Seq Nanopore data [default: $params.rna]
+    ${c_green}--reads_rna${c_reset}           add this flag for noisy direct RNA-Seq Nanopore data [default: $params.reads_rna]
 
     ${c_yellow}Compute options:${c_reset}
     --cores             max cores for local use [default: $params.cores]
