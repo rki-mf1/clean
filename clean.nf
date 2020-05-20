@@ -105,7 +105,7 @@ if (params.host) {
 // user defined fasta sequence
 if (params.own) {
   //TODO funzt auch mit * und so was?
-  ownFastaChannel = Channel.from( params.own ).splitCsv().flatten().map{ it -> file( it, checkIfExists: true ) }
+  ownFastaChannel = Channel.fromPath( params.own, checkIfExists: true).splitCsv().flatten().map{ it -> file( it, checkIfExists: true ) }
 }
 
 /************************** 
