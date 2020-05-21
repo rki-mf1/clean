@@ -44,7 +44,7 @@ Set controls = ['phix', 'dcs', 'eno']
 Set hosts = ['hsa', 'mmu', 'cli', 'csa', 'gga', 'eco']
 
 if (params.profile) { exit 1, "--profile is wrong, use -profile" }
-if (params.nano == '' &&  params.illumina == '' && params.fasta == '' ) { exit 1, "Read files missing, use [--nano] or [--illumina] or [--fasta]"}
+if (params.nano == '' &&  params.illumina == '' && params.fasta == '' && params.illumina_single_end == '' ) { exit 1, "Read files missing, use [--nano] or [--illumina] or [--fasta]"}
 if (params.control) { for( String ctr : params.control.split(',') ) if ( ! (ctr in controls ) ) { exit 1, "Wrong control defined (" + ctr + "), use one of these: " + controls } }
 if (params.nano && params.control && 'dcs' in params.control.split(',') && 'eno' in params.control.split(',')) { exit 1, "Please choose either eno (for ONT dRNA-Seq) or dcs (for ONT DNA-Seq)." }
 if (params.host) { for( String hst : params.host.split(',') ) if ( ! (hst in hosts ) ) { exit 1, "Wrong host defined (" + hst + "), use one of these: " + hosts } }
@@ -64,13 +64,23 @@ if (params.nano && params.list) { nano_input_ch = Channel
     .map { file -> tuple(file.simpleName, file) }
 }
 
-// illumina reads input & --list support
+// illumina paired-end reads input & --list support
 if (params.illumina && params.list) { illumina_input_ch = Channel
   .fromPath( params.illumina, checkIfExists: true )
   .splitCsv()
   .map { row -> [row[0], [file("${row[1]}", checkIfExists: true), file("${row[2]}", checkIfExists: true)]] }
 } else if (params.illumina) { illumina_input_ch = Channel
   .fromFilePairs( params.illumina , checkIfExists: true )
+}
+
+// illumina single-end reads input & --list support
+if (params.illumina_single_end && params.list) { illumina_single_end_input_ch = Channel
+  .fromPath( params.illumina_single_end, checkIfExists: true )
+  .splitCsv()
+  .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
+} else if (params.illumina_single_end) { illumina_single_end_input_ch = Channel
+  .fromPath( params.illumina_single_end, checkIfExists: true )
+  .map { file -> tuple(file.baseName, file) } 
 }
 
 // assembly fasta input & --list support
@@ -233,16 +243,48 @@ workflow clean_illumina {
       concat_contamination( contamination )
     }
     if (params.bbduk){
-      bbduk(illumina_input_ch, concat_contamination.out)
+      bbduk(illumina_input_ch, concat_contamination.out, 'paired')
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'bbduk', illumina_input_ch.map{ it -> it[1] }, contamination)
       bbdukStats(illumina_input_ch.map{ it -> it[0] }, bbduk.out.stats)
     } else {
-      minimap2_illumina(illumina_input_ch, concat_contamination.out)
+      minimap2_illumina(illumina_input_ch, concat_contamination.out, 'paired')
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'minimap2', illumina_input_ch.map{ it -> it[1] }, contamination)
       minimap2Stats(illumina_input_ch.map{ it -> it[0] }, minimap2_illumina.out.totalreads, minimap2_illumina.out.idxstats)
     }
 } 
 
+workflow clean_illumina_single {
+  take:
+    illumina_single_end_input_ch
+    host
+    checkedOwn
+    rRNAChannel
+
+  main:
+    if (params.nano && params.illumina) {
+      contamination = host.collect()
+        .mix(illuminaControlFastaChannel)
+        .mix(checkedOwn)
+        .mix(rRNAChannel).collect()
+      concat_contamination( contamination )
+    } else {
+      contamination = host.collect()
+        .mix(nanoControlFastaChannel)
+        .mix(illuminaControlFastaChannel)
+        .mix(checkedOwn)
+        .mix(rRNAChannel).collect()
+      concat_contamination( contamination )
+    }
+    if (params.bbduk){
+      bbduk(illumina_single_end_input_ch, concat_contamination.out, 'single')
+      writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'bbduk', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
+      bbdukStats(illumina_single_end_input_ch.map{ it -> it[0] }, bbduk.out.stats)
+    } else {
+      minimap2_illumina(illumina_single_end_input_ch, concat_contamination.out, 'single')
+      writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'minimap2', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
+      minimap2Stats(illumina_single_end_input_ch.map{ it -> it[0] }, minimap2_illumina.out.totalreads, minimap2_illumina.out.idxstats)
+    }
+} 
 
 /************************** 
 * WORKFLOW ENTRY POINT
@@ -263,6 +305,10 @@ workflow {
 
   if (params.illumina) { 
     clean_illumina(illumina_input_ch, prepare.out.host, prepare.out.checkedOwn, rRNAChannel)
+  }
+
+  if (params.illumina_single_end) { 
+    clean_illumina_single(illumina_single_end_input_ch, prepare.out.host, prepare.out.checkedOwn, rRNAChannel)
   }
 }
 
@@ -296,11 +342,12 @@ def helpMSG() {
     nextflow run clean.nf --illumina 'test/illumina*.R{1,2}.fastq.gz' --nano data/nanopore.fastq.gz --fasta data/assembly.fasta --host eco --control phix
 
     ${c_yellow}Input:${c_reset}
-    ${c_green} --nano ${c_reset}            '*.fasta' or '*.fastq.gz'   -> one sample per file
-    ${c_green} --illumina ${c_reset}        '*.R{1,2}.fastq.gz'         -> file pairs
-    ${c_green} --fasta ${c_reset}           '*.fasta.gz'                -> one sample per file
+    ${c_green}--nano ${c_reset}               '*.fasta' or '*.fastq.gz'   -> one sample per file
+    ${c_green}--illumina ${c_reset}           '*.R{1,2}.fastq.gz'         -> file pairs
+    ${c_green}--illumina_single_end${c_reset} '*.fastq.gz'                -> one sample per file
+    ${c_green}--fasta ${c_reset}              '*.fasta.gz'                -> one sample per file
     ${c_dim} ...read above input from csv files:${c_reset} ${c_green}--list ${c_reset} 
-                         ${c_dim}required format: name,path for --nano and --fasta; name,pathR1,pathR2 for --illumina${c_reset}   
+                         ${c_dim}required format: name,path for --nano and --fasta; name,pathR1,pathR2 for --illumina; name,path for --illumina_single_end${c_reset}   
 
     ${c_yellow}Decontamination options:${c_reset}
     ${c_green}--host${c_reset}         comma separated list of reference genomes for decontamination, downloaded based on this parameter [default: $params.host]
