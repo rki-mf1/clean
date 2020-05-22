@@ -40,6 +40,10 @@ process minimap2_nano {
   label 'minimap2'
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz"
 
+  errorStrategy { task.exitStatus in 130..140 ? 'retry' : 'terminate' }
+  memory { task.memory * task.attempt }
+  maxRetries 4
+
   input: 
     tuple val(name), path(fastq)
     path db
