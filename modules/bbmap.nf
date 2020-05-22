@@ -12,7 +12,7 @@ process bbduk {
   tuple val(name), path('*contamination*.fastq.gz')
   path 'bbduk_stats.txt', emit: stats
 
-  shell:
+  script:
   if ( mode == 'paired' ) {
   """
   # replace the space in the header to retain the full read IDs after mapping (the mapper would split the ID otherwise after the first space)
