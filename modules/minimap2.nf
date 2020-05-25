@@ -153,11 +153,12 @@ process minimap2_illumina {
   """
   } else {
   """
+  # remove spaces in read IDs to keep them in the later cleaned output
   if [[ ${reads} =~ \\.gz\$ ]]; then
-    zcat ${reads} > ${name}.id.fastq
+    zcat ${reads} | sed 's/ /DECONTAMINATE/g' > ${name}.id.fastq
     TOTALREADS=\$(zcat ${reads} | echo \$((`wc -l`/4)))
   else
-    mv ${reads} ${name}.id.fastq
+    sed 's/ /DECONTAMINATE/g' ${reads} > ${name}.id.fastq
     TOTALREADS=\$(cat ${reads} | echo \$((`wc -l`/4)))
   fi
 
@@ -170,9 +171,8 @@ process minimap2_illumina {
   samtools index ${name}.contamination.sorted.bam
   samtools idxstats ${name}.contamination.sorted.bam > idxstats.tsv
 
-  # restore the original read IDs
-  sed 's/DECONTAMINATE/ /g' ${name}.clean.id.fastq | awk 'BEGIN{LINE=0};{if(LINE % 4 == 0 || LINE == 0){print \$0"/1"}else{print \$0};LINE++;}' | pigz -p ${task.cpus} > ${name}.clean.fastq.gz 
-  sed 's/DECONTAMINATE/ /g' ${name}.contamination.id.fastq | awk 'BEGIN{LINE=0};{if(LINE % 4 == 0 || LINE == 0){print \$0"/1"}else{print \$0};LINE++;}' | pigz -p ${task.cpus} > ${name}.contamination.fastq.gz 
+  sed 's/DECONTAMINATE/ /g' ${name}.clean.id.fastq | pigz -p ${task.cpus} > ${name}.clean.fastq.gz
+  sed 's/DECONTAMINATE/ /g' ${name}.contamination.id.fastq | pigz -p ${task.cpus} > ${name}.contamination.fastq.gz
 
   # remove intermediate files
   rm ${name}.id.fastq ${name}.clean.id.fastq ${name}.contamination.id.fastq ${name}.sam
