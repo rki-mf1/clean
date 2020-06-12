@@ -61,7 +61,8 @@ process check_own {
 }
 
 process concat_contamination {
-
+  label 'smallTask'
+  
   input:
   path '*'
 
