@@ -29,6 +29,8 @@ println "Nextflow-version: $nextflow.version"
 println "Starting time: $nextflow.timestamp"
 println "Workdir location:"
 println "  $workflow.workDir\u001B[0m"
+println "Database location:"
+println "  $params.databases\u001B[0m"
 println " "
 if (workflow.profile == 'standard') {
 println "\033[2mCPUs to use: $params.cores"
