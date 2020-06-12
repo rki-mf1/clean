@@ -381,17 +381,32 @@ def helpMSG() {
 
     ${c_yellow}Computing:${c_reset}
     In particular for execution of the workflow on a HPC (LSF, SLURM) adjust the following parameters:
-    --databases         defines the path where databases are stored [default: $params.dbs]
-    --workdir           defines the path where nextflow writes tmp files [default: $params.workdir]
-    --conda             defines the path where environments (conda) are cached [default: $params.condaCacheDir]
-    --singularity       defines the path where images (singularity) are cached [default: $params.singularityCacheDir] 
+    --databases             defines the path where databases are stored [default: $params.dbs]
+    --workdir               defines the path where nextflow writes tmp files [default: $params.workdir]
+    --condaCacheDir         defines the path where environments (conda) are cached [default: $params.condaCacheDir]
+    --singularityCacheDir   defines the path where images (singularity) are cached [default: $params.singularityCacheDir] 
 
     ${c_yellow}Profile:${c_reset}
-    -profile                 standard (local, pure docker) [default]
-                             conda (mixes conda and docker)
-                             lsf (HPC w/ LSF, singularity/docker)
-                             ebi (HPC w/ LSF, singularity/docker, preconfigured for the EBI cluster)
-                             gcloudMartin (googlegenomics and docker)
+    You can merge different profiles for different setups, e.g.
+
+        -profile local,docker
+        -profile lsf,singularity
+        -profile slurm,singularity
+
+    -profile                 standard (local,docker) [default]
+
+                             local
+                             lsf
+                             slurm
+
+                             docker
+                             singularity
+                             conda
+
+                             ebi (lsf,singularity; preconfigured for the EBI cluster)
+                             yoda (lsf,singularity; preconfigured for the EBI YODA cluster)
+                             ara (slurm,conda; preconfigured for the ARA cluster)
+                             gcloud (use this as template for your own GCP setup)
                              ${c_reset}
     """.stripIndent()
 }
