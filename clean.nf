@@ -379,12 +379,12 @@ def helpMSG() {
     -with-dag chart.html     generates a flowchart for the process tree
     -with-timeline time.html timeline (may cause errors)
 
-    ${c_yellow}LSF computing:${c_reset}
-    For execution of the workflow on a HPC with LSF adjust the following parameters:
+    ${c_yellow}Computing:${c_reset}
+    In particular for execution of the workflow on a HPC (LSF, SLURM) adjust the following parameters:
     --databases         defines the path where databases are stored [default: $params.dbs]
     --workdir           defines the path where nextflow writes tmp files [default: $params.workdir]
-    --cachedir          defines the path where images (singularity) are cached [default: $params.cachedir] 
-
+    --conda             defines the path where environments (conda) are cached [default: $params.condaCacheDir]
+    --singularity       defines the path where images (singularity) are cached [default: $params.singularityCacheDir] 
 
     ${c_yellow}Profile:${c_reset}
     -profile                 standard (local, pure docker) [default]
