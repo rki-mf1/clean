@@ -1,10 +1,10 @@
 process download_host {
   label 'basics'
   if (params.cloudProcess) {
-    publishDir "${params.cloudDatabase}/hosts", mode: 'copy', pattern: "*.fa.gz" 
+    publishDir "${params.databases}/hosts", mode: 'copy', pattern: "*.fa.gz" 
   }
   else {
-    storeDir "nextflow-autodownload-databases/hosts"
+    storeDir "${params.databases}/hosts"
   }
 
   input:

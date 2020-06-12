@@ -381,7 +381,7 @@ def helpMSG() {
 
     ${c_yellow}LSF computing:${c_reset}
     For execution of the workflow on a HPC with LSF adjust the following parameters:
-    --databases         defines the path where databases are stored [default: $params.cloudDatabase]
+    --databases         defines the path where databases are stored [default: $params.dbs]
     --workdir           defines the path where nextflow writes tmp files [default: $params.workdir]
     --cachedir          defines the path where images (singularity) are cached [default: $params.cachedir] 
 
