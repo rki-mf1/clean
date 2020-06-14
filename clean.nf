@@ -32,10 +32,11 @@ println "  $workflow.workDir"
 println "Database location:"
 println "  $params.databases\u001B[0m"
 println " "
-if (workflow.profile == 'standard') {
-println "\033[2mCPUs to use: $params.cores"
-println "Output dir name: $params.output\u001B[0m"
-println " "}
+if (workflow.profile == 'standard' || workflow.profile.contains('local')) {
+    println "\033[2mCPUs to use: $params.cores, maximal CPUs to use: $params.max_cores\u001B[0m"
+    println "Output dir name: $params.output\u001B[0m"
+    println " "
+}
 
 if( !nextflow.version.matches('20.01+') ) {
     println "This workflow requires Nextflow version 20.01 or greater -- You are running version $nextflow.version"
@@ -372,7 +373,8 @@ def helpMSG() {
     ${c_green}--reads_rna${c_reset}           add this flag for noisy direct RNA-Seq Nanopore data [default: $params.reads_rna]
 
     ${c_yellow}Compute options:${c_reset}
-    --cores             max cores for local use [default: $params.cores]
+    --cores             max cores per process for local use [default $params.cores]
+    --max_cores         max cores used on the machine for local use [default $params.max_cores]
     --memory            max memory for local use, enter in this format '8.GB' [default: $params.memory]
     --output            name of the result folder [default: $params.output]
 
