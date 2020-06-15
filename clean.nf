@@ -28,12 +28,15 @@ println "\033[2mCurrent User: $workflow.userName"
 println "Nextflow-version: $nextflow.version"
 println "Starting time: $nextflow.timestamp"
 println "Workdir location:"
-println "  $workflow.workDir\u001B[0m"
+println "  $workflow.workDir"
+println "Database location:"
+println "  $params.databases\u001B[0m"
 println " "
-if (workflow.profile == 'standard') {
-println "\033[2mCPUs to use: $params.cores"
-println "Output dir name: $params.output\u001B[0m"
-println " "}
+if (workflow.profile == 'standard' || workflow.profile.contains('local')) {
+    println "\033[2mCPUs to use: $params.cores, maximal CPUs to use: $params.max_cores\u001B[0m"
+    println "Output dir name: $params.output\u001B[0m"
+    println " "
+}
 
 if( !nextflow.version.matches('20.01+') ) {
     println "This workflow requires Nextflow version 20.01 or greater -- You are running version $nextflow.version"
@@ -370,7 +373,8 @@ def helpMSG() {
     ${c_green}--reads_rna${c_reset}           add this flag for noisy direct RNA-Seq Nanopore data [default: $params.reads_rna]
 
     ${c_yellow}Compute options:${c_reset}
-    --cores             max cores for local use [default: $params.cores]
+    --cores             max cores per process for local use [default $params.cores]
+    --max_cores         max cores used on the machine for local use [default $params.max_cores]
     --memory            max memory for local use, enter in this format '8.GB' [default: $params.memory]
     --output            name of the result folder [default: $params.output]
 
@@ -379,19 +383,34 @@ def helpMSG() {
     -with-dag chart.html     generates a flowchart for the process tree
     -with-timeline time.html timeline (may cause errors)
 
-    ${c_yellow}LSF computing:${c_reset}
-    For execution of the workflow on a HPC with LSF adjust the following parameters:
-    --databases         defines the path where databases are stored [default: $params.cloudDatabase]
-    --workdir           defines the path where nextflow writes tmp files [default: $params.workdir]
-    --cachedir          defines the path where images (singularity) are cached [default: $params.cachedir] 
-
+    ${c_yellow}Computing:${c_reset}
+    In particular for execution of the workflow on a HPC (LSF, SLURM) adjust the following parameters:
+    --databases             defines the path where databases are stored [default: $params.dbs]
+    --workdir               defines the path where nextflow writes tmp files [default: $params.workdir]
+    --condaCacheDir         defines the path where environments (conda) are cached [default: $params.condaCacheDir]
+    --singularityCacheDir   defines the path where images (singularity) are cached [default: $params.singularityCacheDir] 
 
     ${c_yellow}Profile:${c_reset}
-    -profile                 standard (local, pure docker) [default]
-                             conda (mixes conda and docker)
-                             lsf (HPC w/ LSF, singularity/docker)
-                             ebi (HPC w/ LSF, singularity/docker, preconfigured for the EBI cluster)
-                             gcloudMartin (googlegenomics and docker)
+    You can merge different profiles for different setups, e.g.
+
+        -profile local,docker
+        -profile lsf,singularity
+        -profile slurm,singularity
+
+    -profile                 standard (local,docker) [default]
+
+                             local
+                             lsf
+                             slurm
+
+                             docker
+                             singularity
+                             conda
+
+                             ebi (lsf,singularity; preconfigured for the EBI cluster)
+                             yoda (lsf,singularity; preconfigured for the EBI YODA cluster)
+                             ara (slurm,conda; preconfigured for the ARA cluster)
+                             gcloud (use this as template for your own GCP setup)
                              ${c_reset}
     """.stripIndent()
 }
