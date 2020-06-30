@@ -32,7 +32,7 @@ process minimap2_fasta {
   samtools index ${name}.contamination.sorted.bam
   samtools idxstats ${name}.contamination.sorted.bam > idxstats.tsv
 
-  rm ${name}.sam
+  rm -f ${name}.sam
   """
 }
 
@@ -77,7 +77,7 @@ process minimap2_nano {
   samtools index ${name}.contamination.sorted.bam
   samtools idxstats  ${name}.contamination.sorted.bam > idxstats.tsv
 
-  rm ${name}.sam ${name}.clean.id.fastq ${name}.contamination.id.fastq
+  rm -f ${name}.sam ${name}.clean.id.fastq ${name}.contamination.id.fastq
   """
 }
 
@@ -149,7 +149,7 @@ process minimap2_illumina {
   sed 's/DECONTAMINATE/ /g' ${name}.contamination.R2.id.fastq | awk 'BEGIN{LINE=0};{if(LINE % 4 == 0 || LINE == 0){print \$0"/2"}else{print \$0};LINE++;}' | pigz -p ${task.cpus} > ${name}.contamination.R2.fastq.gz
 
   # remove intermediate files
-  rm ${name}.R1.id.fastq ${name}.R2.id.fastq ${name}.clean.R1.id.fastq ${name}.clean.R2.id.fastq ${name}.contamination.R1.id.fastq ${name}.contamination.R2.id.fastq ${name}.sam
+  rm -f ${name}.R1.id.fastq ${name}.R2.id.fastq ${name}.clean.R1.id.fastq ${name}.clean.R2.id.fastq ${name}.contamination.R1.id.fastq ${name}.contamination.R2.id.fastq ${name}.sam
   """
   } else {
   """
@@ -175,7 +175,7 @@ process minimap2_illumina {
   sed 's/DECONTAMINATE/ /g' ${name}.contamination.id.fastq | pigz -p ${task.cpus} > ${name}.contamination.fastq.gz
 
   # remove intermediate files
-  rm ${name}.id.fastq ${name}.clean.id.fastq ${name}.contamination.id.fastq ${name}.sam
+  rm -f ${name}.id.fastq ${name}.clean.id.fastq ${name}.contamination.id.fastq ${name}.sam
   """
   }
 }
@@ -220,7 +220,7 @@ process minimap2_illumina_f12 {
     sed 's/DECONTAMINATE/ /g' ${name}.contamination.R2.id.fastq | awk 'BEGIN{LINE=0};{if(LINE % 4 == 0 || LINE == 0){print \$0"/2"}else{print \$0};LINE++;}' | gzip > ${name}.contamination.R2.fastq.gz
 
     # remove intermediate files
-    rm ${name}.R1.id.fastq ${name}.R2.id.fastq ${name}.clean.R1.id.fastq ${name}.clean.R2.id.fastq ${name}.contamination.R1.id.fastq ${name}.contamination.R2.id.fastq ${name}.sam
+    rm -f ${name}.R1.id.fastq ${name}.R2.id.fastq ${name}.clean.R1.id.fastq ${name}.clean.R2.id.fastq ${name}.contamination.R1.id.fastq ${name}.contamination.R2.id.fastq ${name}.sam
 
     touch log.txt
     cat <<EOF >> log.txt
