@@ -62,7 +62,7 @@ process minimap2_nano {
 
   PARAMS="-ax map-ont"
   if [[ ${params.reads_rna} != 'false' ]]; then
-    PARAMS="-ax splice -uf -k14"
+    PARAMS="-ax splice -k14"
   fi
 
   minimap2 \$PARAMS -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${name}.id.fastq
