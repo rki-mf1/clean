@@ -193,7 +193,7 @@ workflow clean_fasta {
     concat_contamination( contamination )
     minimap2_fasta(fasta_input_ch, concat_contamination.out)
     writeLog(fasta_input_ch.map{ it -> it[0] }, 'minimap2', fasta_input_ch.map{ it -> it[1] }, contamination)
-    minimap2Stats(fasta_input_ch.map{ it -> it[0] }, minimap2_fasta.out.totalreads, minimap2_fasta.out.idxstats)
+    minimap2Stats(minimap2_fasta.out.name, minimap2_fasta.out.totalreads, minimap2_fasta.out.idxstats)
 } 
 
 workflow clean_nano {
@@ -220,7 +220,7 @@ workflow clean_nano {
     }
     minimap2_nano(nano_input_ch, concat_contamination.out)
     writeLog(nano_input_ch.map{ it -> it[0] }, 'minimap2', nano_input_ch.map{ it -> it[1] }, contamination)
-    minimap2Stats(nano_input_ch.map{ it -> it[0] }, minimap2_nano.out.totalreads, minimap2_nano.out.idxstats)
+    minimap2Stats(minimap2_nano.out.name, minimap2_nano.out.totalreads, minimap2_nano.out.idxstats)
 } 
 
 workflow clean_illumina {
@@ -248,11 +248,11 @@ workflow clean_illumina {
     if (params.bbduk){
       bbduk(illumina_input_ch, concat_contamination.out, 'paired')
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'bbduk', illumina_input_ch.map{ it -> it[1] }, contamination)
-      bbdukStats(illumina_input_ch.map{ it -> it[0] }, bbduk.out.stats)
+      bbdukStats(bbduk.out.name, bbduk.out.stats)
     } else {
       minimap2_illumina(illumina_input_ch, concat_contamination.out, 'paired')
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'minimap2', illumina_input_ch.map{ it -> it[1] }, contamination)
-      minimap2Stats(illumina_input_ch.map{ it -> it[0] }, minimap2_illumina.out.totalreads, minimap2_illumina.out.idxstats)
+      minimap2Stats(minimap2_illumina.out.name, minimap2_illumina.out.totalreads, minimap2_illumina.out.idxstats)
     }
 } 
 
