@@ -5,4 +5,6 @@ nextflow-autodownload-databases/
 work/
 .nextflow/
 results/
+conda/
+
 centrifuge-cloud/
