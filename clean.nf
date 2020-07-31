@@ -27,14 +27,19 @@ println " "
 println "\033[2mCurrent User: $workflow.userName"
 println "Nextflow-version: $nextflow.version"
 println "Starting time: $nextflow.timestamp"
+println "Output directory name:"
+println "  $params.output"
 println "Workdir location:"
 println "  $workflow.workDir"
+println "Launchdir location:"
+println "  $workflow.launchDir"
 println "Database location:"
-println "  $params.databases\u001B[0m"
+println "  $params.databases"
+println "Configuration files:"
+println "  $workflow.configFiles\u001B[0m"
 println " "
 if (workflow.profile == 'standard' || workflow.profile.contains('local')) {
     println "\033[2mCPUs to use: $params.cores, maximal CPUs to use: $params.max_cores\u001B[0m"
-    println "Output dir name: $params.output\u001B[0m"
     println " "
 }
 
@@ -203,7 +208,7 @@ workflow clean_fasta {
     concat_contamination( contamination )
     minimap2_fasta(fasta_input_ch, concat_contamination.out)
     writeLog(fasta_input_ch.map{ it -> it[0] }, 'minimap2', fasta_input_ch.map{ it -> it[1] }, contamination)
-    minimap2Stats(fasta_input_ch.map{ it -> it[0] }, minimap2_fasta.out.totalreads, minimap2_fasta.out.idxstats)
+    minimap2Stats(minimap2_fasta.out.name, minimap2_fasta.out.totalreads, minimap2_fasta.out.idxstats)
 } 
 
 workflow clean_nano {
@@ -230,7 +235,7 @@ workflow clean_nano {
     }
     minimap2_nano(nano_input_ch, concat_contamination.out)
     writeLog(nano_input_ch.map{ it -> it[0] }, 'minimap2', nano_input_ch.map{ it -> it[1] }, contamination)
-    minimap2Stats(nano_input_ch.map{ it -> it[0] }, minimap2_nano.out.totalreads, minimap2_nano.out.idxstats)
+    minimap2Stats(minimap2_nano.out.name, minimap2_nano.out.totalreads, minimap2_nano.out.idxstats)
 } 
 
 workflow clean_illumina {
@@ -258,11 +263,11 @@ workflow clean_illumina {
     if (params.bbduk){
       bbduk(illumina_input_ch, concat_contamination.out, 'paired')
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'bbduk', illumina_input_ch.map{ it -> it[1] }, contamination)
-      bbdukStats(illumina_input_ch.map{ it -> it[0] }, bbduk.out.stats)
+      bbdukStats(bbduk.out.name, bbduk.out.stats)
     } else {
       minimap2_illumina(illumina_input_ch, concat_contamination.out, 'paired')
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'minimap2', illumina_input_ch.map{ it -> it[1] }, contamination)
-      minimap2Stats(illumina_input_ch.map{ it -> it[0] }, minimap2_illumina.out.totalreads, minimap2_illumina.out.idxstats)
+      minimap2Stats(minimap2_illumina.out.name, minimap2_illumina.out.totalreads, minimap2_illumina.out.idxstats)
     }
 } 
 
@@ -395,7 +400,7 @@ def helpMSG() {
 
     ${c_yellow}Computing:${c_reset}
     In particular for execution of the workflow on a HPC (LSF, SLURM) adjust the following parameters:
-    --databases             defines the path where databases are stored [default: $params.dbs]
+    --databases             defines the path where databases are stored [default: $params.databases]
     --workdir               defines the path where nextflow writes tmp files [default: $params.workdir]
     --condaCacheDir         defines the path where environments (conda) are cached [default: $params.condaCacheDir]
     --singularityCacheDir   defines the path where images (singularity) are cached [default: $params.singularityCacheDir] 

@@ -8,6 +8,7 @@ process bbduk {
   val mode
 
   output:
+  val name, emit: name
   tuple val(name), path('*clean*.fastq.gz')
   tuple val(name), path('*contamination*.fastq.gz')
   path 'bbduk_stats.txt', emit: stats
