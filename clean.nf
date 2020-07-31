@@ -153,8 +153,18 @@ It is written for local use and cloud use via params.cloudProcess.
 workflow prepare {
   main:
     if (params.host) {
-      download_host(hostNameChannel)
-      host = download_host.out
+      if (params.cloudProcess) {
+        host_preload = file("${params.databases}/hosts/${params.host}.fa.gz")
+        if (host_preload.exists()) {
+          host = Channel.fromPath(host_preload)
+        } else {
+          download_host(hostNameChannel)
+          host = download_host.out
+        }
+      } else {
+        download_host(hostNameChannel)
+        host = download_host.out
+      }
     }
     else {
       host = Channel.empty()
