@@ -6,7 +6,7 @@ A decontamination workflow for short reads, long reads and assemblies.
 ![](https://img.shields.io/badge/uses-docker-blue.svg)
 ![](https://img.shields.io/badge/uses-conda-yellow.svg)
 
-Email: hoelzer.martin@gmail.com
+Email: hoelzer.martin@gmail.com, marie.lataretu@uni-jena.de
 
 ## Objective
 
