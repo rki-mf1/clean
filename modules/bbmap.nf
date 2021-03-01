@@ -43,7 +43,7 @@ process bbduk {
   
   # bbduk
   MEM=\$(echo ${task.memory} | sed 's/ GB//g')
-  bbduk.sh -Xmx\${MEM}g ref=${db} threads=${task.cpus} stats=bbduk_stats.txt ordered=t k=${params.bbduk_kmer} in=${name}.R1.id.fastq in2=${name}.R2.id.fastq out=${name}.clean.R1.id.fastq out2=${name}.clean.R2.id.fastq outm=${name}.contamination.R1.id.fastq outm2=${name}.contamination.R2.id.fastq
+  bbduk.sh -Xmx\${MEM}g ref=${db} threads=${task.cpus} stats=bbduk_stats.txt ordered=t k=${params.bbduk_kmer} qin=${params.bbduk_qin} in=${name}.R1.id.fastq in2=${name}.R2.id.fastq out=${name}.clean.R1.id.fastq out2=${name}.clean.R2.id.fastq outm=${name}.contamination.R1.id.fastq outm2=${name}.contamination.R2.id.fastq
 
   # restore the original read IDs
   sed 's/DECONTAMINATE/ /g' ${name}.clean.R1.id.fastq | awk 'BEGIN{LINE=0};{if(LINE % 4 == 0 || LINE == 0){print \$0"/1"}else{print \$0};LINE++;}' | pigz -p ${task.cpus} > ${name}.clean.R1.fastq.gz 
@@ -63,7 +63,7 @@ process bbduk {
   
   # bbduk
   MEM=\$(echo ${task.memory} | sed 's/ GB//g')
-  bbduk.sh -Xmx\${MEM}g ref=${db} threads=${task.cpus} stats=bbduk_stats.txt ordered=t k=${params.bbduk_kmer} in=${name}.id.fastq out=${name}.clean.id.fastq outm=${name}.contamination.id.fastq
+  bbduk.sh -Xmx\${MEM}g ref=${db} threads=${task.cpus} stats=bbduk_stats.txt ordered=t k=${params.bbduk_kmer} qin=${params.bbduk_qin} in=${name}.id.fastq out=${name}.clean.id.fastq outm=${name}.contamination.id.fastq
 
   sed 's/DECONTAMINATE/ /g' ${name}.clean.id.fastq | pigz -p ${task.cpus} > ${name}.clean.fastq.gz
   sed 's/DECONTAMINATE/ /g' ${name}.contamination.id.fastq | pigz -p ${task.cpus} > ${name}.contamination.fastq.gz
