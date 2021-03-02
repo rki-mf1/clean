@@ -1,5 +1,6 @@
 process bbduk {
   label 'bbmap'
+  
   publishDir "${params.output}/${name}/bbduk", mode: 'copy', pattern: "*.gz"
 
   input:

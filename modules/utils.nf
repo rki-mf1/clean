@@ -1,6 +1,7 @@
 process minimap2Stats {
-  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "stats.txt" 
   label 'smallTask'
+  
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "stats.txt" 
 
   input:
   val name
@@ -29,8 +30,9 @@ process minimap2Stats {
 }
 
 process bbdukStats {
-  publishDir "${params.output}/${name}/bbduk", mode: 'copy', pattern: "stats.txt"
   label 'smallTask'
+
+  publishDir "${params.output}/${name}/bbduk", mode: 'copy', pattern: "stats.txt"
 
   input:
   val name
@@ -57,8 +59,9 @@ process bbdukStats {
 }
 
 process writeLog {
-  publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "log.txt"
   label 'smallTask'
+
+  publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "log.txt"
   
   input:
     val name

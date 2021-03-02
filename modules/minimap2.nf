@@ -2,6 +2,7 @@
 
 process minimap2_fasta {
   label 'minimap2'
+
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz"
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.contamination.sorted.bam"
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.contamination.sorted.bam.bai"
@@ -43,6 +44,7 @@ process minimap2_fasta {
 
 process minimap2_nano {
   label 'minimap2'
+  
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz"
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.contamination.sorted.bam"
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.contamination.sorted.bam.bai"
@@ -93,6 +95,7 @@ process minimap2_nano {
 
 process minimap2_illumina {
   label 'minimap2'
+
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz"
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.contamination.sorted.bam"
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.contamination.sorted.bam.bai"

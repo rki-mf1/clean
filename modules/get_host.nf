@@ -1,5 +1,6 @@
 process download_host {
   label 'basics'
+
   if (params.cloudProcess) {
     publishDir "${params.databases}/hosts", mode: 'copy', pattern: "*.fa.gz" 
   }
@@ -44,6 +45,7 @@ process download_host {
 
 process check_own {
   label 'basics'
+
   input:
   path fasta
 
@@ -73,5 +75,4 @@ process concat_contamination {
   """
   cat * > db.fa.gz
   """
-
 }
