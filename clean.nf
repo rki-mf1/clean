@@ -1,11 +1,25 @@
 #!/usr/bin/env nextflow
-nextflow.preview.dsl=2
+
+if( !nextflow.version.matches('20.01+') ) {
+    println "This workflow requires Nextflow version 20.01 or greater -- You are running version $nextflow.version"
+    exit 1
+}
+
+nextflow.enable.dsl=2
 
 /*
 Nextflow -- Decontamination Pipeline
 Author: marie.lataretu@uni-jena.de
 Author: hoelzer.martin@gmail.com
 */
+
+// Parameters sanity checking
+
+Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'nano', 'illumina', 'illumina_single_end', 'fasta', 'list', 'host', 'own', 'control', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'reads_rna', 'output', 'databases', 'condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
+def parameter_diff = params.keySet() - valid_params
+if (parameter_diff.size() != 0){
+    exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
+}
 
 /************************** 
 * META & HELP MESSAGES 
@@ -35,17 +49,35 @@ println "Launchdir location:"
 println "  $workflow.launchDir"
 println "Database location:"
 println "  $params.databases"
+if ( workflow.profile.contains('singularity') ) {
+    println "Singularity cache directory:"
+    println "  $params.singularityCacheDir"
+}
+if ( workflow.profile.contains('conda') ) { 
+    println "Conda cache directory:"
+    println "  $params.condaCacheDir"
+}
 println "Configuration files:"
-println "  $workflow.configFiles\u001B[0m"
+println "  $workflow.configFiles"
+println "Cmd line:"
+println "  $workflow.commandLine\u001B[0m"
+if (workflow.repository != null){ println "\033[2mGit info: $workflow.repository - $workflow.revision [$workflow.commitId]\u001B[0m" }
 println " "
 if (workflow.profile == 'standard' || workflow.profile.contains('local')) {
     println "\033[2mCPUs to use: $params.cores, maximal CPUs to use: $params.max_cores\u001B[0m"
+    println "\033[2mMemory to use: $params.memory, maximal memory to use: $params.max_memory\u001B[0m"
     println " "
 }
-
-if( !nextflow.version.matches('20.01+') ) {
-    println "This workflow requires Nextflow version 20.01 or greater -- You are running version $nextflow.version"
-    exit 1
+if ( !workflow.revision ) { 
+    println "\033[0;33mWARNING: Not a stable execution. Please use -r for full reproducibility.\033[0m\n"
+}
+def folder = new File(params.output)
+if ( folder.exists() ) { 
+    println "\033[0;33mWARNING: Output folder already exists. Results might be overwritten! You can adjust the output folder via [--output]\033[0m\n"
+}
+if ( workflow.profile.contains('singularity') ) {
+    println "\033[0;33mWARNING: Singularity image building sometimes fails!"
+    println "Multiple resumes (-resume) and --max_cores 1 --cores 1 for local execution might help.\033[0m\n"
 }
 
 Set controls = ['phix', 'dcs', 'eno']
@@ -401,7 +433,6 @@ def helpMSG() {
     ${c_yellow}Computing:${c_reset}
     In particular for execution of the workflow on a HPC (LSF, SLURM) adjust the following parameters:
     --databases             defines the path where databases are stored [default: $params.databases]
-    --workdir               defines the path where nextflow writes tmp files [default: $params.workdir]
     --condaCacheDir         defines the path where environments (conda) are cached [default: $params.condaCacheDir]
     --singularityCacheDir   defines the path where images (singularity) are cached [default: $params.singularityCacheDir] 
 
@@ -429,5 +460,3 @@ def helpMSG() {
                              ${c_reset}
     """.stripIndent()
 }
-
-  
