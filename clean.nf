@@ -15,7 +15,7 @@ Author: hoelzer.martin@gmail.com
 
 // Parameters sanity checking
 
-Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'nano', 'illumina', 'illumina_single_end', 'fasta', 'list', 'host', 'own', 'control', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'reads_rna', 'output', 'databases', 'condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
+Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'nano', 'illumina', 'illumina_single_end', 'fasta', 'list', 'host', 'own', 'control', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'reads_rna', 'output', 'nf_runinfo_dir', 'databases', 'condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
 def parameter_diff = params.keySet() - valid_params
 if (parameter_diff.size() != 0){
     exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"

@@ -2,6 +2,7 @@ cfg
 *.log*
 wip/
 nextflow-autodownload-databases/
+nextflow-clean-databases/
 work/
 .nextflow/
 results/
