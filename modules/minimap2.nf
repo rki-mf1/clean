@@ -3,13 +3,18 @@
 process minimap2_fasta {
   label 'minimap2'
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz"
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.contamination.sorted.bam"
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.contamination.sorted.bam.bai"
 
   input: 
     tuple val(name), path(fasta)
     path db
 
   output:
+    val name, emit: name
     path '*.gz'
+    path '*.contamination.sorted.bam'
+    path '*.contamination.sorted.bam.bai'
     path 'idxstats.tsv', emit: idxstats
     env TOTALREADS, emit: totalreads
 
@@ -39,13 +44,18 @@ process minimap2_fasta {
 process minimap2_nano {
   label 'minimap2'
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz"
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.contamination.sorted.bam"
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.contamination.sorted.bam.bai"
 
   input: 
     tuple val(name), path(fastq)
     path db
 
   output:
+    val name, emit: name
     path '*.gz'
+    path '*.contamination.sorted.bam'
+    path '*.contamination.sorted.bam.bai'
     path 'idxstats.tsv', emit: idxstats
     env TOTALREADS, emit: totalreads
 
@@ -62,7 +72,7 @@ process minimap2_nano {
 
   PARAMS="-ax map-ont"
   if [[ ${params.reads_rna} != 'false' ]]; then
-    PARAMS="-ax splice -uf -k14"
+    PARAMS="-ax splice -k14"
   fi
 
   minimap2 \$PARAMS -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${name}.id.fastq
@@ -83,7 +93,9 @@ process minimap2_nano {
 
 process minimap2_illumina {
   label 'minimap2'
-  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz" 
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.gz"
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.contamination.sorted.bam"
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.contamination.sorted.bam.bai"
 
   input: 
     tuple val(name), path(reads)
@@ -91,7 +103,10 @@ process minimap2_illumina {
     val mode
 
   output:
+    val name, emit: name
     path '*.gz'
+    path '*.contamination.sorted.bam'
+    path '*.contamination.sorted.bam.bai'
     path 'idxstats.tsv', emit: idxstats
     env TOTALREADS, emit: totalreads
 
