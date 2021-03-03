@@ -120,7 +120,7 @@ if (params.illumina_single_end && params.list) { illumina_single_end_input_ch = 
   .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
 } else if (params.illumina_single_end) { illumina_single_end_input_ch = Channel
   .fromPath( params.illumina_single_end, checkIfExists: true )
-  .map { file -> tuple(file.baseName, file) } 
+  .map { file -> tuple(file.simpleName, file) } 
 }
 
 // assembly fasta input & --list support
@@ -171,12 +171,12 @@ if (params.own) {
 
 /* Comment section: */
 
-include {download_host; check_own; concat_contamination} from './modules/get_host'
+include { download_host; check_own; concat_contamination } from './modules/get_host'
 
-include {minimap2_fasta; minimap2_nano; minimap2_illumina} from './modules/minimap2'
-include {bbduk} from './modules/bbmap'
+include { minimap2_fasta; minimap2_nano; minimap2_illumina } from './modules/minimap2'
+include { bbduk } from './modules/bbmap'
 
-include {minimap2Stats; bbdukStats; writeLog} from './modules/utils'
+include { rename_reads; restore_reads; get_number_of_reads; minimap2Stats; bbdukStats; writeLog } from './modules/utils'
 
 /************************** 
 * DATABASES
@@ -187,7 +187,7 @@ The Database Section is designed to "auto-get" pre prepared databases.
 It is written for local use and cloud use via params.cloudProcess.
 */
 
-workflow prepare {
+workflow prepare_host {
   main:
     if (params.host) {
       if (params.cloudProcess) {
@@ -240,7 +240,7 @@ workflow clean_fasta {
     concat_contamination( contamination )
     minimap2_fasta(fasta_input_ch, concat_contamination.out)
     writeLog(fasta_input_ch.map{ it -> it[0] }, 'minimap2', fasta_input_ch.map{ it -> it[1] }, contamination)
-    minimap2Stats(minimap2_fasta.out.name, minimap2_fasta.out.totalreads, minimap2_fasta.out.idxstats)
+    minimap2Stats(minimap2_fasta.out.name, minimap2_fasta.out.totalcontigs, minimap2_fasta.out.idxstats)
 } 
 
 workflow clean_nano {
@@ -265,9 +265,12 @@ workflow clean_nano {
         .mix(rRNAChannel).collect()
       concat_contamination( contamination )
     }
-    minimap2_nano(nano_input_ch, concat_contamination.out)
+    rename_reads(nano_input_ch, 'single')
+    minimap2_nano(rename_reads.out, concat_contamination.out)
     writeLog(nano_input_ch.map{ it -> it[0] }, 'minimap2', nano_input_ch.map{ it -> it[1] }, contamination)
-    minimap2Stats(minimap2_nano.out.name, minimap2_nano.out.totalreads, minimap2_nano.out.idxstats)
+    get_number_of_reads(rename_reads.out, 'single')
+    minimap2Stats(minimap2_nano.out.idxstats.join(get_number_of_reads.out))
+    restore_reads(minimap2_nano.out.cleaned_reads.concat(minimap2_nano.out.contaminated_reads), 'single', 'minimap2')
 } 
 
 workflow clean_illumina {
@@ -292,14 +295,18 @@ workflow clean_illumina {
         .mix(rRNAChannel).collect()
       concat_contamination( contamination )
     }
+    rename_reads(illumina_input_ch, 'paired')
     if (params.bbduk){
-      bbduk(illumina_input_ch, concat_contamination.out, 'paired')
+      bbduk(rename_reads.out, concat_contamination.out, 'paired')
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'bbduk', illumina_input_ch.map{ it -> it[1] }, contamination)
       bbdukStats(bbduk.out.name, bbduk.out.stats)
+      restore_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'paired', 'bbduk')
     } else {
-      minimap2_illumina(illumina_input_ch, concat_contamination.out, 'paired')
+      minimap2_illumina(rename_reads.out, concat_contamination.out, 'paired')
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'minimap2', illumina_input_ch.map{ it -> it[1] }, contamination)
-      minimap2Stats(minimap2_illumina.out.name, minimap2_illumina.out.totalreads, minimap2_illumina.out.idxstats)
+      get_number_of_reads(rename_reads.out, 'paired')
+      minimap2Stats(minimap2_illumina.out.idxstats.join(get_number_of_reads.out))
+      restore_reads(minimap2_illumina.out.cleaned_reads.concat(minimap2_illumina.out.contaminated_reads), 'paired', 'minimap2')
     }
 } 
 
@@ -325,14 +332,18 @@ workflow clean_illumina_single {
         .mix(rRNAChannel).collect()
       concat_contamination( contamination )
     }
+    rename_reads(illumina_single_end_input_ch, 'single')
     if (params.bbduk){
-      bbduk(illumina_single_end_input_ch, concat_contamination.out, 'single')
+      bbduk(rename_reads.out, concat_contamination.out, 'single')
       writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'bbduk', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
       bbdukStats(illumina_single_end_input_ch.map{ it -> it[0] }, bbduk.out.stats)
+      restore_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'single', 'bbduk')
     } else {
-      minimap2_illumina(illumina_single_end_input_ch, concat_contamination.out, 'single')
+      minimap2_illumina(rename_reads.out, concat_contamination.out, 'single')
       writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'minimap2', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
-      minimap2Stats(illumina_single_end_input_ch.map{ it -> it[0] }, minimap2_illumina.out.totalreads, minimap2_illumina.out.idxstats)
+      get_number_of_reads(rename_reads.out, 'single')
+      minimap2Stats(minimap2_illumina.out.idxstats.join(get_number_of_reads.out))
+      restore_reads(minimap2_illumina.out.cleaned_reads.concat(minimap2_illumina.out.contaminated_reads), 'single', 'minimap2')
     }
 } 
 
@@ -343,22 +354,22 @@ workflow clean_illumina_single {
 /* Comment section: */
 
 workflow {
-  prepare()
+  prepare_host()
 
   if (params.fasta) {
-    clean_fasta(fasta_input_ch, prepare.out.host, prepare.out.checkedOwn, rRNAChannel)
+    clean_fasta(fasta_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
   }
 
   if (params.nano) { 
-    clean_nano(nano_input_ch, prepare.out.host, prepare.out.checkedOwn, rRNAChannel)
+    clean_nano(nano_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
   }
 
   if (params.illumina) { 
-    clean_illumina(illumina_input_ch, prepare.out.host, prepare.out.checkedOwn, rRNAChannel)
+    clean_illumina(illumina_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
   }
 
   if (params.illumina_single_end) { 
-    clean_illumina_single(illumina_single_end_input_ch, prepare.out.host, prepare.out.checkedOwn, rRNAChannel)
+    clean_illumina_single(illumina_single_end_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
   }
 }
 
