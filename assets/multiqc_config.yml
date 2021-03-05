@@ -1,0 +1,3 @@
+sp:
+    quast:
+        fn: '*_report.tsv'
