@@ -246,9 +246,9 @@ workflow clean_fasta {
     writeLog(fasta_input_ch.map{ it -> it[0] }, 'minimap2', fasta_input_ch.map{ it -> it[1] }, contamination)
     minimap2Stats(minimap2_fasta.out.idxstats)
   emit:
-    minimap2Stats.out
-    fasta_input_ch.map{ it -> it.plus(1, 'all') }
-    minimap2_fasta.out.cleaned_contigs.concat(minimap2_fasta.out.contaminated_contigs)
+    stats = minimap2Stats.out.tsv
+    in = fasta_input_ch.map{ it -> it.plus(1, 'all') }
+    out = minimap2_fasta.out.cleaned_contigs.concat(minimap2_fasta.out.contaminated_contigs)
 } 
 
 workflow clean_nano {
@@ -280,9 +280,9 @@ workflow clean_nano {
     minimap2Stats(minimap2_nano.out.idxstats.join(get_number_of_reads.out))
     restore_reads(minimap2_nano.out.cleaned_reads.concat(minimap2_nano.out.contaminated_reads), 'single', 'minimap2')
   emit:
-    minimap2Stats.out
-    nano_input_ch.map{ it -> it.plus(1, 'all') }
-    restore_reads.out
+    stats = minimap2Stats.out.tsv
+    in = nano_input_ch.map{ it -> it.plus(1, 'all') }
+    out = restore_reads.out
 } 
 
 workflow clean_illumina {
@@ -313,19 +313,19 @@ workflow clean_illumina {
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'bbduk', illumina_input_ch.map{ it -> it[1] }, contamination)
       bbdukStats(bbduk.out.stats)
       restore_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'paired', 'bbduk')
-      stats = bbdukStats.out
+      stats = bbdukStats.out.tsv
     } else {
       minimap2_illumina(rename_reads.out, concat_contamination.out, 'paired')
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'minimap2', illumina_input_ch.map{ it -> it[1] }, contamination)
       get_number_of_reads(rename_reads.out, 'paired')
       minimap2Stats(minimap2_illumina.out.idxstats.join(get_number_of_reads.out))
       restore_reads(minimap2_illumina.out.cleaned_reads.concat(minimap2_illumina.out.contaminated_reads), 'paired', 'minimap2')
-      stats = minimap2Stats.out
+      stats = minimap2Stats.out.tsv
     }
   emit:
-    stats
-    illumina_input_ch.map{ it -> it.plus(1, 'all') }
-    restore_reads.out
+    stats = stats
+    in = illumina_input_ch.map{ it -> it.plus(1, 'all') }
+    out = restore_reads.out
 } 
 
 workflow clean_illumina_single {
@@ -355,25 +355,24 @@ workflow clean_illumina_single {
       bbduk(rename_reads.out, concat_contamination.out, 'single')
       writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'bbduk', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
       bbdukStats(bbduk.out.stats)
-      stats = bbdukStats.out
+      stats = bbdukStats.out.tsv
       restore_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'single', 'bbduk')
     } else {
       minimap2_illumina(rename_reads.out, concat_contamination.out, 'single')
       writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'minimap2', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
       get_number_of_reads(rename_reads.out, 'single')
       minimap2Stats(minimap2_illumina.out.idxstats.join(get_number_of_reads.out))
-      stats = minimap2Stats.out
+      stats = minimap2Stats.out.tsv
       restore_reads(minimap2_illumina.out.cleaned_reads.concat(minimap2_illumina.out.contaminated_reads), 'single', 'minimap2')
     }
     emit:
-      stats
-      illumina_single_end_input_ch.map{ it -> it.plus(1, 'all') }
-      restore_reads.out
+      stats = stats
+      in = illumina_single_end_input_ch.map{ it -> it.plus(1, 'all') }
+      out = restore_reads.out
 } 
 
 workflow qc_fasta {
   take:
-    fasta_stats
     fasta_input
     fasta_output
   main:
@@ -381,9 +380,9 @@ workflow qc_fasta {
   emit:
     quast.out.report_tsv
 }
+
 workflow qc_nano {
   take:
-    nano_stats
     nano_input
     nano_output
   main:
@@ -392,9 +391,9 @@ workflow qc_nano {
   emit:
     format_nanoplot_report.out
 }
+
 workflow qc_illumina {
   take:
-    illumina_stats
     illumina_input
     illumina_output
   main:
@@ -402,9 +401,9 @@ workflow qc_illumina {
   emit:
     fastqc.out.zip.map{ it -> it[-1] }
 }
+
 workflow qc_illumina_single {
   take:
-    illumina_stats
     illumina_input
     illumina_output
   main:
@@ -419,8 +418,9 @@ workflow qc{
     fastqc
     nanoplot
     quast
+    mapping_stats
   main:
-    multiqc(multiqc_config, fastqc, nanoplot, quast)
+    multiqc(multiqc_config, fastqc, nanoplot, quast, mapping_stats)
 }
 
 /************************** 
@@ -434,32 +434,34 @@ workflow {
 
   if (params.fasta) {
     clean_fasta(fasta_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
-    qc_fasta(clean_fasta.out)
+    qc_fasta(clean_fasta.out.in, clean_fasta.out.out)
+    stast_fasta = clean_fasta.out.stats
     quast = qc_fasta.out.collect()
-  } else { quast = Channel.fromPath('no_fasta_input') }
+  } else { quast = Channel.fromPath('no_fasta_input'); stast_fasta = Channel.fromPath('no_fasta_stats') }
 
   if (params.nano) { 
     clean_nano(nano_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
-    qc_nano(clean_nano.out)
+    qc_nano(clean_nano.out.in, clean_nano.out.out)
+    stast_nano = clean_nano.out.stats
     nanoplot = qc_nano.out.collect()
-  } else { nanoplot = Channel.fromPath('no_nanopore_input') }
+  } else { nanoplot = Channel.fromPath('no_nanopore_input'); stast_nano = Channel.fromPath('no_nano_stats') }
 
   if (params.illumina) { 
     clean_illumina(illumina_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
-    qc_illumina(clean_illumina.out)
+    qc_illumina(clean_illumina.out.in, clean_illumina.out.out)
+    stast_illumina = clean_illumina.out.stats
     fastqc = qc_illumina.out
-  } else { fastqc = Channel.fromPath('no_illumina_input') }
+  } else { fastqc = Channel.fromPath('no_illumina_input'); stast_illumina = Channel.fromPath('no_illumina_stats') }
 
   if (params.illumina_single_end) { 
     clean_illumina_single(illumina_single_end_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
-    qc_illumina_single(clean_illumina_single.out)
+    qc_illumina_single(clean_illumina_single.out.in, clean_illumina_single.out.out)
+    stast_illumina_single = clean_illumina_single.out.stats
     fastqc_single = qc_illumina_single.out
-  } else { fastqc_single = Channel.fromPath('no_illumina_single_input') }
+  } else { fastqc_single = Channel.fromPath('no_illumina_single_input'); stast_illumina_single = Channel.fromPath('no_illumina_single_stats') }
 
-  qc(multiqc_config, fastqc.concat(fastqc_single).collect(), nanoplot, quast)
+  qc(multiqc_config, fastqc.concat(fastqc_single).collect(), nanoplot, quast, stast_fasta.concat(stast_nano).concat(stast_illumina).concat(stast_illumina_single).collect())
 }
-
-
 
 /**************************  
 * --help

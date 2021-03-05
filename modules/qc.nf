@@ -81,7 +81,7 @@ process multiqc {
   path(fastqc)
   path(nanoplot)
   path(quast)
-  // path(clean_stats)
+  path(mapping_stats)
     
   output:
   path "multiqc_report.html"

@@ -115,11 +115,13 @@ process minimap2Stats {
 
   output:
   tuple val(name), path ('stats.txt')
+  path("${name}_minimap2_stats.tsv"), emit: tsv
 
   script:
   """
   MAPPEDSUM=\$(awk -F '\\t' '{sum += \$3} END {print sum}' idxstats.tsv)
   UNPROMAPPEDSUM=\$(awk -F '\\t' '/^[^*]/ {sum += \$4} END {print sum}' idxstats.tsv)
+  PROPMAP=\$((\$MAPPEDSUM-\$UNPROMAPPEDSUM))
 
   MAP=\$(awk -v map=\$MAPPEDSUM -v unpromap=\$UNPROMAPPEDSUM -v tot=${totalreads} 'BEGIN {perc=(map-unpromap)/tot*100; print map-unpromap " ("  perc " %) reads were properly mapped; of these:"}')
 
@@ -130,6 +132,12 @@ process minimap2Stats {
   ${totalreads} reads in total; of these:
   \t\$MAP
   \$FA
+  EOF
+
+  touch ${name}_minimap2_stats.tsv
+  cat <<EOF >> ${name}_minimap2_stats.tsv
+  Sample Name\tTotal reads\tMapped reads
+  ${name}\t${totalreads}\t\$PROPMAP
   EOF
   """
 }
@@ -144,6 +152,7 @@ process bbdukStats {
 
   output:
   tuple val(name), path ('stats.txt')
+  path("${name}_bbduk_stats.tsv"), emit: tsv
 
   script:
   """
@@ -158,6 +167,12 @@ process bbdukStats {
   \$TOTAL reads in total; of these:
   \t\$MNUM (\$MPER) reads were properly mapped; of these:
   \$FA
+  EOF
+
+  touch ${name}_bbduk_stats.tsv
+  cat <<EOF >> ${name}_bbduk_stats.tsv
+  Sample Name\tTotal reads\tMapped reads
+  ${name}\t\$TOTAL\t\$MNUM
   EOF
   """
 }
