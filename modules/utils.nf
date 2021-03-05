@@ -58,7 +58,7 @@ process restore_reads {
   val(tool)
 
   output:
-  tuple val(name), path("${name}*.${type}.fastq.gz")
+  tuple val(name), val(type), path("${name}*.${type}.fastq.gz")
 
   script:
   if ( mode == 'paired' ) {
@@ -114,7 +114,7 @@ process minimap2Stats {
   tuple val(name), path(idxstats), val (totalreads)
 
   output:
-  path 'stats.txt'
+  tuple val(name), path ('stats.txt')
 
   script:
   """
@@ -140,11 +140,10 @@ process bbdukStats {
   publishDir "${params.output}/${name}/bbduk", mode: 'copy', pattern: "stats.txt"
 
   input:
-  val name
-  path bbdukStats
+  tuple val(name), path (bbdukStats)
 
   output:
-  path 'stats.txt'
+  tuple val(name), path ('stats.txt')
 
   script:
   """
