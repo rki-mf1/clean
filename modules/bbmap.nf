@@ -10,7 +10,7 @@ process bbduk {
   val name, emit: name
   tuple val(name), val('clean'), path('*clean.fastq'), emit: cleaned_reads
   tuple val(name), val('contamination'), path('*contamination.fastq'), emit: contaminated_reads
-  path 'bbduk_stats.txt', emit: stats
+  tuple val(name), path('bbduk_stats.txt'), emit: stats
 
   script:
   if ( mode == 'paired' ) {

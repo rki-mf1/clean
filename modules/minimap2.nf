@@ -13,11 +13,10 @@ process minimap2_fasta {
 
   output:
     val name, emit: name
-    path '*.gz'
-    path '*.contamination.sorted.bam'
-    path '*.contamination.sorted.bam.bai'
-    path 'idxstats.tsv', emit: idxstats
-    env TOTALCONTIGS, emit: totalcontigs
+    tuple val(name), val('clean'), path('*clean.fasta.gz'), emit: cleaned_contigs
+    tuple val(name), val('contamination'), path('*contamination.fasta.gz'), emit: contaminated_contigs
+    path '*.contamination.sorted.bam*'
+    tuple val(name), path ('idxstats.tsv'), env (TOTALCONTIGS), emit: idxstats
 
   script:
   """
