@@ -50,7 +50,7 @@ process check_own {
   path fasta
 
   output:
-  path '*' includeInputs true
+  path ('*'), includeInputs: true
 
   script:
   """
@@ -63,16 +63,24 @@ process check_own {
 }
 
 process concat_contamination {
-  label 'smallTask'
+  label 'minimap2' // sets conda env (and cpus)
+  label 'smallTask' // overrides cpus
   
+  publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "db.fa.gz"
+  publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "db.fa.gz.fai"
+
   input:
+  val name
+  val tool
   path '*'
 
   output:
-  path 'db.fa.gz'
+  path 'db.fa.gz', emit: fa
+  path 'db.fa.gz.fai'
   
   script:
   """
   cat * > db.fa.gz
+  samtools faidx db.fa.gz -o db.fa.gz.fai
   """
 }

@@ -160,9 +160,13 @@ if (params.host) {
 }
 
 // user defined fasta sequence
-if (params.own) {
-  //TODO funzt auch mit * und so was?
-  ownFastaChannel = Channel.fromPath( params.own, checkIfExists: true).splitCsv().flatten().map{ it -> file( it, checkIfExists: true ) }
+if (params.own && params.list) {
+  ownFastaChannel = Channel
+    .fromPath( params.own, checkIfExists: true)
+    .splitCsv().flatten().map{ it -> file( it, checkIfExists: true ) }
+} else if (params.own) {
+  ownFastaChannel = Channel
+    .fromPath( params.own, checkIfExists: true)
 }
 
 /************************** 
@@ -237,8 +241,8 @@ workflow clean_fasta {
       .mix(nanoControlFastaChannel)
       .mix(checkedOwn)
       .mix(rRNAChannel).collect()
-    concat_contamination( contamination )
-    minimap2_fasta(fasta_input_ch, concat_contamination.out)
+    concat_contamination( fasta_input_ch.map{ it -> it[0] }, contamination )
+    minimap2_fasta(fasta_input_ch, 'minimap2', concat_contamination.out.fa)
     writeLog(fasta_input_ch.map{ it -> it[0] }, 'minimap2', fasta_input_ch.map{ it -> it[1] }, contamination)
     minimap2Stats(minimap2_fasta.out.name, minimap2_fasta.out.totalcontigs, minimap2_fasta.out.idxstats)
 } 
@@ -256,17 +260,17 @@ workflow clean_nano {
         .mix(nanoControlFastaChannel)
         .mix(checkedOwn)
         .mix(rRNAChannel).collect()
-      concat_contamination( contamination )
+      concat_contamination( nano_input_ch.map{ it -> it[0] }, 'minimap2', contamination )
     } else {
       contamination = host.collect()
         .mix(nanoControlFastaChannel)
         .mix(illuminaControlFastaChannel)
         .mix(checkedOwn)
         .mix(rRNAChannel).collect()
-      concat_contamination( contamination )
+      concat_contamination( nano_input_ch.map{ it -> it[0] }, 'minimap2', contamination )
     }
     rename_reads(nano_input_ch, 'single')
-    minimap2_nano(rename_reads.out, concat_contamination.out)
+    minimap2_nano(rename_reads.out, concat_contamination.out.fa)
     writeLog(nano_input_ch.map{ it -> it[0] }, 'minimap2', nano_input_ch.map{ it -> it[1] }, contamination)
     get_number_of_reads(rename_reads.out, 'single')
     minimap2Stats(minimap2_nano.out.idxstats.join(get_number_of_reads.out))
@@ -286,23 +290,23 @@ workflow clean_illumina {
         .mix(illuminaControlFastaChannel)
         .mix(checkedOwn)
         .mix(rRNAChannel).collect()
-      concat_contamination( contamination )
+      concat_contamination( illumina_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
     } else {
       contamination = host.collect()
         .mix(nanoControlFastaChannel)
         .mix(illuminaControlFastaChannel)
         .mix(checkedOwn)
         .mix(rRNAChannel).collect()
-      concat_contamination( contamination )
+      concat_contamination( illumina_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
     }
     rename_reads(illumina_input_ch, 'paired')
     if (params.bbduk){
-      bbduk(rename_reads.out, concat_contamination.out, 'paired')
+      bbduk(rename_reads.out, concat_contamination.out.fa, 'paired')
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'bbduk', illumina_input_ch.map{ it -> it[1] }, contamination)
       bbdukStats(bbduk.out.name, bbduk.out.stats)
       restore_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'paired', 'bbduk')
     } else {
-      minimap2_illumina(rename_reads.out, concat_contamination.out, 'paired')
+      minimap2_illumina(rename_reads.out, concat_contamination.out.fa, 'paired')
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'minimap2', illumina_input_ch.map{ it -> it[1] }, contamination)
       get_number_of_reads(rename_reads.out, 'paired')
       minimap2Stats(minimap2_illumina.out.idxstats.join(get_number_of_reads.out))
@@ -323,23 +327,23 @@ workflow clean_illumina_single {
         .mix(illuminaControlFastaChannel)
         .mix(checkedOwn)
         .mix(rRNAChannel).collect()
-      concat_contamination( contamination )
+      concat_contamination( illumina_single_end_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
     } else {
       contamination = host.collect()
         .mix(nanoControlFastaChannel)
         .mix(illuminaControlFastaChannel)
         .mix(checkedOwn)
         .mix(rRNAChannel).collect()
-      concat_contamination( contamination )
+      concat_contamination( illumina_single_end_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
     }
     rename_reads(illumina_single_end_input_ch, 'single')
     if (params.bbduk){
-      bbduk(rename_reads.out, concat_contamination.out, 'single')
+      bbduk(rename_reads.out, concat_contamination.out.fa, 'single')
       writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'bbduk', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
       bbdukStats(illumina_single_end_input_ch.map{ it -> it[0] }, bbduk.out.stats)
       restore_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'single', 'bbduk')
     } else {
-      minimap2_illumina(rename_reads.out, concat_contamination.out, 'single')
+      minimap2_illumina(rename_reads.out, concat_contamination.out.fa, 'single')
       writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'minimap2', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
       get_number_of_reads(rename_reads.out, 'single')
       minimap2Stats(minimap2_illumina.out.idxstats.join(get_number_of_reads.out))
