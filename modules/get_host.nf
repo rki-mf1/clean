@@ -44,7 +44,7 @@ process download_host {
 }
 
 process check_own {
-  label 'basics'
+  label 'minimap2'
 
   input:
   path fasta
@@ -56,8 +56,11 @@ process check_own {
   """
   # -L for following a symbolic link
   if ! ( file -L $fasta | grep -q 'gzip compressed' ); then
-    pigz -p ${task.cpus} -f $fasta
+    bgzip -@ ${task.cpus} < ${fasta}
     # now $fasta'.gz'
+  else
+    mv ${fasta} ${fasta}.tmp
+    zcat ${fasta}.tmp | bgzip -c > ${fasta}.gz
   fi
   """
 }
