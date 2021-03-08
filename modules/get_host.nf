@@ -1,5 +1,4 @@
 process download_host {
-  label 'basics'
   label 'minimap2'
 
   if (params.cloudProcess) {
