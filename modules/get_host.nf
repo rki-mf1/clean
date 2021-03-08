@@ -1,5 +1,6 @@
 process download_host {
   label 'basics'
+  label 'minimap2'
 
   if (params.cloudProcess) {
     publishDir "${params.databases}/hosts", mode: 'copy', pattern: "*.fa.gz" 
@@ -18,27 +19,27 @@ process download_host {
   """
   if [ $host == 'hsa' ]; then
     wget ftp://ftp.ensembl.org/pub/release-99/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
-    mv *.fa.gz $host'.fa.gz'
+    zcat *.gz | bgzip -@ ${task.cpus} -c > ${host}.fa.gz
   fi
   if [ $host == 'mmu' ]; then
     wget ftp://ftp.ensembl.org/pub/release-99/fasta/mus_musculus/dna/Mus_musculus.GRCm38.dna.primary_assembly.fa.gz
-    mv *.fa.gz $host'.fa.gz'
+    zcat *.gz | bgzip -@ ${task.cpus} -c > ${host}.fa.gz
   fi
   if [ $host == 'cli' ]; then
     wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/337/935/GCF_000337935.1_Cliv_1.0/GCF_000337935.1_Cliv_1.0_genomic.fna.gz
-    mv *.fna.gz $host'.fa.gz'
+    zcat *.gz | bgzip -@ ${task.cpus} -c > ${host}.fa.gz
   fi
   if [ $host == 'csa' ]; then
     wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/409/795/GCF_000409795.2_Chlorocebus_sabeus_1.1/GCF_000409795.2_Chlorocebus_sabeus_1.1_genomic.fna.gz
-    mv *.fna.gz $host'.fa.gz'
+    zcat *.gz | bgzip -@ ${task.cpus} -c > ${host}.fa.gz
   fi
   if [ $host == 'gga' ]; then
     wget ftp://ftp.ensembl.org/pub/release-99/fasta/gallus_gallus/dna/Gallus_gallus.GRCg6a.dna.toplevel.fa.gz
-    mv *.fa.gz $host'.fa.gz'
+    zcat *.gz | bgzip -@ ${task.cpus} -c > ${host}.fa.gz
   fi
   if [ $host == 'eco' ]; then
     wget ftp://ftp.ensemblgenomes.org/pub/release-45/bacteria//fasta/bacteria_90_collection/escherichia_coli_k_12/dna/Escherichia_coli_k_12.ASM80076v1.dna.toplevel.fa.gz
-    mv *.fa.gz $host'.fa.gz'
+    zcat *.gz | bgzip -@ ${task.cpus} -c > ${host}.fa.gz
   fi
   """
 }
@@ -60,7 +61,7 @@ process check_own {
     # now $fasta'.gz'
   else
     mv ${fasta} ${fasta}.tmp
-    zcat ${fasta}.tmp | bgzip -c > ${fasta}.gz
+    zcat ${fasta}.tmp | bgzip -@ ${task.cpus} -c > ${fasta}.gz
   fi
   """
 }
