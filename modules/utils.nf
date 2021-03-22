@@ -1,5 +1,5 @@
 process rename_reads {
-  label 'basics'
+  label 'smallTask'
 
   input:
   tuple val(name), path(reads)
@@ -75,6 +75,8 @@ process restore_reads {
 }
 
 process get_number_of_reads {
+  label 'smallTask'
+
   input:
   tuple val(name), path(reads)
   val(mode)
