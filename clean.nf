@@ -15,7 +15,7 @@ Author: hoelzer.martin@gmail.com
 
 // Parameters sanity checking
 
-Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'nano', 'illumina', 'illumina_single_end', 'fasta', 'list', 'host', 'own', 'control', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'reads_rna', 'output', 'nf_runinfo_dir', 'databases', 'condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
+Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'nano', 'illumina', 'illumina_single_end', 'fasta', 'list', 'host', 'own', 'control', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'reads_rna', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
 def parameter_diff = params.keySet() - valid_params
 if (parameter_diff.size() != 0){
     exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
@@ -169,6 +169,8 @@ if (params.own && params.list) {
     .fromPath( params.own, checkIfExists: true)
 }
 
+multiqc_config = Channel.fromPath( workflow.projectDir + '/assets/multiqc_config.yml', checkIfExists: true )
+
 /************************** 
 * MODULES
 **************************/
@@ -181,6 +183,8 @@ include { minimap2_fasta; minimap2_nano; minimap2_illumina } from './modules/min
 include { bbduk } from './modules/bbmap'
 
 include { rename_reads; restore_reads; get_number_of_reads; minimap2Stats; bbdukStats; writeLog } from './modules/utils'
+
+include { fastqc; nanoplot; format_nanoplot_report; quast; multiqc } from './modules/qc'
 
 /************************** 
 * DATABASES
@@ -245,6 +249,10 @@ workflow clean_fasta {
     minimap2_fasta(fasta_input_ch, concat_contamination.out.fa)
     writeLog(fasta_input_ch.map{ it -> it[0] }, 'minimap2', fasta_input_ch.map{ it -> it[1] }, contamination)
     minimap2Stats(minimap2_fasta.out.stats)
+  emit:
+    stats = minimap2Stats.out.tsv
+    in = fasta_input_ch.map{ it -> it.plus(1, 'all') }
+    out = minimap2_fasta.out.cleaned_contigs.concat(minimap2_fasta.out.contaminated_contigs)
 } 
 
 workflow clean_nano {
@@ -275,6 +283,10 @@ workflow clean_nano {
     get_number_of_reads(rename_reads.out, 'single')
     minimap2Stats(minimap2_nano.out.idxstats.join(get_number_of_reads.out))
     restore_reads(minimap2_nano.out.cleaned_reads.concat(minimap2_nano.out.contaminated_reads), 'single', 'minimap2')
+  emit:
+    stats = minimap2Stats.out.tsv
+    in = nano_input_ch.map{ it -> it.plus(1, 'all') }
+    out = restore_reads.out
 } 
 
 workflow clean_illumina {
@@ -303,15 +315,21 @@ workflow clean_illumina {
     if (params.bbduk){
       bbduk(rename_reads.out, concat_contamination.out.fa, 'paired')
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'bbduk', illumina_input_ch.map{ it -> it[1] }, contamination)
-      bbdukStats(bbduk.out.name, bbduk.out.stats)
+      bbdukStats(bbduk.out.stats)
       restore_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'paired', 'bbduk')
+      stats = bbdukStats.out.tsv
     } else {
       minimap2_illumina(rename_reads.out, concat_contamination.out.fa, 'paired')
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'minimap2', illumina_input_ch.map{ it -> it[1] }, contamination)
       get_number_of_reads(rename_reads.out, 'paired')
       minimap2Stats(minimap2_illumina.out.idxstats.join(get_number_of_reads.out))
       restore_reads(minimap2_illumina.out.cleaned_reads.concat(minimap2_illumina.out.contaminated_reads), 'paired', 'minimap2')
+      stats = minimap2Stats.out.tsv
     }
+  emit:
+    stats = stats
+    in = illumina_input_ch.map{ it -> it.plus(1, 'all') }
+    out = restore_reads.out
 } 
 
 workflow clean_illumina_single {
@@ -340,16 +358,74 @@ workflow clean_illumina_single {
     if (params.bbduk){
       bbduk(rename_reads.out, concat_contamination.out.fa, 'single')
       writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'bbduk', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
-      bbdukStats(illumina_single_end_input_ch.map{ it -> it[0] }, bbduk.out.stats)
+      bbdukStats(bbduk.out.stats)
+      stats = bbdukStats.out.tsv
       restore_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'single', 'bbduk')
     } else {
       minimap2_illumina(rename_reads.out, concat_contamination.out.fa, 'single')
       writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'minimap2', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
       get_number_of_reads(rename_reads.out, 'single')
       minimap2Stats(minimap2_illumina.out.idxstats.join(get_number_of_reads.out))
+      stats = minimap2Stats.out.tsv
       restore_reads(minimap2_illumina.out.cleaned_reads.concat(minimap2_illumina.out.contaminated_reads), 'single', 'minimap2')
     }
+    emit:
+      stats = stats
+      in = illumina_single_end_input_ch.map{ it -> it.plus(1, 'all') }
+      out = restore_reads.out
 } 
+
+workflow qc_fasta {
+  take:
+    fasta_input
+    fasta_output
+  main:
+    quast(fasta_input.concat(fasta_output))
+  emit:
+    quast.out.report_tsv
+}
+
+workflow qc_nano {
+  take:
+    nano_input
+    nano_output
+  main:
+    nanoplot(nano_input.concat(nano_output))
+    format_nanoplot_report(nanoplot.out.html)
+  emit:
+    format_nanoplot_report.out
+}
+
+workflow qc_illumina {
+  take:
+    illumina_input
+    illumina_output
+  main:
+    fastqc(illumina_input.concat(illumina_output))
+  emit:
+    fastqc.out.zip.map{ it -> it[-1] }
+}
+
+workflow qc_illumina_single {
+  take:
+    illumina_input
+    illumina_output
+  main:
+    fastqc(illumina_input.concat(illumina_output))
+  emit:
+    fastqc.out.zip.map{ it -> it[-1] }
+}
+
+workflow qc{
+  take:
+    multiqc_config
+    fastqc
+    nanoplot
+    quast
+    mapping_stats
+  main:
+    multiqc(multiqc_config, fastqc, nanoplot, quast, mapping_stats)
+}
 
 /************************** 
 * WORKFLOW ENTRY POINT
@@ -362,22 +438,34 @@ workflow {
 
   if (params.fasta) {
     clean_fasta(fasta_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
-  }
+    qc_fasta(clean_fasta.out.in, clean_fasta.out.out)
+    stast_fasta = clean_fasta.out.stats
+    quast = qc_fasta.out.collect()
+  } else { quast = Channel.fromPath('no_fasta_input'); stast_fasta = Channel.fromPath('no_fasta_stats') }
 
   if (params.nano) { 
     clean_nano(nano_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
-  }
+    qc_nano(clean_nano.out.in, clean_nano.out.out)
+    stast_nano = clean_nano.out.stats
+    nanoplot = qc_nano.out.collect()
+  } else { nanoplot = Channel.fromPath('no_nanopore_input'); stast_nano = Channel.fromPath('no_nano_stats') }
 
   if (params.illumina) { 
     clean_illumina(illumina_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
-  }
+    qc_illumina(clean_illumina.out.in, clean_illumina.out.out)
+    stast_illumina = clean_illumina.out.stats
+    fastqc = qc_illumina.out
+  } else { fastqc = Channel.fromPath('no_illumina_input'); stast_illumina = Channel.fromPath('no_illumina_stats') }
 
   if (params.illumina_single_end) { 
     clean_illumina_single(illumina_single_end_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
-  }
+    qc_illumina_single(clean_illumina_single.out.in, clean_illumina_single.out.out)
+    stast_illumina_single = clean_illumina_single.out.stats
+    fastqc_single = qc_illumina_single.out
+  } else { fastqc_single = Channel.fromPath('no_illumina_single_input'); stast_illumina_single = Channel.fromPath('no_illumina_single_stats') }
+
+  qc(multiqc_config, fastqc.concat(fastqc_single).collect(), nanoplot, quast, stast_fasta.concat(stast_nano).concat(stast_illumina).concat(stast_illumina_single).collect())
 }
-
-
 
 /**************************  
 * --help

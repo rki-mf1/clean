@@ -58,7 +58,7 @@ process restore_reads {
   val(tool)
 
   output:
-  tuple val(name), path("${name}*.${type}.fastq.gz")
+  tuple val(name), val(type), path("${name}*.${type}.fastq.gz")
 
   script:
   if ( mode == 'paired' ) {
@@ -116,12 +116,14 @@ process minimap2Stats {
   tuple val(name), path(idxstats), val (totalreads)
 
   output:
-  path 'stats.txt'
+  tuple val(name), path ('stats.txt')
+  path("${name}_minimap2_stats.tsv"), emit: tsv
 
   script:
   """
   MAPPEDSUM=\$(awk -F '\\t' '{sum += \$3} END {print sum}' idxstats.tsv)
   UNPROMAPPEDSUM=\$(awk -F '\\t' '/^[^*]/ {sum += \$4} END {print sum}' idxstats.tsv)
+  PROPMAP=\$((\$MAPPEDSUM-\$UNPROMAPPEDSUM))
 
   MAP=\$(awk -v map=\$MAPPEDSUM -v unpromap=\$UNPROMAPPEDSUM -v tot=${totalreads} 'BEGIN {perc=(map-unpromap)/tot*100; print map-unpromap " ("  perc " %) reads were properly mapped; of these:"}')
 
@@ -133,6 +135,12 @@ process minimap2Stats {
   \t\$MAP
   \$FA
   EOF
+
+  touch ${name}_minimap2_stats.tsv
+  cat <<EOF >> ${name}_minimap2_stats.tsv
+  Sample Name\tTotal reads\tMapped reads
+  ${name}\t${totalreads}\t\$PROPMAP
+  EOF
   """
 }
 
@@ -142,11 +150,11 @@ process bbdukStats {
   publishDir "${params.output}/${name}/bbduk", mode: 'copy', pattern: "stats.txt"
 
   input:
-  val name
-  path bbdukStats
+  tuple val(name), path (bbdukStats)
 
   output:
-  path 'stats.txt'
+  tuple val(name), path ('stats.txt')
+  path("${name}_bbduk_stats.tsv"), emit: tsv
 
   script:
   """
@@ -161,6 +169,12 @@ process bbdukStats {
   \$TOTAL reads in total; of these:
   \t\$MNUM (\$MPER) reads were properly mapped; of these:
   \$FA
+  EOF
+
+  touch ${name}_bbduk_stats.tsv
+  cat <<EOF >> ${name}_bbduk_stats.tsv
+  Sample Name\tTotal reads\tMapped reads
+  ${name}\t\$TOTAL\t\$MNUM
   EOF
   """
 }
