@@ -70,7 +70,8 @@ process concat_contamination {
   label 'smallTask' // overrides cpus
   
   publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "db.fa.gz"
-  publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "db.fa.gz.fai"
+  publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "db.fa.fai"
+  publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "db.fa.gz.gzi"
 
   input:
   val name
@@ -79,11 +80,13 @@ process concat_contamination {
 
   output:
   path 'db.fa.gz', emit: fa
-  path 'db.fa.gz.fai'
+  path 'db.fa.fai'
+  path 'db.fa.gz.gzi'
   
   script:
   """
   cat * > db.fa.gz
-  samtools faidx db.fa.gz -o db.fa.gz.fai
+  samtools faidx db.fa.gz
+  mv db.fa.gz.fai db.fa.fai
   """
 }
