@@ -50,7 +50,7 @@ process check_own {
   path fasta
 
   output:
-  path '*' includeInputs true
+  path '*', includeInputs: true
 
   script:
   """
