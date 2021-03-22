@@ -4,6 +4,8 @@ process minimap2_fasta {
   label 'minimap2'
 
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.contamination.sorted.bam*"
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*clean.fasta.gz"
+  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*contamination.fasta.gz"
 
   input: 
     tuple val(name), path(fasta)
