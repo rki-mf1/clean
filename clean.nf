@@ -241,7 +241,7 @@ workflow clean_fasta {
       .mix(nanoControlFastaChannel)
       .mix(checkedOwn)
       .mix(rRNAChannel).collect()
-    concat_contamination( fasta_input_ch.map{ it -> it[0] }, contamination )
+    concat_contamination( fasta_input_ch.map{ it -> it[0] }, 'minimap2', contamination )
     minimap2_fasta(fasta_input_ch, 'minimap2', concat_contamination.out.fa)
     writeLog(fasta_input_ch.map{ it -> it[0] }, 'minimap2', fasta_input_ch.map{ it -> it[1] }, contamination)
     minimap2Stats(minimap2_fasta.out.name, minimap2_fasta.out.totalcontigs, minimap2_fasta.out.idxstats)
