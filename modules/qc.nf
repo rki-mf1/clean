@@ -55,6 +55,7 @@ process format_nanoplot_report {
 
 process quast {
   label 'quast'
+  errorStrategy { task.exitStatus in 4 ? 'ignore' : 'terminate' }
 
   input:
   tuple val(name), val(type), path(fasta)
