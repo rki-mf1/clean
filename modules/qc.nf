@@ -15,6 +15,7 @@ process fastqc {
 
 process nanoplot {
   label 'nanoplot'
+  errorStrategy { task.exitStatus in 1 ? 'ignore' : 'terminate' }
 
   input:
   tuple val(name), val(type), path(reads)
