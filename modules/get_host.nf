@@ -50,13 +50,13 @@ process check_own {
   path fasta
 
   output:
-  path '*', includeInputs: true
+  path '*.gz', includeInputs: true
 
   script:
   """
   # -L for following a symbolic link
   if ! ( file -L $fasta | grep -q 'gzip compressed' ); then
-    bgzip -@ ${task.cpus} < ${fasta}
+    bgzip -@ ${task.cpus} < ${fasta} > ${fasta}.gz
     # now $fasta'.gz'
   else
     mv ${fasta} ${fasta}.tmp
