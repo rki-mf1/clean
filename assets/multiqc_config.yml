@@ -1,0 +1,15 @@
+custom_data:
+    mapping:
+        file_format: 'tsv'
+        section_name: 'Mapping statistics'
+        anchor: 'mapping'
+        plot_type: 'bargraph'
+        pconfig:
+            id: 'Mapping'
+            title: 'Mapping statistics'
+
+sp:
+    quast:
+        fn: '*_report.tsv'
+    mapping:
+        fn: '*_stats.tsv'

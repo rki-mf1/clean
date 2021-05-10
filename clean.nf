@@ -1,11 +1,25 @@
 #!/usr/bin/env nextflow
-nextflow.preview.dsl=2
+
+if( !nextflow.version.matches('20.01+') ) {
+    println "This workflow requires Nextflow version 20.01 or greater -- You are running version $nextflow.version"
+    exit 1
+}
+
+nextflow.enable.dsl=2
 
 /*
 Nextflow -- Decontamination Pipeline
 Author: marie.lataretu@uni-jena.de
 Author: hoelzer.martin@gmail.com
 */
+
+// Parameters sanity checking
+
+Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'nano', 'illumina', 'illumina_single_end', 'fasta', 'list', 'host', 'own', 'control', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
+def parameter_diff = params.keySet() - valid_params
+if (parameter_diff.size() != 0){
+    exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
+}
 
 /************************** 
 * META & HELP MESSAGES 
@@ -35,17 +49,35 @@ println "Launchdir location:"
 println "  $workflow.launchDir"
 println "Database location:"
 println "  $params.databases"
+if ( workflow.profile.contains('singularity') ) {
+    println "Singularity cache directory:"
+    println "  $params.singularityCacheDir"
+}
+if ( workflow.profile.contains('conda') ) { 
+    println "Conda cache directory:"
+    println "  $params.condaCacheDir"
+}
 println "Configuration files:"
-println "  $workflow.configFiles\u001B[0m"
+println "  $workflow.configFiles"
+println "Cmd line:"
+println "  $workflow.commandLine\u001B[0m"
+if (workflow.repository != null){ println "\033[2mGit info: $workflow.repository - $workflow.revision [$workflow.commitId]\u001B[0m" }
 println " "
 if (workflow.profile == 'standard' || workflow.profile.contains('local')) {
     println "\033[2mCPUs to use: $params.cores, maximal CPUs to use: $params.max_cores\u001B[0m"
+    println "\033[2mMemory to use: $params.memory, maximal memory to use: $params.max_memory\u001B[0m"
     println " "
 }
-
-if( !nextflow.version.matches('20.01+') ) {
-    println "This workflow requires Nextflow version 20.01 or greater -- You are running version $nextflow.version"
-    exit 1
+if ( !workflow.revision ) { 
+    println "\033[0;33mWARNING: Not a stable execution. Please use -r for full reproducibility.\033[0m\n"
+}
+def folder = new File(params.output)
+if ( folder.exists() ) { 
+    println "\033[0;33mWARNING: Output folder already exists. Results might be overwritten! You can adjust the output folder via [--output]\033[0m\n"
+}
+if ( workflow.profile.contains('singularity') ) {
+    println "\033[0;33mWARNING: Singularity image building sometimes fails!"
+    println "Multiple resumes (-resume) and --max_cores 1 --cores 1 for local execution might help.\033[0m\n"
 }
 
 Set controls = ['phix', 'dcs', 'eno']
@@ -88,7 +120,7 @@ if (params.illumina_single_end && params.list) { illumina_single_end_input_ch = 
   .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
 } else if (params.illumina_single_end) { illumina_single_end_input_ch = Channel
   .fromPath( params.illumina_single_end, checkIfExists: true )
-  .map { file -> tuple(file.baseName, file) } 
+  .map { file -> tuple(file.simpleName, file) } 
 }
 
 // assembly fasta input & --list support
@@ -128,10 +160,16 @@ if (params.host) {
 }
 
 // user defined fasta sequence
-if (params.own) {
-  //TODO funzt auch mit * und so was?
-  ownFastaChannel = Channel.fromPath( params.own, checkIfExists: true).splitCsv().flatten().map{ it -> file( it, checkIfExists: true ) }
+if (params.own && params.list) {
+  ownFastaChannel = Channel
+    .fromPath( params.own, checkIfExists: true)
+    .splitCsv().flatten().map{ it -> file( it, checkIfExists: true ) }
+} else if (params.own) {
+  ownFastaChannel = Channel
+    .fromPath( params.own, checkIfExists: true)
 }
+
+multiqc_config = Channel.fromPath( workflow.projectDir + '/assets/multiqc_config.yml', checkIfExists: true )
 
 /************************** 
 * MODULES
@@ -139,12 +177,14 @@ if (params.own) {
 
 /* Comment section: */
 
-include {download_host; check_own; concat_contamination} from './modules/get_host'
+include { download_host; check_own; concat_contamination } from './modules/get_host'
 
-include {minimap2_fasta; minimap2_nano; minimap2_illumina} from './modules/minimap2'
-include {bbduk} from './modules/bbmap'
+include { minimap2_fasta; minimap2_nano; minimap2_illumina } from './modules/minimap2'
+include { bbduk } from './modules/bbmap'
 
-include {minimap2Stats; bbdukStats; writeLog} from './modules/utils'
+include { rename_reads; restore_reads; get_number_of_reads; minimap2Stats; bbdukStats; writeLog } from './modules/utils'
+
+include { fastqc; nanoplot; format_nanoplot_report; quast; multiqc } from './modules/qc'
 
 /************************** 
 * DATABASES
@@ -155,7 +195,7 @@ The Database Section is designed to "auto-get" pre prepared databases.
 It is written for local use and cloud use via params.cloudProcess.
 */
 
-workflow prepare {
+workflow prepare_host {
   main:
     if (params.host) {
       if (params.cloudProcess) {
@@ -205,10 +245,14 @@ workflow clean_fasta {
       .mix(nanoControlFastaChannel)
       .mix(checkedOwn)
       .mix(rRNAChannel).collect()
-    concat_contamination( contamination )
-    minimap2_fasta(fasta_input_ch, concat_contamination.out)
+    concat_contamination( fasta_input_ch.map{ it -> it[0] }, 'minimap2', contamination )
+    minimap2_fasta(fasta_input_ch, concat_contamination.out.fa)
     writeLog(fasta_input_ch.map{ it -> it[0] }, 'minimap2', fasta_input_ch.map{ it -> it[1] }, contamination)
-    minimap2Stats(minimap2_fasta.out.name, minimap2_fasta.out.totalreads, minimap2_fasta.out.idxstats)
+    minimap2Stats(minimap2_fasta.out.stats)
+  emit:
+    stats = minimap2Stats.out.tsv
+    in = fasta_input_ch.map{ it -> it.plus(1, 'all') }
+    out = minimap2_fasta.out.cleaned_contigs.concat(minimap2_fasta.out.contaminated_contigs)
 } 
 
 workflow clean_nano {
@@ -224,18 +268,25 @@ workflow clean_nano {
         .mix(nanoControlFastaChannel)
         .mix(checkedOwn)
         .mix(rRNAChannel).collect()
-      concat_contamination( contamination )
+      concat_contamination( nano_input_ch.map{ it -> it[0] }, 'minimap2', contamination )
     } else {
       contamination = host.collect()
         .mix(nanoControlFastaChannel)
         .mix(illuminaControlFastaChannel)
         .mix(checkedOwn)
         .mix(rRNAChannel).collect()
-      concat_contamination( contamination )
+      concat_contamination( nano_input_ch.map{ it -> it[0] }, 'minimap2', contamination )
     }
-    minimap2_nano(nano_input_ch, concat_contamination.out)
+    rename_reads(nano_input_ch, 'single')
+    minimap2_nano(rename_reads.out, concat_contamination.out.fa)
     writeLog(nano_input_ch.map{ it -> it[0] }, 'minimap2', nano_input_ch.map{ it -> it[1] }, contamination)
-    minimap2Stats(minimap2_nano.out.name, minimap2_nano.out.totalreads, minimap2_nano.out.idxstats)
+    get_number_of_reads(rename_reads.out, 'single')
+    minimap2Stats(minimap2_nano.out.idxstats.join(get_number_of_reads.out))
+    restore_reads(minimap2_nano.out.cleaned_reads.concat(minimap2_nano.out.contaminated_reads), 'single', 'minimap2')
+  emit:
+    stats = minimap2Stats.out.tsv
+    in = nano_input_ch.map{ it -> it.plus(1, 'all') }
+    out = restore_reads.out
 } 
 
 workflow clean_illumina {
@@ -251,24 +302,34 @@ workflow clean_illumina {
         .mix(illuminaControlFastaChannel)
         .mix(checkedOwn)
         .mix(rRNAChannel).collect()
-      concat_contamination( contamination )
+      concat_contamination( illumina_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
     } else {
       contamination = host.collect()
         .mix(nanoControlFastaChannel)
         .mix(illuminaControlFastaChannel)
         .mix(checkedOwn)
         .mix(rRNAChannel).collect()
-      concat_contamination( contamination )
+      concat_contamination( illumina_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
     }
+    rename_reads(illumina_input_ch, 'paired')
     if (params.bbduk){
-      bbduk(illumina_input_ch, concat_contamination.out, 'paired')
+      bbduk(rename_reads.out, concat_contamination.out.fa, 'paired')
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'bbduk', illumina_input_ch.map{ it -> it[1] }, contamination)
-      bbdukStats(bbduk.out.name, bbduk.out.stats)
+      bbdukStats(bbduk.out.stats)
+      restore_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'paired', 'bbduk')
+      stats = bbdukStats.out.tsv
     } else {
-      minimap2_illumina(illumina_input_ch, concat_contamination.out, 'paired')
+      minimap2_illumina(rename_reads.out, concat_contamination.out.fa, 'paired')
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'minimap2', illumina_input_ch.map{ it -> it[1] }, contamination)
-      minimap2Stats(minimap2_illumina.out.name, minimap2_illumina.out.totalreads, minimap2_illumina.out.idxstats)
+      get_number_of_reads(rename_reads.out, 'paired')
+      minimap2Stats(minimap2_illumina.out.idxstats.join(get_number_of_reads.out))
+      restore_reads(minimap2_illumina.out.cleaned_reads.concat(minimap2_illumina.out.contaminated_reads), 'paired', 'minimap2')
+      stats = minimap2Stats.out.tsv
     }
+  emit:
+    stats = stats
+    in = illumina_input_ch.map{ it -> it.plus(1, 'all') }
+    out = restore_reads.out
 } 
 
 workflow clean_illumina_single {
@@ -284,25 +345,87 @@ workflow clean_illumina_single {
         .mix(illuminaControlFastaChannel)
         .mix(checkedOwn)
         .mix(rRNAChannel).collect()
-      concat_contamination( contamination )
+      concat_contamination( illumina_single_end_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
     } else {
       contamination = host.collect()
         .mix(nanoControlFastaChannel)
         .mix(illuminaControlFastaChannel)
         .mix(checkedOwn)
         .mix(rRNAChannel).collect()
-      concat_contamination( contamination )
+      concat_contamination( illumina_single_end_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
     }
+    rename_reads(illumina_single_end_input_ch, 'single')
     if (params.bbduk){
-      bbduk(illumina_single_end_input_ch, concat_contamination.out, 'single')
+      bbduk(rename_reads.out, concat_contamination.out.fa, 'single')
       writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'bbduk', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
-      bbdukStats(illumina_single_end_input_ch.map{ it -> it[0] }, bbduk.out.stats)
+      bbdukStats(bbduk.out.stats)
+      stats = bbdukStats.out.tsv
+      restore_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'single', 'bbduk')
     } else {
-      minimap2_illumina(illumina_single_end_input_ch, concat_contamination.out, 'single')
+      minimap2_illumina(rename_reads.out, concat_contamination.out.fa, 'single')
       writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'minimap2', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
-      minimap2Stats(illumina_single_end_input_ch.map{ it -> it[0] }, minimap2_illumina.out.totalreads, minimap2_illumina.out.idxstats)
+      get_number_of_reads(rename_reads.out, 'single')
+      minimap2Stats(minimap2_illumina.out.idxstats.join(get_number_of_reads.out))
+      stats = minimap2Stats.out.tsv
+      restore_reads(minimap2_illumina.out.cleaned_reads.concat(minimap2_illumina.out.contaminated_reads), 'single', 'minimap2')
     }
+    emit:
+      stats = stats
+      in = illumina_single_end_input_ch.map{ it -> it.plus(1, 'all') }
+      out = restore_reads.out
 } 
+
+workflow qc_fasta {
+  take:
+    fasta_input
+    fasta_output
+  main:
+    quast(fasta_input.concat(fasta_output))
+  emit:
+    quast.out.report_tsv
+}
+
+workflow qc_nano {
+  take:
+    nano_input
+    nano_output
+  main:
+    nanoplot(nano_input.concat(nano_output))
+    format_nanoplot_report(nanoplot.out.html)
+  emit:
+    format_nanoplot_report.out
+}
+
+workflow qc_illumina {
+  take:
+    illumina_input
+    illumina_output
+  main:
+    fastqc(illumina_input.concat(illumina_output))
+  emit:
+    fastqc.out.zip.map{ it -> it[-1] }
+}
+
+workflow qc_illumina_single {
+  take:
+    illumina_input
+    illumina_output
+  main:
+    fastqc(illumina_input.concat(illumina_output))
+  emit:
+    fastqc.out.zip.map{ it -> it[-1] }
+}
+
+workflow qc{
+  take:
+    multiqc_config
+    fastqc
+    nanoplot
+    quast
+    mapping_stats
+  main:
+    multiqc(multiqc_config, fastqc, nanoplot, quast, mapping_stats)
+}
 
 /************************** 
 * WORKFLOW ENTRY POINT
@@ -311,26 +434,38 @@ workflow clean_illumina_single {
 /* Comment section: */
 
 workflow {
-  prepare()
+  prepare_host()
 
   if (params.fasta) {
-    clean_fasta(fasta_input_ch, prepare.out.host, prepare.out.checkedOwn, rRNAChannel)
-  }
+    clean_fasta(fasta_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
+    qc_fasta(clean_fasta.out.in, clean_fasta.out.out)
+    stast_fasta = clean_fasta.out.stats
+    quast = qc_fasta.out.collect()
+  } else { quast = Channel.fromPath('no_fasta_input'); stast_fasta = Channel.fromPath('no_fasta_stats') }
 
   if (params.nano) { 
-    clean_nano(nano_input_ch, prepare.out.host, prepare.out.checkedOwn, rRNAChannel)
-  }
+    clean_nano(nano_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
+    qc_nano(clean_nano.out.in, clean_nano.out.out)
+    stast_nano = clean_nano.out.stats
+    nanoplot = qc_nano.out.collect()
+  } else { nanoplot = Channel.fromPath('no_nanopore_input'); stast_nano = Channel.fromPath('no_nano_stats') }
 
   if (params.illumina) { 
-    clean_illumina(illumina_input_ch, prepare.out.host, prepare.out.checkedOwn, rRNAChannel)
-  }
+    clean_illumina(illumina_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
+    qc_illumina(clean_illumina.out.in, clean_illumina.out.out)
+    stast_illumina = clean_illumina.out.stats
+    fastqc = qc_illumina.out
+  } else { fastqc = Channel.fromPath('no_illumina_input'); stast_illumina = Channel.fromPath('no_illumina_stats') }
 
   if (params.illumina_single_end) { 
-    clean_illumina_single(illumina_single_end_input_ch, prepare.out.host, prepare.out.checkedOwn, rRNAChannel)
-  }
+    clean_illumina_single(illumina_single_end_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
+    qc_illumina_single(clean_illumina_single.out.in, clean_illumina_single.out.out)
+    stast_illumina_single = clean_illumina_single.out.stats
+    fastqc_single = qc_illumina_single.out
+  } else { fastqc_single = Channel.fromPath('no_illumina_single_input'); stast_illumina_single = Channel.fromPath('no_illumina_single_stats') }
+
+  qc(multiqc_config, fastqc.concat(fastqc_single).collect(), nanoplot, quast, stast_fasta.concat(stast_nano).concat(stast_illumina).concat(stast_illumina_single).collect())
 }
-
-
 
 /**************************  
 * --help
@@ -402,7 +537,6 @@ def helpMSG() {
     ${c_yellow}Computing:${c_reset}
     In particular for execution of the workflow on a HPC (LSF, SLURM) adjust the following parameters:
     --databases             defines the path where databases are stored [default: $params.databases]
-    --workdir               defines the path where nextflow writes tmp files [default: $params.workdir]
     --condaCacheDir         defines the path where environments (conda) are cached [default: $params.condaCacheDir]
     --singularityCacheDir   defines the path where images (singularity) are cached [default: $params.singularityCacheDir] 
 
@@ -430,5 +564,3 @@ def helpMSG() {
                              ${c_reset}
     """.stripIndent()
 }
-
-  

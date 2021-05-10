@@ -2,9 +2,10 @@ cfg
 *.log*
 wip/
 nextflow-autodownload-databases/
+nextflow-clean-databases/
+nextflow-clean-autodownload/
 work/
 .nextflow/
 results/
-conda/
-
 centrifuge-cloud/
+conda/
