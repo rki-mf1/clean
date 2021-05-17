@@ -1,25 +1,5 @@
 #!/usr/bin/env nextflow
 
-/* 
-Nextflow version check  
-Format is this: XX.YY.ZZ  (e.g. 20.07.1)
-change below
-*/
-
-XX = "21"
-YY = "04"
-ZZ = "0"
-
-if ( nextflow.version.toString().tokenize('.')[0].toInteger() < XX.toInteger() ) {
-println "\033[0;33mCLEAN requires at least Nextflow version " + XX + "." + YY + "." + ZZ + " -- You are using version $nextflow.version\u001B[0m"
-exit 1
-}
-else if ( nextflow.version.toString().tokenize('.')[1].toInteger() == XX.toInteger() && nextflow.version.toString().tokenize('.')[1].toInteger() < YY.toInteger() ) {
-println "\033[0;33mCLEAN requires at least Nextflow version " + XX + "." + YY + "." + ZZ + " -- You are using version $nextflow.version\u001B[0m"
-exit 1
-}
-
-
 nextflow.enable.dsl=2
 
 /*
