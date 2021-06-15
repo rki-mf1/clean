@@ -1,10 +1,5 @@
 #!/usr/bin/env nextflow
 
-if( !nextflow.version.matches('20.01+') ) {
-    println "This workflow requires Nextflow version 20.01 or greater -- You are running version $nextflow.version"
-    exit 1
-}
-
 nextflow.enable.dsl=2
 
 /*
