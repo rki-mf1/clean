@@ -182,7 +182,7 @@ include { download_host; check_own; concat_contamination } from './modules/get_h
 include { minimap2_fasta; minimap2_nano; minimap2_illumina } from './modules/minimap2'
 include { bbduk } from './modules/bbmap'
 
-include { rename_reads; restore_reads; get_number_of_reads; minimap2Stats; bbdukStats; writeLog } from './modules/utils'
+include { compress_reads; get_number_of_reads; minimap2Stats; bbdukStats; writeLog } from './modules/utils'
 
 include { fastqc; nanoplot; format_nanoplot_report; quast; multiqc } from './modules/qc'
 
@@ -277,16 +277,16 @@ workflow clean_nano {
         .mix(rRNAChannel).collect()
       concat_contamination( nano_input_ch.map{ it -> it[0] }, 'minimap2', contamination )
     }
-    rename_reads(nano_input_ch, 'single')
-    minimap2_nano(rename_reads.out, concat_contamination.out.fa)
+    // rename_reads(nano_input_ch, 'single')
+    minimap2_nano(nano_input_ch, concat_contamination.out.fa)
     writeLog(nano_input_ch.map{ it -> it[0] }, 'minimap2', nano_input_ch.map{ it -> it[1] }, contamination)
-    get_number_of_reads(rename_reads.out, 'single')
+    get_number_of_reads(nano_input_ch, 'single')
     minimap2Stats(minimap2_nano.out.idxstats.join(get_number_of_reads.out))
-    restore_reads(minimap2_nano.out.cleaned_reads.concat(minimap2_nano.out.contaminated_reads), 'single', 'minimap2')
+    compress_reads(minimap2_nano.out.cleaned_reads.concat(minimap2_nano.out.contaminated_reads), 'single', 'minimap2')
   emit:
     stats = minimap2Stats.out.tsv
     in = nano_input_ch.map{ it -> it.plus(1, 'all') }
-    out = restore_reads.out
+    out = compress_reads.out
 } 
 
 workflow clean_illumina {
@@ -311,25 +311,25 @@ workflow clean_illumina {
         .mix(rRNAChannel).collect()
       concat_contamination( illumina_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
     }
-    rename_reads(illumina_input_ch, 'paired')
+    // rename_reads(illumina_input_ch, 'paired')
     if (params.bbduk){
-      bbduk(rename_reads.out, concat_contamination.out.fa, 'paired')
+      bbduk(illumina_input_ch, concat_contamination.out.fa, 'paired')
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'bbduk', illumina_input_ch.map{ it -> it[1] }, contamination)
       bbdukStats(bbduk.out.stats)
-      restore_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'paired', 'bbduk')
+      compress_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'paired', 'bbduk')
       stats = bbdukStats.out.tsv
     } else {
-      minimap2_illumina(rename_reads.out, concat_contamination.out.fa, 'paired')
+      minimap2_illumina(illumina_input_ch, concat_contamination.out.fa, 'paired')
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'minimap2', illumina_input_ch.map{ it -> it[1] }, contamination)
-      get_number_of_reads(rename_reads.out, 'paired')
+      get_number_of_reads(illumina_input_ch, 'paired')
       minimap2Stats(minimap2_illumina.out.idxstats.join(get_number_of_reads.out))
-      restore_reads(minimap2_illumina.out.cleaned_reads.concat(minimap2_illumina.out.contaminated_reads), 'paired', 'minimap2')
+      compress_reads(minimap2_illumina.out.cleaned_reads.concat(minimap2_illumina.out.contaminated_reads), 'paired', 'minimap2')
       stats = minimap2Stats.out.tsv
     }
   emit:
     stats = stats
     in = illumina_input_ch.map{ it -> it.plus(1, 'all') }
-    out = restore_reads.out
+    out = compress_reads.out
 } 
 
 workflow clean_illumina_single {
@@ -354,25 +354,25 @@ workflow clean_illumina_single {
         .mix(rRNAChannel).collect()
       concat_contamination( illumina_single_end_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
     }
-    rename_reads(illumina_single_end_input_ch, 'single')
+    // rename_reads(illumina_single_end_input_ch, 'single')
     if (params.bbduk){
-      bbduk(rename_reads.out, concat_contamination.out.fa, 'single')
+      bbduk(illumina_single_end_input_ch, concat_contamination.out.fa, 'single')
       writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'bbduk', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
       bbdukStats(bbduk.out.stats)
       stats = bbdukStats.out.tsv
-      restore_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'single', 'bbduk')
+      compress_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'single', 'bbduk')
     } else {
-      minimap2_illumina(rename_reads.out, concat_contamination.out.fa, 'single')
+      minimap2_illumina(illumina_single_end_input_ch, concat_contamination.out.fa, 'single')
       writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'minimap2', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
-      get_number_of_reads(rename_reads.out, 'single')
+      get_number_of_reads(illumina_single_end_input_ch, 'single')
       minimap2Stats(minimap2_illumina.out.idxstats.join(get_number_of_reads.out))
       stats = minimap2Stats.out.tsv
-      restore_reads(minimap2_illumina.out.cleaned_reads.concat(minimap2_illumina.out.contaminated_reads), 'single', 'minimap2')
+      compress_reads(minimap2_illumina.out.cleaned_reads.concat(minimap2_illumina.out.contaminated_reads), 'single', 'minimap2')
     }
     emit:
       stats = stats
       in = illumina_single_end_input_ch.map{ it -> it.plus(1, 'all') }
-      out = restore_reads.out
+      out = compress_reads.out
 } 
 
 workflow qc_fasta {
