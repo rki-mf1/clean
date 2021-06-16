@@ -63,12 +63,12 @@ process compress_reads {
   script:
   if ( mode == 'paired' ) {
     """
-    pigz -p ${task.cpus} > ${name}_1.${type}.fastq.gz 
-    pigz -p ${task.cpus} > ${name}_2.${type}.fastq.gz
+    pigz -fc -p ${task.cpus} ${reads[0]} > ${name}_1.${type}.fastq.gz 
+    pigz -fc -p ${task.cpus} ${reads[1]} > ${name}_2.${type}.fastq.gz
     """
   } else {
     """
-    pigz -p ${task.cpus} > ${name}.${type}.fastq.gz
+    pigz -fc -p ${task.cpus} ${reads} > ${name}.${type}.fastq.gz
     """
   }
 }
