@@ -1,12 +1,13 @@
 custom_data:
     mapping:
         file_format: 'tsv'
-        section_name: 'Mapping statistics'
-        anchor: 'mapping'
+        section_name: 'Contamination statistics'
+        description: "Mapped and unmapped reads (or contigs) for the mapping result against the contamination. Short and sweet: mapped = contamination."
+        anchor: 'contamination'
         plot_type: 'bargraph'
         pconfig:
-            id: 'Mapping'
-            title: 'Mapping statistics'
+            id: 'Contamination'
+            title: 'Contamination statistics'
 
 sp:
     quast:

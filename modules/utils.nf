@@ -47,7 +47,7 @@ process rename_reads {
   }
 }
 
-process restore_reads {
+process compress_reads {
   label 'basics'
 
   publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "*.gz"
@@ -63,13 +63,12 @@ process restore_reads {
   script:
   if ( mode == 'paired' ) {
     """
-    # restore the original read IDs
-    sed 's/DECONTAMINATE/ /g' ${reads}[0] | awk 'BEGIN{LINE=0};{if(LINE % 4 == 0 || LINE == 0){print \$0"/1"}else{print \$0};LINE++;}' | pigz -p ${task.cpus} > ${name}_1.${type}.fastq.gz 
-    sed 's/DECONTAMINATE/ /g' ${reads}[1] | awk 'BEGIN{LINE=0};{if(LINE % 4 == 0 || LINE == 0){print \$0"/2"}else{print \$0};LINE++;}' | pigz -p ${task.cpus} > ${name}_2.${type}.fastq.gz
+    pigz -fc -p ${task.cpus} ${reads[0]} > ${name}_1.${type}.fastq.gz 
+    pigz -fc -p ${task.cpus} ${reads[1]} > ${name}_2.${type}.fastq.gz
     """
   } else {
     """
-    sed 's/DECONTAMINATE/ /g' ${reads} | pigz -p ${task.cpus} > ${name}.${type}.fastq.gz
+    pigz -fc -p ${task.cpus} ${reads} > ${name}.${type}.fastq.gz
     """
   }
 }
