@@ -71,7 +71,6 @@ process concat_contamination {
   
   publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "db.fa.gz"
   publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "db.fa.fai"
-  publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "db.fa.gz.gzi"
 
   input:
   val name
@@ -81,7 +80,6 @@ process concat_contamination {
   output:
   path 'db.fa.gz', emit: fa
   path 'db.fa.fai'
-  path 'db.fa.gz.gzi'
   
   script:
   """
