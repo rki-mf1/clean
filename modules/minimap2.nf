@@ -42,18 +42,13 @@ process minimap2_fasta {
 
 process minimap2_nano {
   label 'minimap2'
-  
-  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.contamination.sorted.bam*"
 
   input: 
     tuple val(name), path(reads)
-    path db
+    path (db)
 
   output:
-    tuple val(name), path ('idxstats.tsv'), emit: idxstats
-    tuple val(name), val('clean'), path('*clean.fastq'), emit: cleaned_reads
-    tuple val(name), val('contamination'), path('*contamination.fastq'), emit: contaminated_reads
-    path '*.contamination.sorted.bam*'
+    tuple val(name), path('*.sam'), path(reads), emit: sam // reads just for naming
 
   script:
   """
@@ -63,55 +58,28 @@ process minimap2_nano {
   fi
 
   minimap2 \$PARAMS -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${reads}
-
-  samtools fastq -f 4 -0 ${reads.baseName}.clean.fastq ${name}.sam
-  samtools fastq -F 4 -0 ${reads.baseName}.contamination.fastq ${name}.sam
-
-  samtools view -b -F 2052 ${name}.sam | samtools sort -o ${name}.contamination.sorted.bam --threads ${task.cpus}
-  samtools index ${name}.contamination.sorted.bam
-  samtools idxstats  ${name}.contamination.sorted.bam > idxstats.tsv
   """
 }
 
 process minimap2_illumina {
   label 'minimap2'
 
-  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "*.contamination.sorted.bam*"
-
   input: 
     tuple val(name), path(reads)
-    path db
-    val mode
+    path (db)
+    val (mode)
 
   output:
-    tuple val(name), path ('idxstats.tsv'), emit: idxstats
-    tuple val(name), val('clean'), path('*clean.fastq'), emit: cleaned_reads
-    tuple val(name), val('contamination'), path('*contamination.fastq'), emit: contaminated_reads
-    path '*.contamination.sorted.bam*'
+    tuple val(name), path('*.sam'), path(reads), emit: sam // reads just for naming
 
   script:
   if ( mode == 'paired' ) {
     """
     minimap2 -ax sr -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${reads[0]} ${reads[1]}
-    
-    # Use samtools -F 2 to discard only reads mapped in proper pair:
-    samtools fastq -F 2 -1 ${reads[0].baseName}.clean.fastq -2 ${reads[1].baseName}.clean.fastq ${name}.sam
-    samtools fastq -f 2 -1 ${reads[0].baseName}.contamination.fastq -2 ${reads[1].baseName}.contamination.fastq ${name}.sam
-
-    samtools view -b -f 2 -F 2048 ${name}.sam | samtools sort -o ${name}.contamination.sorted.bam --threads ${task.cpus}
-    samtools index ${name}.contamination.sorted.bam
-    samtools idxstats ${name}.contamination.sorted.bam > idxstats.tsv
     """
   } else {
     """
     minimap2 -ax sr -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${reads}
-    
-    samtools fastq -f 4 -0 ${reads.baseName}.clean.fastq ${name}.sam
-    samtools fastq -F 4 -0 ${reads.baseName}.contamination.fastq ${name}.sam
-
-    samtools view -b -F 2052 ${name}.sam | samtools sort -o ${name}.contamination.sorted.bam --threads ${task.cpus}
-    samtools index ${name}.contamination.sorted.bam
-    samtools idxstats ${name}.contamination.sorted.bam > idxstats.tsv
     """
   }
 }

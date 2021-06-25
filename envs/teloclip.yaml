@@ -1,0 +1,6 @@
+name: teloclip
+channels:
+  - bioconda
+dependencies:
+  - teloclip=0.0.3
+  - pigz=2.3.4
