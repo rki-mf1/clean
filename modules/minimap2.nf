@@ -12,10 +12,10 @@ process minimap2_fasta {
     path db
 
   output:
-    tuple val(name), path ('idxstats.tsv'), env(TOTALCONTIGS), emit: stats
+    tuple val(name), env(TOTALCONTIGS), emit: num_contigs
     tuple val(name), val('clean'), path('*clean.fasta.gz'), emit: cleaned_contigs
     tuple val(name), val('contamination'), path('*contamination.fasta.gz'), emit: contaminated_contigs
-    path '*.contamination.sorted.bam*'
+    tuple val(name), path('*.sam'), path(fasta), emit: sam // reads just for naming
 
   script:
   """
@@ -31,12 +31,6 @@ process minimap2_fasta {
   samtools fasta -F 4 -0 ${name}.contamination.fasta ${name}.sam
   pigz -p ${task.cpus} ${name}.clean.fasta
   pigz -p ${task.cpus} ${name}.contamination.fasta
-
-  samtools view -b -F 2052 ${name}.sam | samtools sort -o ${name}.contamination.sorted.bam --threads ${task.cpus}
-  samtools index ${name}.contamination.sorted.bam
-  samtools idxstats ${name}.contamination.sorted.bam > idxstats.tsv
-
-  rm -f ${name}.sam
   """
 }
 
