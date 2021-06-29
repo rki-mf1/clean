@@ -56,14 +56,12 @@ process make_contamination_bam {
 }
 
 process filter_soft_clipped_alignments {
-  label 'teloclip'
+  // label ''
 
   publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "*.bam*"
 
   input:
   tuple val(name), path (bam)
-  path (db)
-  path (fai)
   val (max)
   val (tool)
   
@@ -73,9 +71,10 @@ process filter_soft_clipped_alignments {
   
   script:
   """
-  unpigz -f -k -p ${task.cpus} ${db}
-  samtools view -h ${bam} | teloclip --minClip ${max} --ref ${fai} | samtools sort > ${name}.ambiguous.bam
+  git clone git@github.com:MarieLataretu/samclipy.git
+  samtools view -h ${bam} | python samclipy/samclipy.py --invert --minClip ${max} | samtools sort > ${name}.ambiguous.bam
+  samtools view -h ${bam} | python samclipy/samclipy.py --minClip ${max} | samtools sort > ${name}.unambiguous.bam
   samtools index ${name}.ambiguous.bam
-  rm -f ${db.baseName}
+  samtools index ${name}.unambiguous.bam
   """
 }
