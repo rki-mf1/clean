@@ -56,7 +56,8 @@ process make_contamination_bam {
 }
 
 process filter_soft_clipped_alignments {
-  // label ''
+  label 'minimap2' // sets conda env (and cpus)
+  label 'smallTask' // overrides cpus
 
   publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "*.bam*"
 
