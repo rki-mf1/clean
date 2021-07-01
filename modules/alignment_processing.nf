@@ -72,7 +72,7 @@ process filter_soft_clipped_alignments {
   
   script:
   """
-  git clone git@github.com:MarieLataretu/samclipy.git
+  git clone https://github.com/MarieLataretu/samclipy.git
   samtools view -h ${bam} | python samclipy/samclipy.py --invert --minClip ${max} | samtools sort > ${name}.ambiguous.bam
   samtools view -h ${bam} | python samclipy/samclipy.py --minClip ${max} | samtools sort > ${name}.unambiguous.bam
   samtools index ${name}.ambiguous.bam
