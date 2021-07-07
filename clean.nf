@@ -10,7 +10,7 @@ Author: hoelzer.martin@gmail.com
 
 // Parameters sanity checking
 
-Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'nano', 'illumina', 'illumina_single_end', 'fasta', 'list', 'host', 'own', 'control', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
+Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'nano', 'illumina', 'illumina_single_end', 'fasta', 'list', 'host', 'own', 'control', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'min_clip', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
 def parameter_diff = params.keySet() - valid_params
 if (parameter_diff.size() != 0){
     exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
@@ -284,7 +284,9 @@ workflow clean_nano {
     compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads), 'single', 'minimap2')
     make_contamination_bam(minimap2_nano.out.sam, 'single', 'minimap2')
     // filter soft clipped reads
-    filter_soft_clipped_alignments(make_contamination_bam.out.contamination_bam, '5', 'minimap2')
+    if (params.min_clip) {
+      filter_soft_clipped_alignments(make_contamination_bam.out.contamination_bam, params.min_clip, 'minimap2')
+    }
     // log & stats
     writeLog(nano_input_ch.map{ it -> it[0] }, 'minimap2', nano_input_ch.map{ it -> it[1] }, contamination)
     get_number_of_reads(nano_input_ch, 'single')
@@ -335,7 +337,9 @@ workflow clean_illumina {
       compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads), 'paired', 'minimap2')
       make_contamination_bam(minimap2_illumina.out.sam, 'paired', 'minimap2')
       // filter soft clipped reads
-      filter_soft_clipped_alignments(make_contamination_bam.out.contamination_bam, '5', 'minimap2')
+      if (params.min_clip) {
+        filter_soft_clipped_alignments(make_contamination_bam.out.contamination_bam, params.min_clip, 'minimap2')
+      }
       // log & stats
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'minimap2', illumina_input_ch.map{ it -> it[1] }, contamination)
       get_number_of_reads(illumina_input_ch, 'paired')
@@ -388,7 +392,9 @@ workflow clean_illumina_single {
       compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads), 'single', 'minimap2')
       make_contamination_bam(minimap2_illumina.out.sam, 'single', 'minimap2')
       // filter soft clipped reads
-      filter_soft_clipped_alignments(make_contamination_bam.out.contamination_bam, '0.2', 'minimap2')
+      if (params.min_clip){
+        filter_soft_clipped_alignments(make_contamination_bam.out.contamination_bam, params.min_clip, 'minimap2')
+      }
       // log & stats
       writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'minimap2', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
       get_number_of_reads(illumina_single_end_input_ch, 'single')

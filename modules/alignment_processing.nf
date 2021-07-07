@@ -63,7 +63,7 @@ process filter_soft_clipped_alignments {
 
   input:
   tuple val(name), path (bam)
-  val (max)
+  val (minClip)
   val (tool)
   
   output:
@@ -73,8 +73,8 @@ process filter_soft_clipped_alignments {
   script:
   """
   git clone https://github.com/MarieLataretu/samclipy.git --branch v0.0.2 || git clone git@github.com:MarieLataretu/samclipy.git --branch v0.0.2 
-  samtools view -h ${bam} | python samclipy/samclipy.py --invert --minClip ${max} | samtools sort > ${name}.ambiguous.bam
-  samtools view -h ${bam} | python samclipy/samclipy.py --minClip ${max} | samtools sort > ${name}.unambiguous.bam
+  samtools view -h ${bam} | python samclipy/samclipy.py --invert --minClip ${minClip} | samtools sort > ${name}.ambiguous.bam
+  samtools view -h ${bam} | python samclipy/samclipy.py --minClip ${minClip} | samtools sort > ${name}.unambiguous.bam
   samtools index ${name}.ambiguous.bam
   samtools index ${name}.unambiguous.bam
   """
