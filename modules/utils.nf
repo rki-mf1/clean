@@ -9,7 +9,7 @@ process compress_reads {
   val(tool)
 
   output:
-  tuple val(name), val(type), path("${name}*.${type}.fastq.gz")
+  tuple val(name), val(type), path("${name}*.${type}.fast{q,a}.gz")
 
   script:
   if ( mode == 'paired' ) {
@@ -17,10 +17,13 @@ process compress_reads {
     pigz -fc -p ${task.cpus} ${reads[0]} > ${name}_1.${type}.fastq.gz 
     pigz -fc -p ${task.cpus} ${reads[1]} > ${name}_2.${type}.fastq.gz
     """
+  } else if ( mode == 'single' || mode == 'fasta' ) {
+    dtype = (mode == 'single') ? 'q' : 'a'
+    """
+    pigz -fc -p ${task.cpus} ${reads} > ${name}.${type}.fast${dtype}.gz
+    """
   } else {
-    """
-    pigz -fc -p ${task.cpus} ${reads} > ${name}.${type}.fastq.gz
-    """
+    error "Invalid mode: ${mode}"
   }
 }
 

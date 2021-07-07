@@ -6,8 +6,8 @@ process filter_un_mapped_alignments {
     val(mode)
 
   output:
-    tuple val(name), val('clean'), path('*clean.fastq'), emit: cleaned_reads
-    tuple val(name), val('contamination'), path('*contamination.fastq'), emit: contaminated_reads
+    tuple val(name), val('clean'), path('*clean.fast{q,a}'), emit: cleaned_reads
+    tuple val(name), val('contamination'), path('*contamination.fast{q,a}'), emit: contaminated_reads
 
   script:
   if ( mode == 'paired' ) {
@@ -16,11 +16,14 @@ process filter_un_mapped_alignments {
     samtools fastq -F 2 -1 ${reads[0].baseName}.clean.fastq -2 ${reads[1].baseName}.clean.fastq ${name}.sam
     samtools fastq -f 2 -1 ${reads[0].baseName}.contamination.fastq -2 ${reads[1].baseName}.contamination.fastq ${name}.sam
     """
+  } else if ( mode == 'single' || mode == 'fasta' ) {
+    dtype = (mode == 'single') ? 'q' : 'a'
+    """
+    samtools fast${dtype} -f 4 -0 ${reads.baseName}.clean.fast${dtype} ${sam}
+    samtools fast${dtype} -F 4 -0 ${reads.baseName}.contamination.fast${dtype} ${sam}
+    """
   } else {
-    """
-    samtools fastq -f 4 -0 ${reads.baseName}.clean.fastq ${sam}
-    samtools fastq -F 4 -0 ${reads.baseName}.contamination.fastq ${sam}
-    """
+    error "Invalid mode: ${mode}"
   }
 }
 

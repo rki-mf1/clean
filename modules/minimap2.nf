@@ -13,8 +13,6 @@ process minimap2_fasta {
 
   output:
     tuple val(name), env(TOTALCONTIGS), emit: num_contigs
-    tuple val(name), val('clean'), path('*clean.fasta.gz'), emit: cleaned_contigs
-    tuple val(name), val('contamination'), path('*contamination.fasta.gz'), emit: contaminated_contigs
     tuple val(name), path('*.sam'), path(fasta), emit: sam // reads just for naming
 
   script:
@@ -25,12 +23,7 @@ process minimap2_fasta {
     TOTALCONTIGS=\$(grep '^>' ${fasta} | wc -l)
   fi
 
-  minimap2 -ax asm5 -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${fasta}
-
-  samtools fasta -f 4 -0 ${name}.clean.fasta ${name}.sam
-  samtools fasta -F 4 -0 ${name}.contamination.fasta ${name}.sam
-  pigz -p ${task.cpus} ${name}.clean.fasta
-  pigz -p ${task.cpus} ${name}.contamination.fasta
+  minimap2 -ax asm5 -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${fasta}s
   """
 }
 

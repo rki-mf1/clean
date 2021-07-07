@@ -245,6 +245,9 @@ workflow clean_fasta {
     concat_contamination( fasta_input_ch.map{ it -> it[0] }, 'minimap2', contamination )
     // map
     minimap2_fasta(fasta_input_ch, concat_contamination.out.fa)
+    // separate un/mapped reads, compress reads, make contamination bam
+    filter_un_mapped_alignments(minimap2_fasta.out.sam, 'fasta')
+    compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads), 'fasta', 'minimap2')
     make_contamination_bam(minimap2_fasta.out.sam, 'single', 'minimap2')
     // log & stats
     writeLog(fasta_input_ch.map{ it -> it[0] }, 'minimap2', fasta_input_ch.map{ it -> it[1] }, contamination)
@@ -252,7 +255,7 @@ workflow clean_fasta {
   emit:
     stats = minimap2Stats.out.tsv
     in = fasta_input_ch.map{ it -> it.plus(1, 'all') }
-    out = minimap2_fasta.out.cleaned_contigs.concat(minimap2_fasta.out.contaminated_contigs)
+    out = compress_reads.out
 } 
 
 workflow clean_nano {
