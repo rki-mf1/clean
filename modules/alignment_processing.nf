@@ -70,8 +70,9 @@ process filter_soft_clipped_alignments {
   val (tool)
   
   output:
-  path ('*.ambiguous.bam')
-  path ('*.ambiguous.bam.bai')
+  tuple val(name), val('contamination_ambiguous'), path ('*.ambiguous.bam'), emit: bam_am
+  tuple val(name), val('contamination_unambiguous'), path ('*.unambiguous.bam'), emit: bam_unam
+  tuple val(name), path ('*.bam.bai')
   
   script:
   """
@@ -80,5 +81,20 @@ process filter_soft_clipped_alignments {
   samtools view -h ${bam} | python samclipy/samclipy.py --minClip ${minClip} | samtools sort > ${name}.unambiguous.bam
   samtools index ${name}.ambiguous.bam
   samtools index ${name}.unambiguous.bam
+  """
+}
+
+process fastq_from_bam {
+  label 'minimap2'
+
+  input:
+  tuple val(name), val(type), path(bam)
+
+  output:
+  tuple val(name), val(type), path('*.fastq')
+
+  script:
+  """
+  samtools fastq -@ ${task.cpus} -0 ${bam.baseName}.fastq ${bam}
   """
 }
