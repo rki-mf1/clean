@@ -14,3 +14,8 @@ sp:
         fn: '*_report.tsv'
     mapping:
         fn: '*_stats.tsv'
+
+nanostat:
+  max_filesize: 4096
+  contents: >
+    Number, percentage and megabases of reads above quality cutoffs

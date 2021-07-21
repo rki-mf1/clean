@@ -388,7 +388,8 @@ workflow qc_nano {
     nanoplot(nano_input.concat(nano_output))
     format_nanoplot_report(nanoplot.out.html)
   emit:
-    format_nanoplot_report.out
+    html = format_nanoplot_report.out
+    txt = nanoplot.out.txt.map{ it -> it[2] }
 }
 
 workflow qc_illumina {
@@ -442,7 +443,8 @@ workflow {
     clean_nano(nano_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
     qc_nano(clean_nano.out.in, clean_nano.out.out)
     stast_nano = clean_nano.out.stats
-    nanoplot = qc_nano.out.collect()
+    nanoplot = qc_nano.out.html.collect().combine(qc_nano.out.txt.collect())
+    nanoplot.view()
   } else { nanoplot = Channel.fromPath('no_nanopore_input'); stast_nano = Channel.fromPath('no_nano_stats') }
 
   if (params.illumina) { 

@@ -21,7 +21,8 @@ process nanoplot {
   tuple val(name), val(type), path(reads)
 
   output:
-  tuple val(name), path("*.html"), path("*.png"), path("*.pdf"), file("${name}_${type}_read_quality.txt")
+  tuple val(name), path("*.html"), path("*.png"), path("*.pdf")
+  tuple val(name), val(type), path("${name}_${type}_read_quality.txt"), emit: txt
   tuple val(name), val(type), path("${name}_${type}_read_quality_report.html"), emit: html
   
   script:
