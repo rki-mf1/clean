@@ -9,13 +9,17 @@ process compress_reads {
   val(tool)
 
   output:
-  tuple val(name), val(type), path("${name}*.${type}.fast{q,a}.gz")
+  tuple val(name), val(type), path("*.fast{q,a}.gz")
 
   script:
   if ( mode == 'paired' ) {
     """
     pigz -fc -p ${task.cpus} ${reads[0]} > ${name}_1.${type}.fastq.gz 
     pigz -fc -p ${task.cpus} ${reads[1]} > ${name}_2.${type}.fastq.gz
+
+    if [ -f "${reads[2]}" ]; then
+      pigz -fc -p ${task.cpus} ${reads[2]} > ${name}.${type}_singleton.fastq.gz
+    fi
     """
   } else if ( mode == 'single' || mode == 'fasta' ) {
     dtype = (mode == 'single') ? 'q' : 'a'

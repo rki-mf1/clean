@@ -89,12 +89,19 @@ process fastq_from_bam {
 
   input:
   tuple val(name), val(type), path(bam)
+  val(mode)
 
   output:
   tuple val(name), val(type), path('*.fastq')
 
   script:
-  """
-  samtools fastq -@ ${task.cpus} -0 ${bam.baseName}.fastq ${bam}
-  """
+  if ( mode == 'paired' ) {
+    """
+    samtools fastq -@ ${task.cpus} -1 ${bam.baseName}_1.fastq -2 ${bam.baseName}_2.fastq -s ${bam.baseName}_singleton.fastq ${bam}
+    """
+  } else {
+    """
+    samtools fastq -@ ${task.cpus} -0 ${bam.baseName}.fastq ${bam}
+    """
+  }
 }

@@ -177,7 +177,7 @@ include { download_host; check_own; concat_contamination } from './modules/get_h
 include { minimap2_fasta; minimap2_nano; minimap2_illumina } from './modules/minimap2'
 include { bbduk } from './modules/bbmap'
 
-include { filter_un_mapped_alignments; make_contamination_bam; filter_soft_clipped_alignments } from './modules/alignment_processing'
+include { filter_un_mapped_alignments; make_contamination_bam; filter_soft_clipped_alignments ; fastq_from_bam } from './modules/alignment_processing'
 
 include { compress_reads; get_number_of_reads; minimap2Stats; bbdukStats; writeLog } from './modules/utils'
 
@@ -282,13 +282,19 @@ workflow clean_nano {
     }
     // map
     minimap2_nano(nano_input_ch, concat_contamination.out.fa)
-    // separate un/mapped reads, compress reads, make contamination bam
+    // separate un/mapped reads, make contamination bam
     filter_un_mapped_alignments(minimap2_nano.out.sam, 'single')
-    compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads), 'single', 'minimap2')
     make_contamination_bam(minimap2_nano.out.sam, 'single', 'minimap2')
     // filter soft clipped reads
     if (params.min_clip) {
       filter_soft_clipped_alignments(make_contamination_bam.out.contamination_bam, params.min_clip, 'minimap2')
+      fastq_from_bam(filter_soft_clipped_alignments.out.bam_am.mix(filter_soft_clipped_alignments.out.bam_unam), 'single')
+    }
+    // compress reads
+    if (params.min_clip) {
+      compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads).concat(fastq_from_bam.out), 'single', 'minimap2')
+    } else {
+      compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads), 'single', 'minimap2')
     }
     // log & stats
     writeLog(nano_input_ch.map{ it -> it[0] }, 'minimap2', nano_input_ch.map{ it -> it[1] }, contamination)
@@ -335,13 +341,19 @@ workflow clean_illumina {
     } else {
       // map
       minimap2_illumina(illumina_input_ch, concat_contamination.out.fa, 'paired')
-      // separate un/mapped reads, compress reads, make contamination bam
+      // separate un/mapped reads, make contamination bam
       filter_un_mapped_alignments(minimap2_illumina.out.sam, 'paired')
-      compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads), 'paired', 'minimap2')
       make_contamination_bam(minimap2_illumina.out.sam, 'paired', 'minimap2')
       // filter soft clipped reads
       if (params.min_clip) {
         filter_soft_clipped_alignments(make_contamination_bam.out.contamination_bam, params.min_clip, 'minimap2')
+        fastq_from_bam(filter_soft_clipped_alignments.out.bam_am.mix(filter_soft_clipped_alignments.out.bam_unam), 'paired')
+      }
+      // compress reads
+      if (params.min_clip) {
+        compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads).concat(fastq_from_bam.out), 'paired', 'minimap2')
+      } else {
+        compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads), 'paired', 'minimap2')
       }
       // log & stats
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'minimap2', illumina_input_ch.map{ it -> it[1] }, contamination)
@@ -390,13 +402,19 @@ workflow clean_illumina_single {
     } else {
       // map
       minimap2_illumina(illumina_single_end_input_ch, concat_contamination.out.fa, 'single')
-      // separate un/mapped reads, compress reads, make contamination bam
+      // separate un/mapped reads, make contamination bam
       filter_un_mapped_alignments(minimap2_illumina.out.sam, 'single')
-      compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads), 'single', 'minimap2')
       make_contamination_bam(minimap2_illumina.out.sam, 'single', 'minimap2')
       // filter soft clipped reads
       if (params.min_clip){
         filter_soft_clipped_alignments(make_contamination_bam.out.contamination_bam, params.min_clip, 'minimap2')
+        fastq_from_bam(filter_soft_clipped_alignments.out.bam_am.mix(filter_soft_clipped_alignments.out.bam_unam), 'single')
+      }
+      // compress reads
+      if (params.min_clip) {
+        compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads).concat(fastq_from_bam.out), 'single', 'minimap2')
+      } else {
+        compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads), 'single', 'minimap2')
       }
       // log & stats
       writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'minimap2', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
