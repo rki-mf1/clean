@@ -66,8 +66,7 @@ process check_own {
 }
 
 process concat_contamination {
-  label 'minimap2' // sets conda env (and cpus)
-  label 'smallTask' // overrides cpus
+  label 'minimap2'
   
   publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "db.fa.gz"
   publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "db.fa.fai"
@@ -84,7 +83,8 @@ process concat_contamination {
   script:
   """
   cat * > db.fa.gz
-  samtools faidx db.fa.gz
-  mv db.fa.gz.fai db.fa.fai
+  unpigz -k -p ${task.cpus} db.fa.gz
+  samtools faidx db.fa
+  rm db.fa
   """
 }
