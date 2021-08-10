@@ -23,7 +23,7 @@ process minimap2_fasta {
     TOTALCONTIGS=\$(grep '^>' ${fasta} | wc -l)
   fi
 
-  minimap2 -ax asm5 -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${fasta}s
+  minimap2 -ax asm5 -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${fasta}
   """
 }
 
