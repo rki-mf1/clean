@@ -70,13 +70,24 @@ process minimap2Stats {
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "stats.txt" 
 
   input:
-  tuple val(name), path(idxstats), val (totalreads)
+  tuple val(name), path(idxstats), val (totalreads), val(ambiguousreads)
 
   output:
   tuple val(name), path ('stats.txt')
   path("${name}_minimap2_stats.tsv"), emit: tsv
 
   script:
+
+  if ("${ambiguousreads}" == 'NULL'){
+    header = 'Sample Name\tClean reads\tUnambiguous mapped reads'
+    visible_val = ""
+    val = '0'
+  } else {
+    header = 'Sample Name\tClean reads\tUnambiguous mapped reads\tAmbiguous mapped reads'
+    visible_val = "\t${ambiguousreads}"
+    val = "${ambiguousreads}"
+  }
+
   """
   MAPPEDSUM=\$(awk -F '\\t' '{sum += \$3} END {print sum}' idxstats.tsv)
   UNPROMAPPEDSUM=\$(awk -F '\\t' '/^[^*]/ {sum += \$4} END {print sum}' idxstats.tsv)
@@ -95,8 +106,8 @@ process minimap2Stats {
 
   touch ${name}_minimap2_stats.tsv
   cat <<EOF >> ${name}_minimap2_stats.tsv
-  Sample Name\tTotal reads\tMapped reads
-  ${name}\t${totalreads}\t\$PROPMAP
+  ${header}
+  ${name}\t\$((${totalreads}-\$PROPMAP))\t\$((\$PROPMAP-${val}))${visible_val}
   EOF
   """
 }

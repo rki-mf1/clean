@@ -2,7 +2,7 @@ custom_data:
     mapping:
         file_format: 'tsv'
         section_name: 'Contamination statistics'
-        description: "Mapped and unmapped reads (or contigs) for the mapping result against the contamination. Short and sweet: mapped = contamination."
+        description: "Mapped and unmapped reads (or contigs) for the mapping result against the contamination. Short and sweet: mapped = contamination.<p>If you applied a soft-clipped filtering (<code>--min_clip</code>), you also see the number of reads with not passing the filter (<em>Ambiguous mapped read</em>)."
         anchor: 'contamination'
         plot_type: 'bargraph'
         pconfig:
