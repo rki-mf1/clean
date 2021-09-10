@@ -84,6 +84,7 @@ process multiqc {
   path(nanoplot)
   path(quast)
   path(mapping_stats)
+  path(idxstats)
     
   output:
   path "multiqc_report.html"

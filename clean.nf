@@ -177,7 +177,7 @@ include { download_host; check_own; concat_contamination } from './modules/get_h
 include { minimap2_fasta; minimap2_nano; minimap2_illumina } from './modules/minimap2'
 include { bbduk } from './modules/bbmap'
 
-include { filter_un_mapped_alignments; make_mapped_bam; filter_soft_clipped_alignments ; fastq_from_bam } from './modules/alignment_processing'
+include { filter_un_mapped_alignments; make_mapped_bam; filter_soft_clipped_alignments ; fastq_from_bam ; idxstats_from_bam as idxstats_from_bam_one ; idxstats_from_bam as idxstats_from_bam_two } from './modules/alignment_processing'
 
 include { compress_reads; get_number_of_reads as get_number_of_reads; get_number_of_reads as get_number_of_ambiguous_reads; minimap2Stats; bbdukStats; writeLog } from './modules/utils'
 
@@ -285,11 +285,13 @@ workflow clean_nano {
     // separate un/mapped reads, make contamination bam
     filter_un_mapped_alignments(minimap2_nano.out.sam, 'single')
     make_mapped_bam(minimap2_nano.out.sam, 'single', 'minimap2')
+    idxstats_from_bam_one(make_mapped_bam.out.contamination_bam)
     // filter soft clipped reads
     if (params.min_clip) {
       filter_soft_clipped_alignments(make_mapped_bam.out.contamination_bam, params.min_clip, 'minimap2')
       fastq_from_bam(filter_soft_clipped_alignments.out.bam_am.mix(filter_soft_clipped_alignments.out.bam_unam), 'single')
       number_ambiguous_reads_ch = get_number_of_ambiguous_reads(fastq_from_bam.out.filter{ it[1] == 'ambiguous'}.map{ it -> [it[0]]+[it[2]] }, 'single')
+      idxstats_from_bam_two(filter_soft_clipped_alignments.out.bam_am.map{ it -> [it[0]]+[it[2]] }.mix(filter_soft_clipped_alignments.out.bam_unam.map{ it -> [it[0]]+[it[2]] }))
     } else {
       number_ambiguous_reads_ch = nano_input_ch.map{ it -> it[0] }.combine(Channel.from('NULL'))
     }
@@ -306,6 +308,7 @@ workflow clean_nano {
     minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_reads.out).join( number_ambiguous_reads_ch ) )
   emit:
     stats = minimap2Stats.out.tsv
+    idxstats = idxstats_from_bam_one.out.mix(idxstats_from_bam_two.out).collect()
     in = nano_input_ch.map{ it -> it.plus(1, 'all') }
     out = compress_reads.out
 } 
@@ -486,8 +489,9 @@ workflow qc{
     nanoplot
     quast
     mapping_stats
+    idxstats
   main:
-    multiqc(multiqc_config, fastqc, nanoplot, quast, mapping_stats)
+    multiqc(multiqc_config, fastqc, nanoplot, quast, mapping_stats, idxstats)
 }
 
 /************************** 
@@ -510,6 +514,7 @@ workflow {
     clean_nano(nano_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
     qc_nano(clean_nano.out.in, clean_nano.out.out)
     stast_nano = clean_nano.out.stats
+    idxstast_nano = clean_nano.out.idxstats
     nanoplot = qc_nano.out.collect()
   } else { nanoplot = Channel.fromPath('no_nanopore_input'); stast_nano = Channel.fromPath('no_nano_stats') }
 
@@ -527,7 +532,7 @@ workflow {
     fastqc_single = qc_illumina_single.out
   } else { fastqc_single = Channel.fromPath('no_illumina_single_input'); stast_illumina_single = Channel.fromPath('no_illumina_single_stats') }
 
-  qc(multiqc_config, fastqc.concat(fastqc_single).collect(), nanoplot, quast, stast_fasta.concat(stast_nano).concat(stast_illumina).concat(stast_illumina_single).collect())
+  qc(multiqc_config, fastqc.concat(fastqc_single).collect(), nanoplot, quast, idxstast_nano, stast_fasta.concat(stast_nano).concat(stast_illumina).concat(stast_illumina_single).collect())
 }
 
 /**************************  
