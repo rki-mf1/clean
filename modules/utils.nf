@@ -141,8 +141,8 @@ process bbdukStats {
 
   touch ${name}_bbduk_stats.tsv
   cat <<EOF >> ${name}_bbduk_stats.tsv
-  Sample Name\tTotal reads\tMapped reads
-  ${name}\t\$TOTAL\t\$MNUM
+  Sample Name\tClean reads\tMapped reads
+  ${name}\t\$((\$TOTAL-\$MNUM))\t\$MNUM
   EOF
   """
 }

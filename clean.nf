@@ -289,9 +289,9 @@ workflow clean_nano {
     if (params.min_clip) {
       filter_soft_clipped_alignments(make_mapped_bam.out.contamination_bam, params.min_clip, 'minimap2')
       fastq_from_bam(filter_soft_clipped_alignments.out.bam_am.mix(filter_soft_clipped_alignments.out.bam_unam), 'single')
-      foo = get_number_of_ambiguous_reads(fastq_from_bam.out.filter{ it[1] == 'ambiguous'}.map{ it -> [it[0]]+[it[2]] }, 'single')
+      number_ambiguous_reads_ch = get_number_of_ambiguous_reads(fastq_from_bam.out.filter{ it[1] == 'ambiguous'}.map{ it -> [it[0]]+[it[2]] }, 'single')
     } else {
-      foo = nano_input_ch.map{ it -> it[0] }.combine(Channel.from('NULL'))
+      number_ambiguous_reads_ch = nano_input_ch.map{ it -> it[0] }.combine(Channel.from('NULL'))
     }
     // compress reads
     if (params.min_clip) {
@@ -303,7 +303,7 @@ workflow clean_nano {
     writeLog(nano_input_ch.map{ it -> it[0] }, 'minimap2', nano_input_ch.map{ it -> it[1] }, contamination)
     get_number_of_reads(nano_input_ch, 'single')
     
-    minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_reads.out).join( foo ) )
+    minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_reads.out).join( number_ambiguous_reads_ch ) )
   emit:
     stats = minimap2Stats.out.tsv
     in = nano_input_ch.map{ it -> it.plus(1, 'all') }
@@ -352,6 +352,9 @@ workflow clean_illumina {
       if (params.min_clip) {
         filter_soft_clipped_alignments(make_mapped_bam.out.contamination_bam, params.min_clip, 'minimap2')
         fastq_from_bam(filter_soft_clipped_alignments.out.bam_am.mix(filter_soft_clipped_alignments.out.bam_unam), 'paired')
+        number_ambiguous_reads_ch = get_number_of_ambiguous_reads(fastq_from_bam.out.filter{ it[1] == 'ambiguous'}.map{ it -> [it[0]]+[it[2]] }, 'paired')
+      } else {
+        number_ambiguous_reads_ch = illumina_input_ch.map{ it -> it[0] }.combine(Channel.from('NULL'))
       }
       // compress reads
       if (params.min_clip) {
@@ -362,7 +365,7 @@ workflow clean_illumina {
       // log & stats
       writeLog(illumina_input_ch.map{ it -> it[0] }, 'minimap2', illumina_input_ch.map{ it -> it[1] }, contamination)
       get_number_of_reads(illumina_input_ch, 'paired')
-      minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_reads.out))
+      minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_reads.out).join( number_ambiguous_reads_ch ) )
       stats = minimap2Stats.out.tsv
     }
   emit:
@@ -413,6 +416,9 @@ workflow clean_illumina_single {
       if (params.min_clip){
         filter_soft_clipped_alignments(make_mapped_bam.out.contamination_bam, params.min_clip, 'minimap2')
         fastq_from_bam(filter_soft_clipped_alignments.out.bam_am.mix(filter_soft_clipped_alignments.out.bam_unam), 'single')
+        number_ambiguous_reads_ch = get_number_of_ambiguous_reads(fastq_from_bam.out.filter{ it[1] == 'ambiguous'}.map{ it -> [it[0]]+[it[2]] }, 'single')
+      } else {
+        number_ambiguous_reads_ch = illumina_single_end_input_ch.map{ it -> it[0] }.combine(Channel.from('NULL'))
       }
       // compress reads
       if (params.min_clip) {
@@ -423,7 +429,7 @@ workflow clean_illumina_single {
       // log & stats
       writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'minimap2', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
       get_number_of_reads(illumina_single_end_input_ch, 'single')
-      minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_reads.out))
+      minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_reads.out).join( number_ambiguous_reads_ch ) )
       stats = minimap2Stats.out.tsv
     }
     emit:
