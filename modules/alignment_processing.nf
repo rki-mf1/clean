@@ -105,3 +105,18 @@ process fastq_from_bam {
     """
   }
 }
+
+process idxstats_from_bam {
+  label 'minimap2'
+
+  input:
+  tuple val(name), path(bam)
+
+  output:
+  path('*_idxstats.tsv')
+
+  script:
+  """
+  samtools idxstats ${bam} > ${bam.baseName}_idxstats.tsv
+  """
+}
