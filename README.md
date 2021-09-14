@@ -23,6 +23,10 @@ You can simply specify provided hosts and controls for the cleanup or use your o
 If Nanopore (`--nano`) and Illumina (`--illumina`) reads and control(s) (`--control`) are set, the control is selectively concatenated with the host and own FASTA: `dcs` for Nanopore DNA-Seq, `eno` for Nanopore RNA-Seq and `phix` from Illumina data.
 Else, specified host, control and user defined FASTA files are concatenated.
 
+### Filter soft-clipped contamination reads
+
+We saw many soft-clipped reads after the mapping, that probably aren't contamination. With `--min_clip` the user can set a threshold for the number of soft-clipped positions (sum of both ends). If `--min_clip` is greater 1, the total number is considered, else the fraction of soft-clipped positions to the read length. The output consists of all mapped, soft-clipped and mapped reads passing the filer.
+
 ## Requirements
 
 ### Workflow management
@@ -37,7 +41,7 @@ and/or
 
 - [Docker](https://docs.docker.com/get-docker/)
 
-In default `docker` is used; tp switch to `conda`use `-profile conda`.
+In default `docker` is used; to switch to `conda` use `-profile conda`.
 
 ## Execution examples
 
