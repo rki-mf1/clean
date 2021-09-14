@@ -605,6 +605,9 @@ def helpMSG() {
     ${c_green}--bbduk_qin${c_reset}     set quality ASCII encoding for bbduk [default: $params.bbduk_qin; options are: 64, 33, auto]
     ${c_green}--reads_rna${c_reset}           add this flag for noisy direct RNA-Seq Nanopore data [default: $params.reads_rna]
 
+    ${c_green}--min_clip${c_reset}      filter mapped reads by soft-clipped lenth (left + right). If >= 1 total
+                     number; if < 1 relative to read length
+
     ${c_yellow}Compute options:${c_reset}
     --cores             max cores per process for local use [default $params.cores]
     --max_cores         max cores used on the machine for local use [default $params.max_cores]
