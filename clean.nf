@@ -251,7 +251,7 @@ workflow clean_fasta {
     make_mapped_bam(minimap2_fasta.out.sam, 'single', 'minimap2')
     // log & stats
     writeLog(fasta_input_ch.map{ it -> it[0] }, 'minimap2', fasta_input_ch.map{ it -> it[1] }, contamination)
-    minimap2Stats(make_mapped_bam.out.idxstats.join(minimap2_fasta.out.num_contigs))
+    minimap2Stats(make_mapped_bam.out.idxstats.join(minimap2_fasta.out.num_contigs).combine(Channel.from('NULL')))
   emit:
     stats = minimap2Stats.out.tsv
     in = fasta_input_ch.map{ it -> it.plus(1, 'all') }
