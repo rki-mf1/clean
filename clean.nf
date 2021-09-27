@@ -249,11 +249,13 @@ workflow clean_fasta {
     filter_un_mapped_alignments(minimap2_fasta.out.sam, 'fasta')
     compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads), 'fasta', 'minimap2')
     make_mapped_bam(minimap2_fasta.out.sam, 'single', 'minimap2')
+    idxstats_from_bam_mapped(make_mapped_bam.out.contamination_bam)
     // log & stats
     writeLog(fasta_input_ch.map{ it -> it[0] }, 'minimap2', fasta_input_ch.map{ it -> it[1] }, contamination)
     minimap2Stats(make_mapped_bam.out.idxstats.join(minimap2_fasta.out.num_contigs).combine(Channel.from('NULL')))
   emit:
     stats = minimap2Stats.out.tsv
+    idxstats = idxstats_from_bam_mapped.out
     in = fasta_input_ch.map{ it -> it.plus(1, 'all') }
     out = compress_reads.out
 } 
@@ -519,6 +521,7 @@ workflow {
     clean_fasta(fasta_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
     qc_fasta(clean_fasta.out.in, clean_fasta.out.out)
     stast_fasta = clean_fasta.out.stats
+    clean_fasta = clean_fasta.out.idxstats
     quast = qc_fasta.out.collect()
   } else { quast = Channel.fromPath('no_fasta_input'); stast_fasta = Channel.fromPath('no_fasta_stats') }
 
@@ -546,7 +549,7 @@ workflow {
     fastqc_single = qc_illumina_single.out
   } else { fastqc_single = Channel.fromPath('no_illumina_single_input'); stast_illumina_single = Channel.fromPath('no_illumina_single_stats') ; idxstast_illumina_single = Channel.fromPath('no_illumina_single_idxstast') }
 
-  qc(multiqc_config, fastqc.concat(fastqc_single).collect(), nanoplot, quast, idxstast_nano.concat(idxstast_illumina).concat(idxstast_illumina_single).collect(), stast_fasta.concat(stast_nano).concat(stast_illumina).concat(stast_illumina_single).collect())
+  qc(multiqc_config, fastqc.concat(fastqc_single).collect(), nanoplot, quast, clean_fasta.concat(idxstast_nano).concat(idxstast_illumina).concat(idxstast_illumina_single).collect(), stast_fasta.concat(stast_nano).concat(stast_illumina).concat(stast_illumina_single).collect())
 }
 
 /**************************  
