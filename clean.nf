@@ -520,36 +520,36 @@ workflow {
   if (params.fasta) {
     clean_fasta(fasta_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
     qc_fasta(clean_fasta.out.in, clean_fasta.out.out)
-    stast_fasta = clean_fasta.out.stats
-    clean_fasta = clean_fasta.out.idxstats
+    stats_fasta = clean_fasta.out.stats
+    idxstats_fasta = clean_fasta.out.idxstats
     quast = qc_fasta.out.collect()
-  } else { quast = Channel.fromPath('no_fasta_input'); stast_fasta = Channel.fromPath('no_fasta_stats') }
+  } else { quast = Channel.fromPath('no_fasta_input'); stats_fasta = Channel.fromPath('no_fasta_stats') ; idxstats_fasta = Channel.fromPath('no_fasta_idxstats') }
 
   if (params.nano) { 
     clean_nano(nano_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
     qc_nano(clean_nano.out.in, clean_nano.out.out)
-    stast_nano = clean_nano.out.stats
-    idxstast_nano = clean_nano.out.idxstats
+    stats_nano = clean_nano.out.stats
+    idxstats_nano = clean_nano.out.idxstats
     nanoplot = qc_nano.out.collect()
-  } else { nanoplot = Channel.fromPath('no_nanopore_input'); stast_nano = Channel.fromPath('no_nano_stats') ; idxstast_nano = Channel.fromPath('no_nano_idxstast') }
+  } else { nanoplot = Channel.fromPath('no_nanopore_input'); stats_nano = Channel.fromPath('no_nano_stats') ; idxstats_nano = Channel.fromPath('no_nano_idxstats') }
 
   if (params.illumina) { 
     clean_illumina(illumina_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
     qc_illumina(clean_illumina.out.in, clean_illumina.out.out)
-    stast_illumina = clean_illumina.out.stats
-    idxstast_illumina = clean_illumina.out.idxstats
+    stats_illumina = clean_illumina.out.stats
+    idxstats_illumina = clean_illumina.out.idxstats
     fastqc = qc_illumina.out
-  } else { fastqc = Channel.fromPath('no_illumina_input'); stast_illumina = Channel.fromPath('no_illumina_stats') ; idxstast_illumina = Channel.fromPath('no_illumina_idxstast') }
+  } else { fastqc = Channel.fromPath('no_illumina_input'); stats_illumina = Channel.fromPath('no_illumina_stats') ; idxstats_illumina = Channel.fromPath('no_illumina_idxstats') }
 
   if (params.illumina_single_end) { 
     clean_illumina_single(illumina_single_end_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
     qc_illumina_single(clean_illumina_single.out.in, clean_illumina_single.out.out)
-    stast_illumina_single = clean_illumina_single.out.stats
-    idxstast_illumina_single = clean_illumina_single.out.idxstats
+    stats_illumina_single = clean_illumina_single.out.stats
+    idxstats_illumina_single = clean_illumina_single.out.idxstats
     fastqc_single = qc_illumina_single.out
-  } else { fastqc_single = Channel.fromPath('no_illumina_single_input'); stast_illumina_single = Channel.fromPath('no_illumina_single_stats') ; idxstast_illumina_single = Channel.fromPath('no_illumina_single_idxstast') }
+  } else { fastqc_single = Channel.fromPath('no_illumina_single_input'); stats_illumina_single = Channel.fromPath('no_illumina_single_stats') ; idxstats_illumina_single = Channel.fromPath('no_illumina_single_idxstats') }
 
-  qc(multiqc_config, fastqc.concat(fastqc_single).collect(), nanoplot, quast, clean_fasta.concat(idxstast_nano).concat(idxstast_illumina).concat(idxstast_illumina_single).collect(), stast_fasta.concat(stast_nano).concat(stast_illumina).concat(stast_illumina_single).collect())
+  qc(multiqc_config, fastqc.concat(fastqc_single).collect(), nanoplot, quast, idxstats_fasta.concat(idxstats_nano).concat(idxstats_illumina).concat(idxstats_illumina_single).collect(), stats_fasta.concat(stats_nano).concat(stats_illumina).concat(stats_illumina_single).collect())
 }
 
 /**************************  
