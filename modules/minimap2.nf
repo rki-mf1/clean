@@ -25,7 +25,7 @@ process minimap2_fasta {
     TOTALCONTIGS=\$(grep '^>' ${fasta} | wc -l)
   fi
 
-  minimap2 -ax asm5 -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${fasta}
+  minimap2 -ax asm5 -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${fasta}
 
   samtools fasta -f 4 -0 ${name}.clean.fasta ${name}.sam
   samtools fasta -F 4 -0 ${name}.contamination.fasta ${name}.sam
@@ -62,7 +62,7 @@ process minimap2_nano {
     PARAMS="-ax splice -k14"
   fi
 
-  minimap2 \$PARAMS -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${reads}
+  minimap2 \$PARAMS -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${reads}
 
   samtools fastq -f 4 -0 ${reads.baseName}.clean.fastq ${name}.sam
   samtools fastq -F 4 -0 ${reads.baseName}.contamination.fastq ${name}.sam
@@ -92,7 +92,7 @@ process minimap2_illumina {
   script:
   if ( mode == 'paired' ) {
     """
-    minimap2 -ax sr -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${reads[0]} ${reads[1]}
+    minimap2 -ax sr -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${reads[0]} ${reads[1]}
     
     # Use samtools -F 2 to discard only reads mapped in proper pair:
     samtools fastq -F 2 -1 ${reads[0].baseName}.clean.fastq -2 ${reads[1].baseName}.clean.fastq ${name}.sam
@@ -104,7 +104,7 @@ process minimap2_illumina {
     """
   } else {
     """
-    minimap2 -ax sr -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${reads}
+    minimap2 -ax sr -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${reads}
     
     samtools fastq -f 4 -0 ${reads.baseName}.clean.fastq ${name}.sam
     samtools fastq -F 4 -0 ${reads.baseName}.contamination.fastq ${name}.sam
