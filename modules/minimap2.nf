@@ -23,7 +23,8 @@ process minimap2_fasta {
     TOTALCONTIGS=\$(grep '^>' ${fasta} | wc -l)
   fi
 
-  minimap2 -ax asm5 -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${fasta}
+  minimap2 -ax asm5 -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${fasta}
+
   """
 }
 
@@ -43,8 +44,8 @@ process minimap2_nano {
   if [[ ${params.reads_rna} != 'false' ]]; then
     PARAMS="-ax splice -k14"
   fi
-
-  minimap2 \$PARAMS -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${reads}
+  
+  minimap2 \$PARAMS -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${reads}
   """
 }
 
@@ -62,11 +63,11 @@ process minimap2_illumina {
   script:
   if ( mode == 'paired' ) {
     """
-    minimap2 -ax sr -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${reads[0]} ${reads[1]}
+    minimap2 -ax sr -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${reads[0]} ${reads[1]}
     """
   } else {
     """
-    minimap2 -ax sr -N 5 --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${reads}
+    minimap2 -ax sr -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${reads}
     """
   }
 }
