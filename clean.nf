@@ -15,6 +15,9 @@ def parameter_diff = params.keySet() - valid_params
 if (parameter_diff.size() != 0){
     exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
 }
+if (params.illumina_single_end.contains('.clean.') || params.illumina.contains('.clean.') || params.nano.contains('.clean.') || params.fasta.contains('.clean.') ) { 
+  exit 1, "ERROR: Input files cannot contain `.clean.`\n" 
+}
 
 /************************** 
 * META & HELP MESSAGES 
