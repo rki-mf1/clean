@@ -74,7 +74,7 @@ process concat_contamination {
   input:
   val name
   val tool
-  path '*'
+  path fastas
 
   output:
   path 'db.fa.gz', emit: fa
@@ -82,9 +82,12 @@ process concat_contamination {
   
   script:
   """
-  cat * > db.fa.gz
-  unpigz -k -p ${task.cpus} db.fa.gz
-  samtools faidx db.fa
-  rm db.fa
+  for FASTA in ${fastas}
+  do
+      NAME="\${FASTA%%.*}"
+      zcat \$FASTA | awk -v n=\$NAME '/>/{sub(">","&"n"_")}1' | bgzip -@ ${task.cpus} -c >> db.fa.gz
+  done
+  samtools faidx db.fa.gz
+  mv db.fa.gz.fai db.fa.fai
   """
 }

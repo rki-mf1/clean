@@ -235,16 +235,9 @@ workflow prepare_host {
 workflow clean_fasta {
   take: 
     fasta_input_ch
-    host
-    checkedOwn
-    rRNAChannel
-
+    contamination
+    
   main:
-    contamination = host.collect()
-      .mix(illuminaControlFastaChannel)
-      .mix(nanoControlFastaChannel)
-      .mix(checkedOwn)
-      .mix(rRNAChannel).collect()
     concat_contamination( fasta_input_ch.map{ it -> it[0] }, 'minimap2', contamination )
     // map
     minimap2_fasta(fasta_input_ch, concat_contamination.out.fa)
@@ -266,26 +259,11 @@ workflow clean_fasta {
 workflow clean_nano {
   take: 
     nano_input_ch
-    host
-    checkedOwn
-    rRNAChannel
+    contamination
 
   main:
-    if (params.nano && params.illumina) {
-      contamination = host.collect()
-        .mix(nanoControlFastaChannel)
-        .mix(checkedOwn)
-        .mix(rRNAChannel).collect()
-      concat_contamination( nano_input_ch.map{ it -> it[0] }, 'minimap2', contamination )
-    } else {
-      contamination = host.collect()
-        .mix(nanoControlFastaChannel)
-        .mix(illuminaControlFastaChannel)
-        .mix(checkedOwn)
-        .mix(rRNAChannel).collect()
-      concat_contamination( nano_input_ch.map{ it -> it[0] }, 'minimap2', contamination )
-    }
-    // map
+    concat_contamination( nano_input_ch.map{ it -> it[0] }, 'minimap2', contamination )
+    // rename_reads(nano_input_ch, 'single')
     minimap2_nano(nano_input_ch, concat_contamination.out.fa)
     // separate un/mapped reads, make contamination bam
     filter_un_mapped_alignments(minimap2_nano.out.sam, 'single')
@@ -323,26 +301,11 @@ workflow clean_nano {
 workflow clean_illumina {
   take: 
     illumina_input_ch
-    host
-    checkedOwn
-    rRNAChannel
+    contamination
 
   main:
-    if (params.nano && params.illumina) {
-      contamination = host.collect()
-        .mix(illuminaControlFastaChannel)
-        .mix(checkedOwn)
-        .mix(rRNAChannel).collect()
-      concat_contamination( illumina_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
-    } else {
-      contamination = host.collect()
-        .mix(nanoControlFastaChannel)
-        .mix(illuminaControlFastaChannel)
-        .mix(checkedOwn)
-        .mix(rRNAChannel).collect()
-      concat_contamination( illumina_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
-    }
-
+    concat_contamination( illumina_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
+    // rename_reads(illumina_input_ch, 'paired')
     if (params.bbduk){
       // map
       bbduk(illumina_input_ch, concat_contamination.out.fa, 'paired')
@@ -392,26 +355,11 @@ workflow clean_illumina {
 workflow clean_illumina_single {
   take:
     illumina_single_end_input_ch
-    host
-    checkedOwn
-    rRNAChannel
+    contamination
 
   main:
-    if (params.nano && params.illumina) {
-      contamination = host.collect()
-        .mix(illuminaControlFastaChannel)
-        .mix(checkedOwn)
-        .mix(rRNAChannel).collect()
-      concat_contamination( illumina_single_end_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
-    } else {
-      contamination = host.collect()
-        .mix(nanoControlFastaChannel)
-        .mix(illuminaControlFastaChannel)
-        .mix(checkedOwn)
-        .mix(rRNAChannel).collect()
-      concat_contamination( illumina_single_end_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
-    }
-
+    concat_contamination( illumina_single_end_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
+    // rename_reads(illumina_single_end_input_ch, 'single')
     if (params.bbduk){
       // map
       bbduk(illumina_single_end_input_ch, concat_contamination.out.fa, 'single')
@@ -519,9 +467,15 @@ workflow qc{
 
 workflow {
   prepare_host()
+  
+  contamination = prepare_host.out.host.collect()
+        .mix(nanoControlFastaChannel)
+        .mix(illuminaControlFastaChannel)
+        .mix(prepare_host.out.checkedOwn)
+        .mix(rRNAChannel).collect()
 
   if (params.fasta) {
-    clean_fasta(fasta_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
+    clean_fasta(fasta_input_ch, contamination)
     qc_fasta(clean_fasta.out.in, clean_fasta.out.out)
     stats_fasta = clean_fasta.out.stats
     idxstats_fasta = clean_fasta.out.idxstats
@@ -529,7 +483,7 @@ workflow {
   } else { quast = Channel.fromPath('no_fasta_input'); stats_fasta = Channel.fromPath('no_fasta_stats') ; idxstats_fasta = Channel.fromPath('no_fasta_idxstats') }
 
   if (params.nano) { 
-    clean_nano(nano_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
+    clean_nano(nano_input_ch, contamination)
     qc_nano(clean_nano.out.in, clean_nano.out.out)
     stats_nano = clean_nano.out.stats
     idxstats_nano = clean_nano.out.idxstats
@@ -537,7 +491,7 @@ workflow {
   } else { nanoplot = Channel.fromPath('no_nanopore_input'); stats_nano = Channel.fromPath('no_nano_stats') ; idxstats_nano = Channel.fromPath('no_nano_idxstats') }
 
   if (params.illumina) { 
-    clean_illumina(illumina_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
+    clean_illumina(illumina_input_ch, contamination)
     qc_illumina(clean_illumina.out.in, clean_illumina.out.out)
     stats_illumina = clean_illumina.out.stats
     idxstats_illumina = clean_illumina.out.idxstats
@@ -545,7 +499,7 @@ workflow {
   } else { fastqc = Channel.fromPath('no_illumina_input'); stats_illumina = Channel.fromPath('no_illumina_stats') ; idxstats_illumina = Channel.fromPath('no_illumina_idxstats') }
 
   if (params.illumina_single_end) { 
-    clean_illumina_single(illumina_single_end_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
+    clean_illumina_single(illumina_single_end_input_ch, contamination)
     qc_illumina_single(clean_illumina_single.out.in, clean_illumina_single.out.out)
     stats_illumina_single = clean_illumina_single.out.stats
     idxstats_illumina_single = clean_illumina_single.out.idxstats
