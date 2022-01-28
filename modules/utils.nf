@@ -1,52 +1,3 @@
-process rename_reads {
-  label 'smallTask'
-
-  input:
-  tuple val(name), path(reads)
-  val(mode)
-
-  output:
-  tuple val(name), path("R*.fastq")
-
-  script:
-  if ( mode == 'paired' ) {
-    """
-    # replace the space in the header to retain the full read IDs after mapping (the mapper would split the ID otherwise after the first space)
-    # this is working for ENA reads that have at the end of a read id '/1' or '/2'
-    EXAMPLE_ID=\$(zcat ${reads[0]} | head -1)
-    if [[ \$EXAMPLE_ID == */1 ]]; then 
-      if [[ ${reads[0]} =~ \\.gz\$ ]]; then
-        zcat ${reads[0]} | sed 's/ /DECONTAMINATE/g' > R1.fastq
-      else
-        sed 's/ /DECONTAMINATE/g' ${reads[0]} > R1.fastq
-      fi
-      if [[ ${reads[1]} =~ \\.gz\$ ]]; then
-        zcat ${reads[1]} | sed 's/ /DECONTAMINATE/g' > R2.fastq
-      else
-        sed 's/ /DECONTAMINATE/g' ${reads[1]} > R2.fastq
-      fi
-    else
-      # this is for paried-end SRA reads that don't follow the ENA pattern
-      if [[ ${reads[0]} =~ \\.gz\$ ]]; then
-        zcat ${reads[0]} > R1.fastq
-        zcat ${reads[1]} > R2.fastq
-      else
-        mv ${reads[0]} R1.fastq
-        mv ${reads[1]} R2.fastq
-      fi
-    fi
-    """
-  } else {  
-    """
-    if [[ ${reads} =~ \\.gz\$ ]]; then
-      zcat ${reads} | sed 's/ /DECONTAMINATE/g' > R.fastq
-    else
-      sed 's/ /DECONTAMINATE/g' ${reads} > R.fastq
-    fi
-    """
-  }
-}
-
 process compress_reads {
   label 'basics'
 
@@ -58,18 +9,25 @@ process compress_reads {
   val(tool)
 
   output:
-  tuple val(name), val(type), path("${name}*.${type}.fastq.gz")
+  tuple val(name), val(type), path("*.fast{q,a}.gz")
 
   script:
   if ( mode == 'paired' ) {
     """
     pigz -fc -p ${task.cpus} ${reads[0]} > ${name}_1.${type}.fastq.gz 
     pigz -fc -p ${task.cpus} ${reads[1]} > ${name}_2.${type}.fastq.gz
+
+    if [ -f "${reads[2]}" ]; then
+      pigz -fc -p ${task.cpus} ${reads[2]} > ${name}.${type}_singleton.fastq.gz
+    fi
+    """
+  } else if ( mode == 'single' || mode == 'fasta' ) {
+    dtype = (mode == 'single') ? 'q' : 'a'
+    """
+    pigz -fc -p ${task.cpus} ${reads} > ${name}.${type}.fast${dtype}.gz
     """
   } else {
-    """
-    pigz -fc -p ${task.cpus} ${reads} > ${name}.${type}.fastq.gz
-    """
+    error "Invalid mode: ${mode}"
   }
 }
 
@@ -112,13 +70,24 @@ process minimap2Stats {
   publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "stats.txt" 
 
   input:
-  tuple val(name), path(idxstats), val (totalreads)
+  tuple val(name), path(idxstats), val (totalreads), val(ambiguousreads)
 
   output:
   tuple val(name), path ('stats.txt')
   path("${name}_minimap2_stats.tsv"), emit: tsv
 
   script:
+
+  if ("${ambiguousreads}" == 'NULL'){
+    header = 'Sample Name\tClean reads\tUnambiguous mapped reads'
+    visible_val = ""
+    val = '0'
+  } else {
+    header = 'Sample Name\tClean reads\tUnambiguous mapped reads\tAmbiguous mapped reads'
+    visible_val = "\t${ambiguousreads}"
+    val = "${ambiguousreads}"
+  }
+
   """
   MAPPEDSUM=\$(awk -F '\\t' '{sum += \$3} END {print sum}' idxstats.tsv)
   UNPROMAPPEDSUM=\$(awk -F '\\t' '/^[^*]/ {sum += \$4} END {print sum}' idxstats.tsv)
@@ -137,8 +106,8 @@ process minimap2Stats {
 
   touch ${name}_minimap2_stats.tsv
   cat <<EOF >> ${name}_minimap2_stats.tsv
-  Sample Name\tTotal reads\tMapped reads
-  ${name}\t${totalreads}\t\$PROPMAP
+  ${header}
+  ${name}\t\$((${totalreads}-\$PROPMAP))\t\$((\$PROPMAP-${val}))${visible_val}
   EOF
   """
 }
@@ -172,8 +141,8 @@ process bbdukStats {
 
   touch ${name}_bbduk_stats.tsv
   cat <<EOF >> ${name}_bbduk_stats.tsv
-  Sample Name\tTotal reads\tMapped reads
-  ${name}\t\$TOTAL\t\$MNUM
+  Sample Name\tClean reads\tMapped reads
+  ${name}\t\$((\$TOTAL-\$MNUM))\t\$MNUM
   EOF
   """
 }
