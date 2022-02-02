@@ -81,12 +81,19 @@ process concat_contamination {
   path 'db.fa.fai', emit: fai
   
   script:
+  len = fastas.collect().size()
   """
-  for FASTA in ${fastas}
-  do
-      NAME="\${FASTA%%.*}"
-      zcat \$FASTA | awk -v n=\$NAME '/>/{sub(">","&"n"_")}1' | bgzip -@ ${task.cpus} -c >> db.fa.gz
-  done
+  if [[ ${len} -gt 1 ]] 
+  then
+    for FASTA in ${fastas}
+    do
+        NAME="\${FASTA%%.*}"
+        zcat \$FASTA | awk -v n=\$NAME '/>/{sub(">","&"n"_")}1' | bgzip -@ ${task.cpus} -c >> db.fa.gz
+    done
+  else
+    mv ${fastas} db.fa.gz
+  fi
+
   samtools faidx db.fa.gz
   mv db.fa.gz.fai db.fa.fai
   """
