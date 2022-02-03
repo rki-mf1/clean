@@ -55,13 +55,12 @@ process minimap2_illumina {
   input: 
     tuple val(name), path(reads)
     path (db)
-    val (mode)
 
   output:
     tuple val(name), path('*.sam'), path(reads), emit: sam // reads just for naming
 
   script:
-  if ( mode == 'paired' ) {
+  if ( params.mode == 'paired' ) {
     """
     minimap2 -ax sr -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${reads[0]} ${reads[1]}
     """

@@ -1,12 +1,11 @@
 process compress_reads {
   label 'basics'
 
-  publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "*.gz"
+  publishDir "${params.output}/${name}/${params.tool}", mode: 'copy', pattern: "*.gz"
 
   input:
   tuple val(name), val(type), path(reads)
   val(mode)
-  val(tool)
 
   output:
   tuple val(name), val(type), path("*.fast{q,a}.gz")
@@ -36,13 +35,12 @@ process get_number_of_reads {
 
   input:
   tuple val(name), path(reads)
-  val(mode)
 
   output:
   tuple val(name), env(TOTALREADS), emit: totalreads
 
   script:
-  if ( mode == 'paired' ) {
+  if ( params.mode == 'paired' ) {
     """
     if [[ ${reads[0]} =~ \\.gz\$ ]]; then
       TOTALREADS_1=\$(zcat ${reads[0]} | echo \$((`wc -l`/4)))
@@ -150,11 +148,10 @@ process bbdukStats {
 process writeLog {
   label 'smallTask'
 
-  publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "log.txt"
+  publishDir "${params.output}/${name}/${params.tool}", mode: 'copy', pattern: "log.txt"
   
   input:
     val name
-    val tool
     val reads
     val db
 
@@ -168,7 +165,7 @@ process writeLog {
   Input reads:\t${reads}
   Contamination:\t${db}
   
-  Statistics summary:\t${params.output}/${name}/${tool}/stats.txt
+  Statistics summary:\t${params.output}/${name}/${params.tool}/stats.txt
   EOF
   """
 
