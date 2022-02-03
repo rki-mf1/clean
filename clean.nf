@@ -148,7 +148,7 @@ if ( params.control ) {
 }
 
 // load rRNA DB
-if (params.rm_rrna){
+if ( params.rm_rrna ){
   rRNAChannel = Channel.fromPath( workflow.projectDir + '/data/rRNA/*.fasta.gz', checkIfExists: true )
 } else{
   rRNAChannel = Channel.empty()
