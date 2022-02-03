@@ -97,10 +97,12 @@ if ( !params.host && !params.own && !params.control && !params.rm_rrna ) { exit 
 if ( params.nano && params.list ) { nano_input_ch = Channel
   .fromPath( params.nano, checkIfExists: true )
   .splitCsv()
-  .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] } 
+  .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
+  seq_type = 'nano'
 } else if ( params.nano ) { nano_input_ch = Channel
     .fromPath( params.nano, checkIfExists: true)
     .map { file -> tuple(file.simpleName, file) }
+    seq_type = 'nano'
 }
 
 // illumina paired-end reads input & --list support
@@ -108,8 +110,10 @@ if ( params.illumina && params.list ) { illumina_input_ch = Channel
   .fromPath( params.illumina, checkIfExists: true )
   .splitCsv()
   .map { row -> [row[0], [file("${row[1]}", checkIfExists: true), file("${row[2]}", checkIfExists: true)]] }
+  seq_type = 'illumina'
 } else if ( params.illumina ) { illumina_input_ch = Channel
   .fromFilePairs( params.illumina , checkIfExists: true )
+  seq_type = 'illumina'
 }
 
 // illumina single-end reads input & --list support
@@ -117,9 +121,11 @@ if ( params.illumina_single_end && params.list ) { illumina_single_end_input_ch 
   .fromPath( params.illumina_single_end, checkIfExists: true )
   .splitCsv()
   .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
+  seq_type = 'illumina'
 } else if ( params.illumina_single_end ) { illumina_single_end_input_ch = Channel
   .fromPath( params.illumina_single_end, checkIfExists: true )
   .map { file -> tuple(file.simpleName, file) } 
+  seq_type = 'illumina'
 }
 
 // assembly fasta input & --list support
@@ -127,9 +133,11 @@ if ( params.fasta && params.list ) { fasta_input_ch = Channel
   .fromPath( params.fasta, checkIfExists: true )
   .splitCsv()
   .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
+  seq_type = 'fasta'
 } else if ( params.fasta ) { fasta_input_ch = Channel
     .fromPath( params.fasta, checkIfExists: true)
     .map { file -> tuple(file.simpleName, file) }
+    seq_type = 'fasta'
 }
 
 // load control fasta sequence
@@ -184,7 +192,7 @@ include { prepare_host } from './workflows/get_host_wf'
 
 include { concat_contamination } from './modules/get_host' addParams( tool: tool )
 
-include { minimap2_fasta; minimap2_nano; minimap2_illumina } from './modules/minimap2' addParams( mode: lib_type )
+include { minimap2 } from './modules/minimap2' addParams( mode: lib_type; seq_type: seq_type )
 include { bbduk } from './modules/bbmap' addParams( mode: lib_type )
 
 include { filter_un_mapped_alignments; make_mapped_bam; filter_soft_clipped_alignments ; fastq_from_bam ; idxstats_from_bam as idxstats_from_bam_mapped ; idxstats_from_bam as idxstats_from_bam_softclipped ; filter_true_dcs_alignments } from './modules/alignment_processing' addParams( tool: tool ; mode: lib_type )
@@ -207,15 +215,15 @@ workflow clean_fasta {
   main:
     concat_contamination( fasta_input_ch.map{ it -> it[0] }, contamination )
     // map
-    minimap2_fasta(fasta_input_ch, concat_contamination.out.fa)
+    minimap2(fasta_input_ch, concat_contamination.out.fa)
     // separate un/mapped reads, compress reads, make contamination bam
-    filter_un_mapped_alignments(minimap2_fasta.out.sam, 'fasta')
+    filter_un_mapped_alignments(minimap2.out.sam, 'fasta')
     compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads), 'fasta')
-    make_mapped_bam(minimap2_fasta.out.sam)
+    make_mapped_bam(minimap2.out.sam)
     idxstats_from_bam_mapped(make_mapped_bam.out.contamination_bam)
     // log & stats
     writeLog(fasta_input_ch.map{ it -> it[0] }, fasta_input_ch.map{ it -> it[1] }, contamination)
-    minimap2Stats(make_mapped_bam.out.idxstats.join(minimap2_fasta.out.num_contigs).combine(Channel.from('NULL')))
+    minimap2Stats(make_mapped_bam.out.idxstats.join(minimap2.out.num_contigs).combine(Channel.from('NULL')))
   emit:
     stats = minimap2Stats.out.tsv
     idxstats = idxstats_from_bam_mapped.out
@@ -231,10 +239,10 @@ workflow clean_nano {
   main:
     concat_contamination( nano_input_ch.map{ it -> it[0] }, contamination )
     // rename_reads(nano_input_ch, 'single')
-    minimap2_nano(nano_input_ch, concat_contamination.out.fa)
+    minimap2(nano_input_ch, concat_contamination.out.fa)
     // separate un/mapped reads, make contamination bam
-    filter_un_mapped_alignments(minimap2_nano.out.sam, 'single')
-    make_mapped_bam(minimap2_nano.out.sam)
+    filter_un_mapped_alignments(minimap2.out.sam, 'single')
+    make_mapped_bam(minimap2.out.sam)
     filter_true_dcs_alignments(make_mapped_bam.out.contamination_bam, nanoControlBedChannel)
     idxstats_from_bam_mapped(filter_true_dcs_alignments.out)
     // filter soft clipped reads
@@ -285,10 +293,10 @@ workflow clean_illumina {
       stats = bbdukStats.out.tsv
     } else {
       // map
-      minimap2_illumina(illumina_input_ch, concat_contamination.out.fa)
+      minimap2(illumina_input_ch, concat_contamination.out.fa)
       // separate un/mapped reads, make contamination bam
-      filter_un_mapped_alignments(minimap2_illumina.out.sam, 'paired')
-      make_mapped_bam(minimap2_illumina.out.sam)
+      filter_un_mapped_alignments(minimap2.out.sam, 'paired')
+      make_mapped_bam(minimap2.out.sam)
       idxstats_from_bam_mapped(make_mapped_bam.out.contamination_bam)
       // filter soft clipped reads
       if (params.min_clip) {
@@ -339,10 +347,10 @@ workflow clean_illumina_single {
       stats = bbdukStats.out.tsv
     } else {
       // map
-      minimap2_illumina(illumina_single_end_input_ch, concat_contamination.out.fa)
+      minimap2(illumina_single_end_input_ch, concat_contamination.out.fa)
       // separate un/mapped reads, make contamination bam
-      filter_un_mapped_alignments(minimap2_illumina.out.sam, 'single')
-      make_mapped_bam(minimap2_illumina.out.sam)
+      filter_un_mapped_alignments(minimap2.out.sam, 'single')
+      make_mapped_bam(minimap2.out.sam)
       idxstats_from_bam_mapped(make_mapped_bam.out.contamination_bam)
       // filter soft clipped reads
       if (params.min_clip){
