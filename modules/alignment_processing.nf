@@ -30,12 +30,10 @@ process filter_un_mapped_alignments {
 process make_mapped_bam {
   label 'minimap2'
 
-  publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "*.mapped.bam*"
+  publishDir "${params.output}/${name}/${params.tool}", mode: 'copy', pattern: "*.mapped.bam*"
 
   input:
     tuple val(name), path(sam), path(reads)
-    val(mode)
-    val(tool)
 
   output:
     tuple val(name), path ('*.mapped.bam'), emit: contamination_bam
@@ -43,7 +41,7 @@ process make_mapped_bam {
     tuple val(name), path ('idxstats.tsv'), emit: idxstats
 
   script:
-  if ( mode == 'paired' ) {
+  if ( params.mode == 'paired' ) {
     """
     samtools view -b -f 2 -F 2048 ${name}.sam | samtools sort -o ${name}.mapped.bam --threads ${task.cpus}
     samtools index ${name}.mapped.bam
@@ -62,12 +60,11 @@ process filter_soft_clipped_alignments {
   label 'samclipy'
   label 'smallTask'
 
-  publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "*.bam*"
+  publishDir "${params.output}/${name}/${params.tool}", mode: 'copy', pattern: "*.bam*"
 
   input:
   tuple val(name), path (bam)
   val (minClip)
-  val (tool)
   
   output:
   tuple val(name), val('ambiguous'), path ('*.ambiguous.bam'), emit: bam_am
@@ -89,13 +86,12 @@ process fastq_from_bam {
 
   input:
   tuple val(name), val(type), path(bam)
-  val(mode)
 
   output:
   tuple val(name), val(type), path('*.fastq')
 
   script:
-  if ( mode == 'paired' ) {
+  if ( params.mode == 'paired' ) {
     """
     samtools fastq -@ ${task.cpus} -1 ${bam.baseName}_1.fastq -2 ${bam.baseName}_2.fastq -s ${bam.baseName}_singleton.fastq ${bam}
     """
