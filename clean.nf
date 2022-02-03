@@ -180,7 +180,9 @@ lib_type = params.illumina ? 'paired' : 'single'
 
 /* Comment section: */
 
-include { download_host; check_own; concat_contamination } from './modules/get_host' addParams( tool: tool )
+include { prepare_host } from './workflows/get_host_wf'
+
+include { concat_contamination } from './modules/get_host' addParams( tool: tool )
 
 include { minimap2_fasta; minimap2_nano; minimap2_illumina } from './modules/minimap2' addParams( mode: lib_type )
 include { bbduk } from './modules/bbmap' addParams( mode: lib_type )
@@ -190,46 +192,6 @@ include { filter_un_mapped_alignments; make_mapped_bam; filter_soft_clipped_alig
 include { compress_reads; get_number_of_reads as get_number_of_reads; get_number_of_reads as get_number_of_ambiguous_reads; minimap2Stats; bbdukStats; writeLog } from './modules/utils' addParams( tool: tool ; mode: lib_type )
 
 include { fastqc; nanoplot; format_nanoplot_report; quast; multiqc } from './modules/qc'
-
-/************************** 
-* DATABASES
-**************************/
-
-/* Comment section:
-The Database Section is designed to "auto-get" pre prepared databases.
-It is written for local use and cloud use via params.cloudProcess.
-*/
-
-workflow prepare_host {
-  main:
-    if ( params.host ) {
-      if ( params.cloudProcess ) {
-        host_preload = file("${params.databases}/hosts/${params.host}.fa.gz")
-        if ( host_preload.exists() ) {
-          host = Channel.fromPath(host_preload)
-        } else {
-          download_host(hostNameChannel)
-          host = download_host.out
-        }
-      } else {
-        download_host(hostNameChannel)
-        host = download_host.out
-      }
-    }
-    else {
-      host = Channel.empty()
-    }
-    if ( params.own ) {
-      check_own(ownFastaChannel)
-      checkedOwn = check_own.out
-    }
-    else {
-      checkedOwn = Channel.empty()
-    }
-  emit:
-    host = host
-    checkedOwn = checkedOwn
-}
 
 /************************** 
 * SUB WORKFLOWS
