@@ -81,58 +81,59 @@ if ( workflow.profile.contains('singularity') ) {
 Set controls = ['phix', 'dcs', 'eno']
 Set hosts = ['hsa', 'mmu', 'cli', 'csa', 'gga', 'eco']
 
-if (params.profile) { exit 1, "--profile is wrong, use -profile" }
-if (params.nano == '' &&  params.illumina == '' && params.fasta == '' && params.illumina_single_end == '' ) { exit 1, "Read files missing, use [--nano] or [--illumina] or [--fasta]"}
-if (params.control) { for( String ctr : params.control.split(',') ) if ( ! (ctr in controls ) ) { exit 1, "Wrong control defined (" + ctr + "), use one of these: " + controls } }
-if (params.nano && params.control && 'dcs' in params.control.split(',') && 'eno' in params.control.split(',')) { exit 1, "Please choose either eno (for ONT dRNA-Seq) or dcs (for ONT DNA-Seq)." }
-if (params.host) { for( String hst : params.host.split(',') ) if ( ! (hst in hosts ) ) { exit 1, "Wrong host defined (" + hst + "), use one of these: " + hosts } }
-if (!params.host && !params.own && !params.control && !params.rm_rrna) { exit 1, "Please provide a control (--control), a host tag (--host), a FASTA file (--own) or set --rm_rrna for rRNA removal for the clean up."}
+if ( params.profile ) { exit 1, "--profile is wrong, use -profile" }
+if ( params.nano == '' &&  params.illumina == '' && params.fasta == '' && params.illumina_single_end == '' ) { exit 1, "Read files missing, use [--nano] or [--illumina] or [--fasta]"}
+
+if ( params.control ) { for( String ctr : params.control.split(',') ) if ( ! (ctr in controls ) ) { exit 1, "Wrong control defined (" + ctr + "), use one of these: " + controls } }
+if ( params.nano && params.control && 'dcs' in params.control.split(',') && 'eno' in params.control.split(',') ) { exit 1, "Please choose either eno (for ONT dRNA-Seq) or dcs (for ONT DNA-Seq)." }
+if ( params.host ) { for( String hst : params.host.split(',') ) if ( ! (hst in hosts ) ) { exit 1, "Wrong host defined (" + hst + "), use one of these: " + hosts } }
+if ( !params.host && !params.own && !params.control && !params.rm_rrna ) { exit 1, "Please provide a control (--control), a host tag (--host), a FASTA file (--own) or set --rm_rrna for rRNA removal for the clean up."}
 
 /************************** 
 * INPUT CHANNELS 
 **************************/
 
 // nanopore reads input & --list support
-if (params.nano && params.list) { nano_input_ch = Channel
+if ( params.nano && params.list ) { nano_input_ch = Channel
   .fromPath( params.nano, checkIfExists: true )
   .splitCsv()
   .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] } 
-} else if (params.nano) { nano_input_ch = Channel
+} else if ( params.nano ) { nano_input_ch = Channel
     .fromPath( params.nano, checkIfExists: true)
     .map { file -> tuple(file.simpleName, file) }
 }
 
 // illumina paired-end reads input & --list support
-if (params.illumina && params.list) { illumina_input_ch = Channel
+if ( params.illumina && params.list ) { illumina_input_ch = Channel
   .fromPath( params.illumina, checkIfExists: true )
   .splitCsv()
   .map { row -> [row[0], [file("${row[1]}", checkIfExists: true), file("${row[2]}", checkIfExists: true)]] }
-} else if (params.illumina) { illumina_input_ch = Channel
+} else if ( params.illumina ) { illumina_input_ch = Channel
   .fromFilePairs( params.illumina , checkIfExists: true )
 }
 
 // illumina single-end reads input & --list support
-if (params.illumina_single_end && params.list) { illumina_single_end_input_ch = Channel
+if ( params.illumina_single_end && params.list ) { illumina_single_end_input_ch = Channel
   .fromPath( params.illumina_single_end, checkIfExists: true )
   .splitCsv()
   .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
-} else if (params.illumina_single_end) { illumina_single_end_input_ch = Channel
+} else if ( params.illumina_single_end ) { illumina_single_end_input_ch = Channel
   .fromPath( params.illumina_single_end, checkIfExists: true )
   .map { file -> tuple(file.simpleName, file) } 
 }
 
 // assembly fasta input & --list support
-if (params.fasta && params.list) { fasta_input_ch = Channel
+if ( params.fasta && params.list ) { fasta_input_ch = Channel
   .fromPath( params.fasta, checkIfExists: true )
   .splitCsv()
   .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
-} else if (params.fasta) { fasta_input_ch = Channel
+} else if ( params.fasta ) { fasta_input_ch = Channel
     .fromPath( params.fasta, checkIfExists: true)
     .map { file -> tuple(file.simpleName, file) }
 }
 
 // load control fasta sequence
-if (params.control) {
+if ( params.control ) {
   if ( 'phix' in params.control.split(',') ) {
     illuminaControlFastaChannel = Channel.fromPath( workflow.projectDir + '/data/controls/phix.fa.gz' , checkIfExists: true )
   } else { illuminaControlFastaChannel = Channel.empty() }
@@ -153,16 +154,16 @@ if (params.rm_rrna){
   rRNAChannel = Channel.empty()
 }
 
-if (params.host) {
+if ( params.host ) {
   hostNameChannel = Channel.from( params.host ).splitCsv().flatten()
 }
 
 // user defined fasta sequence
-if (params.own && params.list) {
+if ( params.own && params.list ) {
   ownFastaChannel = Channel
     .fromPath( params.own, checkIfExists: true)
     .splitCsv().flatten().map{ it -> file( it, checkIfExists: true ) }
-} else if (params.own) {
+} else if ( params.own ) {
   ownFastaChannel = Channel
     .fromPath( params.own, checkIfExists: true)
 }
@@ -197,10 +198,10 @@ It is written for local use and cloud use via params.cloudProcess.
 
 workflow prepare_host {
   main:
-    if (params.host) {
-      if (params.cloudProcess) {
+    if ( params.host ) {
+      if ( params.cloudProcess ) {
         host_preload = file("${params.databases}/hosts/${params.host}.fa.gz")
-        if (host_preload.exists()) {
+        if ( host_preload.exists() ) {
           host = Channel.fromPath(host_preload)
         } else {
           download_host(hostNameChannel)
@@ -214,7 +215,7 @@ workflow prepare_host {
     else {
       host = Channel.empty()
     }
-    if (params.own) {
+    if ( params.own ) {
       check_own(ownFastaChannel)
       checkedOwn = check_own.out
     }
@@ -474,7 +475,7 @@ workflow {
         .mix(prepare_host.out.checkedOwn)
         .mix(rRNAChannel).collect()
 
-  if (params.fasta) {
+  if ( params.fasta ) {
     clean_fasta(fasta_input_ch, contamination)
     qc_fasta(clean_fasta.out.in, clean_fasta.out.out)
     stats_fasta = clean_fasta.out.stats
@@ -482,7 +483,7 @@ workflow {
     quast = qc_fasta.out.collect()
   } else { quast = Channel.fromPath('no_fasta_input'); stats_fasta = Channel.fromPath('no_fasta_stats') ; idxstats_fasta = Channel.fromPath('no_fasta_idxstats') }
 
-  if (params.nano) { 
+  if ( params.nano ) { 
     clean_nano(nano_input_ch, contamination)
     qc_nano(clean_nano.out.in, clean_nano.out.out)
     stats_nano = clean_nano.out.stats
@@ -490,7 +491,7 @@ workflow {
     nanoplot = qc_nano.out.collect()
   } else { nanoplot = Channel.fromPath('no_nanopore_input'); stats_nano = Channel.fromPath('no_nano_stats') ; idxstats_nano = Channel.fromPath('no_nano_idxstats') }
 
-  if (params.illumina) { 
+  if ( params.illumina ) { 
     clean_illumina(illumina_input_ch, contamination)
     qc_illumina(clean_illumina.out.in, clean_illumina.out.out)
     stats_illumina = clean_illumina.out.stats
@@ -498,7 +499,7 @@ workflow {
     fastqc = qc_illumina.out
   } else { fastqc = Channel.fromPath('no_illumina_input'); stats_illumina = Channel.fromPath('no_illumina_stats') ; idxstats_illumina = Channel.fromPath('no_illumina_idxstats') }
 
-  if (params.illumina_single_end) { 
+  if ( params.illumina_single_end ) { 
     clean_illumina_single(illumina_single_end_input_ch, contamination)
     qc_illumina_single(clean_illumina_single.out.in, clean_illumina_single.out.out)
     stats_illumina_single = clean_illumina_single.out.stats
