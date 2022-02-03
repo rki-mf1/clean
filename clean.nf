@@ -191,7 +191,7 @@ include { filter_un_mapped_alignments; make_mapped_bam; filter_soft_clipped_alig
 
 include { compress_reads; get_number_of_reads as get_number_of_reads; get_number_of_reads as get_number_of_ambiguous_reads; minimap2Stats; bbdukStats; writeLog } from './modules/utils' addParams( tool: tool ; mode: lib_type )
 
-include { fastqc; nanoplot; format_nanoplot_report; quast; multiqc } from './modules/qc'
+include { qc_fasta; qc_nano; qc_illumina as qc_illumina; qc_illumina as qc_illumina_single ; qc } from './workflows/qc'
 
 /************************** 
 * SUB WORKFLOWS
@@ -373,59 +373,6 @@ workflow clean_illumina_single {
       in = illumina_single_end_input_ch.map{ it -> it.plus(1, 'all') }
       out = compress_reads.out
 } 
-
-workflow qc_fasta {
-  take:
-    fasta_input
-    fasta_output
-  main:
-    quast(fasta_input.concat(fasta_output))
-  emit:
-    quast.out.report_tsv
-}
-
-workflow qc_nano {
-  take:
-    nano_input
-    nano_output
-  main:
-    nanoplot(nano_input.concat(nano_output))
-    format_nanoplot_report(nanoplot.out.html)
-  emit:
-    format_nanoplot_report.out
-}
-
-workflow qc_illumina {
-  take:
-    illumina_input
-    illumina_output
-  main:
-    fastqc(illumina_input.concat(illumina_output))
-  emit:
-    fastqc.out.zip.map{ it -> it[-1] }
-}
-
-workflow qc_illumina_single {
-  take:
-    illumina_input
-    illumina_output
-  main:
-    fastqc(illumina_input.concat(illumina_output))
-  emit:
-    fastqc.out.zip.map{ it -> it[-1] }
-}
-
-workflow qc{
-  take:
-    multiqc_config
-    fastqc
-    nanoplot
-    quast
-    mapping_stats
-    idxstats
-  main:
-    multiqc(multiqc_config, fastqc, nanoplot, quast, mapping_stats, idxstats)
-}
 
 /************************** 
 * WORKFLOW ENTRY POINT
