@@ -81,6 +81,30 @@ process filter_soft_clipped_alignments {
   """
 }
 
+process filter_true_dcs_alignments {
+  label 'bed_samtools'
+
+  publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "*.bam*"
+
+  input:
+  tuple val(name), path (bam)
+  path (bed)
+
+  output:
+  tuple val(name), path ("${name}_filtered.bam")
+
+  script:
+  """
+  # true spike in: 1-65 || 1-92; 3513-3560 (len 48)
+  samtools view -b -h -e 'rname=="Lambda_3.6kb"' ${bam} > tmp.bam
+  samtools view -b -h -e 'rname!="Lambda_3.6kb"' ${bam} > non_lambda.bam
+  bedtools intersect -wa -ubam -header -a tmp.bam -b ${bed} > ${name}_filtered.bam
+  bedtools intersect -v -ubam -header -a tmp.bam -b ${bed} > ${name}_pseudo_dcs.bam
+
+  # samtools view -h -e 'rname=="Lambda_3.6kb"' --region-file dcs_artificial_ends.bed SRR11356414.mapped.bam > SRR11356414_st_view.sam
+  """ 
+}
+
 process fastq_from_bam {
   label 'minimap2'
 

@@ -139,6 +139,7 @@ if ( params.control ) {
   } else { illuminaControlFastaChannel = Channel.empty() }
   if ( 'dcs' in params.control.split(',') ) {
     nanoControlFastaChannel = Channel.fromPath( workflow.projectDir + '/data/controls/dcs.fa.gz' , checkIfExists: true )
+    nanoControlBedChannel = Channel.fromPath( workflow.projectDir + '/data/controls/dcs_artificial_ends.bed' , checkIfExists: true )
   } else if ( 'eno' in params.control.split(',') ) {
     nanoControlFastaChannel = Channel.fromPath( workflow.projectDir + '/data/controls/eno.fa.gz' , checkIfExists: true )
   } else { nanoControlFastaChannel = Channel.empty() }
@@ -272,11 +273,13 @@ workflow clean_nano {
     // separate un/mapped reads, make contamination bam
     filter_un_mapped_alignments(minimap2_nano.out.sam, 'single')
     make_mapped_bam(minimap2_nano.out.sam)
+    filter_true_dcs_alignments(make_mapped_bam.out.contamination_bam, nanoControlBedChannel)
+    idxstats_from_bam_mapped(filter_true_dcs_alignments.out)
     // filter soft clipped reads
     if (params.min_clip) {
-      filter_soft_clipped_alignments(make_mapped_bam.out.contamination_bam, params.min_clip, 'minimap2')
-      fastq_from_bam(filter_soft_clipped_alignments.out.bam_am.mix(filter_soft_clipped_alignments.out.bam_unam), 'single')
-      number_ambiguous_reads_ch = get_number_of_ambiguous_reads(fastq_from_bam.out.filter{ it[1] == 'ambiguous'}.map{ it -> [it[0]]+[it[2]] }, 'single')
+      filter_soft_clipped_alignments(filter_true_dcs_alignments.out, params.min_clip)
+      fastq_from_bam(filter_soft_clipped_alignments.out.bam_am.mix(filter_soft_clipped_alignments.out.bam_unam))
+      number_ambiguous_reads_ch = get_number_of_ambiguous_reads(fastq_from_bam.out.filter{ it[1] == 'ambiguous'}.map{ it -> [it[0]]+[it[2]] })
       idxstats_from_bam_softclipped(filter_soft_clipped_alignments.out.bam_am.map{ it -> [it[0]]+[it[2]] }.mix(filter_soft_clipped_alignments.out.bam_unam.map{ it -> [it[0]]+[it[2]] }))
       idxstats_from_bam_softclipped_out = idxstats_from_bam_softclipped.out
     } else {
