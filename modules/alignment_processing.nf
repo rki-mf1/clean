@@ -3,28 +3,31 @@ process filter_un_mapped_alignments {
 
   input:
     tuple val(name), path(sam), path(reads)
-    val(mode)
 
   output:
     tuple val(name), val('clean'), path('*clean.fast{q,a}'), emit: cleaned_reads
     tuple val(name), val('mapped'), path('*mapped.fast{q,a}'), emit: contaminated_reads
 
   script:
-  if ( mode == 'paired' ) {
+  if ( params.mode == 'paired' ) {
     """
     # Use samtools -F 2 to discard only reads mapped in proper pair:
     samtools fastq -F 2 -1 ${reads[0].baseName}.clean.fastq -2 ${reads[1].baseName}.clean.fastq ${name}.sam
     samtools fastq -f 2 -1 ${reads[0].baseName}.mapped.fastq -2 ${reads[1].baseName}.mapped.fastq ${name}.sam
     """
-  } else if ( mode == 'single' || mode == 'fasta' ) {
-    dtype = (mode == 'single') ? 'q' : 'a'
+  } else if ( params.mode == 'single' ) {
+    dtype = (params.seq_type == 'fasta') ? 'a' : 'q'
     """
     samtools fast${dtype} -f 4 -0 ${reads.baseName}.clean.fast${dtype} ${sam}
     samtools fast${dtype} -F 4 -0 ${reads.baseName}.mapped.fast${dtype} ${sam}
     """
   } else {
-    error "Invalid mode: ${mode}"
+    error "Invalid mode: ${params.mode}"
   }
+  stub:
+  """
+  touch ${reads.baseName}.clean.fasta ${reads.baseName}.mapped.fasta ${reads.baseName}.clean.fastq ${reads.baseName}.mapped.fastq
+  """
 }
 
 process make_mapped_bam {
@@ -47,13 +50,19 @@ process make_mapped_bam {
     samtools index ${name}.mapped.bam
     samtools idxstats ${name}.mapped.bam > idxstats.tsv
     """
-  } else {
+  } else if ( params.mode == 'single' ) {
     """
     samtools view -b -F 2052 ${name}.sam | samtools sort -o ${name}.mapped.bam --threads ${task.cpus}
     samtools index ${name}.mapped.bam
     samtools idxstats  ${name}.mapped.bam > idxstats.tsv
     """
+  } else {
+    error "Invalid mode: ${params.mode}"
   }
+  stub:
+  """
+  touch ${name}.mapped.bam ${name}.mapped.bam.bai idxstats.tsv
+  """
 }
 
 process filter_soft_clipped_alignments {
@@ -79,12 +88,16 @@ process filter_soft_clipped_alignments {
   samtools index ${name}.ambiguous.bam
   samtools index ${name}.contamination.bam
   """
+  stub:
+  """
+  touch ${name}.ambiguous.bam ${name}.contamination.bam ${name}.ambiguous.bam.bai ${name}.contamination.bam.bai
+  """
 }
 
 process filter_true_dcs_alignments {
   label 'bed_samtools'
 
-  publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "*.bam*"
+  publishDir "${params.output}/${name}/${params.tool}", mode: 'copy', pattern: "*.bam*"
 
   input:
   tuple val(name), path (bam)
@@ -103,6 +116,10 @@ process filter_true_dcs_alignments {
 
   # samtools view -h -e 'rname=="Lambda_3.6kb"' --region-file dcs_artificial_ends.bed SRR11356414.mapped.bam > SRR11356414_st_view.sam
   """ 
+  stub:
+  """
+  touch ${name}_filtered.bam
+  """
 }
 
 process fastq_from_bam {
@@ -119,11 +136,17 @@ process fastq_from_bam {
     """
     samtools fastq -@ ${task.cpus} -1 ${bam.baseName}_1.fastq -2 ${bam.baseName}_2.fastq -s ${bam.baseName}_singleton.fastq ${bam}
     """
-  } else {
+  } else if ( params.mode == 'single' ) {
     """
     samtools fastq -@ ${task.cpus} -0 ${bam.baseName}.fastq ${bam}
     """
+  } else {
+    error "Invalid mode: ${params.mode}"
   }
+  stub:
+  """
+  touch ${bam.baseName}_1.fastq ${bam.baseName}_2.fastq
+  """
 }
 
 process idxstats_from_bam {
@@ -138,5 +161,9 @@ process idxstats_from_bam {
   script:
   """
   samtools idxstats ${bam} > ${bam.baseName}_idxstats.tsv
+  """
+  stub:
+  """
+  touch ${bam.baseName}_idxstats.tsv
   """
 }

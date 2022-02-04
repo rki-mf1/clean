@@ -5,13 +5,12 @@ process compress_reads {
 
   input:
   tuple val(name), val(type), path(reads)
-  val(mode)
 
   output:
   tuple val(name), val(type), path("*.fast{q,a}.gz")
 
   script:
-  if ( mode == 'paired' ) {
+  if ( params.mode == 'paired' ) {
     """
     pigz -fc -p ${task.cpus} ${reads[0]} > ${name}_1.${type}.fastq.gz 
     pigz -fc -p ${task.cpus} ${reads[1]} > ${name}_2.${type}.fastq.gz
@@ -20,14 +19,18 @@ process compress_reads {
       pigz -fc -p ${task.cpus} ${reads[2]} > ${name}.${type}_singleton.fastq.gz
     fi
     """
-  } else if ( mode == 'single' || mode == 'fasta' ) {
-    dtype = (mode == 'single') ? 'q' : 'a'
+  } else if ( params.mode == 'single' ) {
+    dtype = (params.seq_type == 'fasta') ? 'a' : 'q'
     """
     pigz -fc -p ${task.cpus} ${reads} > ${name}.${type}.fast${dtype}.gz
     """
   } else {
-    error "Invalid mode: ${mode}"
+    error "Invalid mode: ${params.mode}"
   }
+  stub:
+  """
+  touch ${name}.${type}.fasta.gz ${name}.${type}.fastq.gz
+  """
 }
 
 process get_number_of_reads {
@@ -60,6 +63,10 @@ process get_number_of_reads {
     fi
     """
   }
+  stub:
+  """
+  TOTALREADS=42
+  """
 }
 
 process minimap2Stats {
@@ -108,6 +115,10 @@ process minimap2Stats {
   ${name}\t\$((${totalreads}-\$PROPMAP))\t\$((\$PROPMAP-${val}))${visible_val}
   EOF
   """
+  stub:
+  """
+  touch stats.txt ${name}_minimap2_stats.tsv
+  """
 }
 
 process bbdukStats {
@@ -143,6 +154,10 @@ process bbdukStats {
   ${name}\t\$((\$TOTAL-\$MNUM))\t\$MNUM
   EOF
   """
+  stub:
+  """
+  touch stats.txt ${name}_bbduk_stats.tsv
+  """
 }
 
 process writeLog {
@@ -168,5 +183,8 @@ process writeLog {
   Statistics summary:\t${params.output}/${name}/${params.tool}/stats.txt
   EOF
   """
-
+  stub:
+  """
+  touch log.txt
+  """
 }

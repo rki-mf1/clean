@@ -11,6 +11,10 @@ process fastqc {
   """
   fastqc --noextract -t ${task.cpus} ${reads}
   """
+  stub:
+  """
+  touch ${name}_fastqc.zip
+  """
 }
 
 process nanoplot {
@@ -30,6 +34,10 @@ process nanoplot {
   NanoPlot -t ${task.cpus} --pickle NanoPlot-data.pickle --title ${name}_${type} --color darkslategrey --N50 --plots hex --loglength -f pdf
   mv NanoPlot-report.html ${name}_${type}_read_quality_report.html
   mv NanoStats.txt ${name}_${type}_read_quality.txt
+  """
+  stub:
+  """
+  touch ${name}_${type}_read_quality_report.html ${name}_${type}_read_quality.txt fuu.png fuu.pdf
   """
 }
 
@@ -52,6 +60,10 @@ process format_nanoplot_report {
     cat tmp ${nanoplot_report}.tmp > ${nanoplot_report.baseName}_mqc.html
     rm -f *tmp
     """
+    stub:
+    """
+    touch ${nanoplot_report.baseName}_mqc.html
+    """
 }
 
 process quast {
@@ -69,6 +81,10 @@ process quast {
   """
   quast.py -o quast_${name}_${type} -t ${task.cpus} ${fasta}
   cp quast_${name}_${type}/report.tsv ${name}_${type}_report.tsv
+  """
+  stub:
+  """
+  touch ${name}_${type}_report.tsv quast_${name}_${type}
   """
 }
 
@@ -92,5 +108,9 @@ process multiqc {
   script:
   """
   multiqc . -s -c ${config}
+  """
+  stub:
+  """
+  touch multiqc_report.html
   """
 }

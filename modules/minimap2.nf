@@ -6,7 +6,7 @@ process minimap2 {
     path (db)
 
   output:
-    tuple val(name), env(TOTALCONTIGS), emit: num_contigs optional true into
+    tuple val(name), env(TOTALCONTIGS), emit: num_contigs optional true
     tuple val(name), path('*.sam'), path(input), emit: sam // input just for naming
 
   script:
@@ -40,6 +40,11 @@ process minimap2 {
       minimap2 -ax asm5 -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${fasta}
       """
   } else {
-    println "Unknown seq_type: ${params.seq_type}"
+    error "Unknown seq_type: ${params.seq_type}"
   }
+  stub:
+  """
+  TOTALCONTIGS=42
+  touch ${name}.sam
+  """
 }

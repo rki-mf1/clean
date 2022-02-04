@@ -99,10 +99,12 @@ if ( params.nano && params.list ) { nano_input_ch = Channel
   .splitCsv()
   .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
   seq_type = 'nano'
+  name = nano_input_ch.map{ it -> it[0] }
 } else if ( params.nano ) { nano_input_ch = Channel
     .fromPath( params.nano, checkIfExists: true)
     .map { file -> tuple(file.simpleName, file) }
     seq_type = 'nano'
+    name = nano_input_ch.map{ it -> it[0] }
 }
 
 // illumina paired-end reads input & --list support
@@ -111,9 +113,11 @@ if ( params.illumina && params.list ) { illumina_input_ch = Channel
   .splitCsv()
   .map { row -> [row[0], [file("${row[1]}", checkIfExists: true), file("${row[2]}", checkIfExists: true)]] }
   seq_type = 'illumina'
+  name = illumina_input_ch.map{ it -> it[0] }
 } else if ( params.illumina ) { illumina_input_ch = Channel
   .fromFilePairs( params.illumina , checkIfExists: true )
   seq_type = 'illumina'
+  name = illumina_input_ch.map{ it -> it[0] }
 }
 
 // illumina single-end reads input & --list support
@@ -122,10 +126,12 @@ if ( params.illumina_single_end && params.list ) { illumina_single_end_input_ch 
   .splitCsv()
   .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
   seq_type = 'illumina'
+  name = illumina_single_end_input_ch.map{ it -> it[0] }
 } else if ( params.illumina_single_end ) { illumina_single_end_input_ch = Channel
   .fromPath( params.illumina_single_end, checkIfExists: true )
   .map { file -> tuple(file.simpleName, file) } 
   seq_type = 'illumina'
+  name = illumina_single_end_input_ch.map{ it -> it[0] }
 }
 
 // assembly fasta input & --list support
@@ -134,10 +140,12 @@ if ( params.fasta && params.list ) { fasta_input_ch = Channel
   .splitCsv()
   .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
   seq_type = 'fasta'
+  name = fasta_input_ch.map{ it -> it[0] }
 } else if ( params.fasta ) { fasta_input_ch = Channel
     .fromPath( params.fasta, checkIfExists: true)
     .map { file -> tuple(file.simpleName, file) }
     seq_type = 'fasta'
+    name = fasta_input_ch.map{ it -> it[0] }
 }
 
 // load control fasta sequence
@@ -190,16 +198,14 @@ lib_type = params.illumina ? 'paired' : 'single'
 
 include { prepare_contamination } from './workflows/prepare_contamination_wf' addParams( name: name, tool: tool )
 
-include { concat_contamination } from './modules/get_host' addParams( tool: tool )
-
-include { minimap2 } from './modules/minimap2' addParams( mode: lib_type; seq_type: seq_type )
+include { minimap2 } from './modules/minimap2' addParams( mode: lib_type, seq_type: seq_type )
 include { bbduk } from './modules/bbmap' addParams( mode: lib_type )
 
-include { filter_un_mapped_alignments; make_mapped_bam; filter_soft_clipped_alignments ; fastq_from_bam ; idxstats_from_bam as idxstats_from_bam_mapped ; idxstats_from_bam as idxstats_from_bam_softclipped ; filter_true_dcs_alignments } from './modules/alignment_processing' addParams( tool: tool ; mode: lib_type )
+include { filter_un_mapped_alignments; make_mapped_bam; filter_soft_clipped_alignments ; fastq_from_bam ; idxstats_from_bam as idxstats_from_bam_mapped ; idxstats_from_bam as idxstats_from_bam_softclipped ; filter_true_dcs_alignments } from './modules/alignment_processing' addParams( tool: tool, mode: lib_type, seq_type: seq_type )
 
-include { compress_reads; get_number_of_reads as get_number_of_reads; get_number_of_reads as get_number_of_ambiguous_reads; minimap2Stats; bbdukStats; writeLog } from './modules/utils' addParams( tool: tool ; mode: lib_type )
+include { compress_reads; get_number_of_reads as get_number_of_reads; get_number_of_reads as get_number_of_ambiguous_reads; minimap2Stats; bbdukStats; writeLog } from './modules/utils' addParams( tool: tool, mode: lib_type, seq_type: seq_type )
 
-include { qc_fasta; qc_nano; qc_illumina as qc_illumina; qc_illumina as qc_illumina_single ; qc } from './workflows/qc'
+include { qc_fasta; qc_nano; qc_illumina as qc_illumina; qc_illumina as qc_illumina_single ; qc } from './workflows/qc_wf'
 
 /************************** 
 * SUB WORKFLOWS
@@ -216,8 +222,8 @@ workflow clean_fasta {
     // map
     minimap2(fasta_input_ch, contamination)
     // separate un/mapped reads, compress reads, make contamination bam
-    filter_un_mapped_alignments(minimap2.out.sam, 'fasta')
-    compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads), 'fasta')
+    filter_un_mapped_alignments(minimap2.out.sam)
+    compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads))
     make_mapped_bam(minimap2.out.sam)
     idxstats_from_bam_mapped(make_mapped_bam.out.contamination_bam)
     // log & stats
@@ -239,7 +245,7 @@ workflow clean_nano {
     // rename_reads(nano_input_ch, 'single')
     minimap2(nano_input_ch, contamination)
     // separate un/mapped reads, make contamination bam
-    filter_un_mapped_alignments(minimap2.out.sam, 'single')
+    filter_un_mapped_alignments(minimap2.out.sam)
     make_mapped_bam(minimap2.out.sam)
     filter_true_dcs_alignments(make_mapped_bam.out.contamination_bam, nanoControlBedChannel)
     idxstats_from_bam_mapped(filter_true_dcs_alignments.out)
@@ -256,9 +262,9 @@ workflow clean_nano {
     }
     // compress reads
     if (params.min_clip) {
-      compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads).concat(fastq_from_bam.out), 'single')
+      compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads).concat(fastq_from_bam.out))
     } else {
-      compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads), 'single')
+      compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads))
     }
     // log & stats
     writeLog(nano_input_ch.map{ it -> it[0] }, nano_input_ch.map{ it -> it[1] }, contamination)
@@ -283,7 +289,7 @@ workflow clean_illumina {
       // map
       bbduk(illumina_input_ch, contamination)
       // compress reads
-      compress_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'paired')
+      compress_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads))
       // log & stats
       writeLog(illumina_input_ch.map{ it -> it[0] }, illumina_input_ch.map{ it -> it[1] }, contamination)
       bbdukStats(bbduk.out.stats)
@@ -292,7 +298,7 @@ workflow clean_illumina {
       // map
       minimap2(illumina_input_ch, contamination)
       // separate un/mapped reads, make contamination bam
-      filter_un_mapped_alignments(minimap2.out.sam, 'paired')
+      filter_un_mapped_alignments(minimap2.out.sam)
       make_mapped_bam(minimap2.out.sam)
       idxstats_from_bam_mapped(make_mapped_bam.out.contamination_bam)
       // filter soft clipped reads
@@ -308,9 +314,9 @@ workflow clean_illumina {
       }
       // compress reads
       if (params.min_clip) {
-        compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads).concat(fastq_from_bam.out), 'paired')
+        compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads).concat(fastq_from_bam.out))
       } else {
-        compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads), 'paired')
+        compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads))
       }
       // log & stats
       writeLog(illumina_input_ch.map{ it -> it[0] }, illumina_input_ch.map{ it -> it[1] }, contamination)
@@ -336,7 +342,7 @@ workflow clean_illumina_single {
       // map
       bbduk(illumina_single_end_input_ch, contamination)
       // compress reads
-      compress_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'single')
+      compress_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads))
       // log & stats
       writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
       bbdukStats(bbduk.out.stats)
@@ -345,7 +351,7 @@ workflow clean_illumina_single {
       // map
       minimap2(illumina_single_end_input_ch, contamination)
       // separate un/mapped reads, make contamination bam
-      filter_un_mapped_alignments(minimap2.out.sam, 'single')
+      filter_un_mapped_alignments(minimap2.out.sam)
       make_mapped_bam(minimap2.out.sam)
       idxstats_from_bam_mapped(make_mapped_bam.out.contamination_bam)
       // filter soft clipped reads
@@ -361,9 +367,9 @@ workflow clean_illumina_single {
       }
       // compress reads
       if (params.min_clip) {
-        compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads).concat(fastq_from_bam.out), 'single')
+        compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads).concat(fastq_from_bam.out))
       } else {
-        compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads), 'single')
+        compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads))
       }
       // log & stats
       writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
