@@ -188,7 +188,7 @@ lib_type = params.illumina ? 'paired' : 'single'
 
 /* Comment section: */
 
-include { prepare_host } from './workflows/get_host_wf'
+include { prepare_contamination } from './workflows/prepare_contamination_wf' addParams( name: name, tool: tool )
 
 include { concat_contamination } from './modules/get_host' addParams( tool: tool )
 
@@ -213,9 +213,8 @@ workflow clean_fasta {
     contamination
     
   main:
-    concat_contamination( fasta_input_ch.map{ it -> it[0] }, contamination )
     // map
-    minimap2(fasta_input_ch, concat_contamination.out.fa)
+    minimap2(fasta_input_ch, contamination)
     // separate un/mapped reads, compress reads, make contamination bam
     filter_un_mapped_alignments(minimap2.out.sam, 'fasta')
     compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads), 'fasta')
@@ -237,9 +236,8 @@ workflow clean_nano {
     contamination
 
   main:
-    concat_contamination( nano_input_ch.map{ it -> it[0] }, contamination )
     // rename_reads(nano_input_ch, 'single')
-    minimap2(nano_input_ch, concat_contamination.out.fa)
+    minimap2(nano_input_ch, contamination)
     // separate un/mapped reads, make contamination bam
     filter_un_mapped_alignments(minimap2.out.sam, 'single')
     make_mapped_bam(minimap2.out.sam)
@@ -280,11 +278,10 @@ workflow clean_illumina {
     contamination
 
   main:
-    concat_contamination( illumina_input_ch.map{ it -> it[0] }, contamination )
     // rename_reads(illumina_input_ch, 'paired')
     if (params.bbduk){
       // map
-      bbduk(illumina_input_ch, concat_contamination.out.fa)
+      bbduk(illumina_input_ch, contamination)
       // compress reads
       compress_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'paired')
       // log & stats
@@ -293,7 +290,7 @@ workflow clean_illumina {
       stats = bbdukStats.out.tsv
     } else {
       // map
-      minimap2(illumina_input_ch, concat_contamination.out.fa)
+      minimap2(illumina_input_ch, contamination)
       // separate un/mapped reads, make contamination bam
       filter_un_mapped_alignments(minimap2.out.sam, 'paired')
       make_mapped_bam(minimap2.out.sam)
@@ -334,11 +331,10 @@ workflow clean_illumina_single {
     contamination
 
   main:
-    concat_contamination( illumina_single_end_input_ch.map{ it -> it[0] }, contamination )
     // rename_reads(illumina_single_end_input_ch, 'single')
     if (params.bbduk){
       // map
-      bbduk(illumina_single_end_input_ch, concat_contamination.out.fa)
+      bbduk(illumina_single_end_input_ch, contamination)
       // compress reads
       compress_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'single')
       // log & stats
@@ -347,7 +343,7 @@ workflow clean_illumina_single {
       stats = bbdukStats.out.tsv
     } else {
       // map
-      minimap2(illumina_single_end_input_ch, concat_contamination.out.fa)
+      minimap2(illumina_single_end_input_ch, contamination)
       // separate un/mapped reads, make contamination bam
       filter_un_mapped_alignments(minimap2.out.sam, 'single')
       make_mapped_bam(minimap2.out.sam)
@@ -389,13 +385,8 @@ workflow clean_illumina_single {
 /* Comment section: */
 
 workflow {
-  prepare_host()
-  
-  contamination = prepare_host.out.host.collect()
-        .mix(nanoControlFastaChannel)
-        .mix(illuminaControlFastaChannel)
-        .mix(prepare_host.out.checkedOwn)
-        .mix(rRNAChannel).collect()
+  prepare_contamination(nanoControlFastaChannel, illuminaControlFastaChannel, rRNAChannel)
+  contamination = prepare_contamination.out
 
   if ( params.fasta ) {
     clean_fasta(fasta_input_ch, contamination)

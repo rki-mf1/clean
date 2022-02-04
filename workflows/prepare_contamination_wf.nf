@@ -1,11 +1,32 @@
-include { download_host; check_own } from '../modules/get_host'
+include { download_host; check_own; concat_contamination } from '../modules/prepare_contamination'
 
 /* Comment section:
 The Database Section is designed to "auto-get" pre prepared databases.
 It is written for local use and cloud use via params.cloudProcess.
 */
 
-workflow prepare_host {
+workflow prepare_contamination {
+  take:
+    nanoControlFastaChannel
+    illuminaControlFastaChannel
+    rRNAChannel
+
+  main:
+    prepare_auto_host()
+    prepare_own_host()
+
+    contamination_collection = prepare_auto_host.out.collect()
+          .mix(nanoControlFastaChannel)
+          .mix(illuminaControlFastaChannel)
+          .mix(prepare_own_host.out)
+          .mix(rRNAChannel).collect()
+    concat_contamination(params.name, contamination_collection)
+
+  emit:
+    concat_contamination.out.fa
+}
+
+workflow prepare_auto_host {
   main:
     if ( params.host ) {
       if ( params.cloudProcess ) {
@@ -24,6 +45,12 @@ workflow prepare_host {
     else {
       host = Channel.empty()
     }
+  emit:
+    host
+}
+
+workflow prepare_own_host {
+  main:
     if ( params.own ) {
       check_own(ownFastaChannel)
       checkedOwn = check_own.out
@@ -32,6 +59,5 @@ workflow prepare_host {
       checkedOwn = Channel.empty()
     }
   emit:
-    host = host
-    checkedOwn = checkedOwn
+    checkedOwn
 }

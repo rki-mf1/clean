@@ -41,6 +41,10 @@ process download_host {
     zcat *.gz | bgzip -@ ${task.cpus} -c > ${host}.fa.gz
   fi
   """
+  stub:
+  """
+  touch ${host}.fa.gz
+  """
 }
 
 process check_own {
@@ -62,6 +66,10 @@ process check_own {
     mv ${fasta} ${fasta}.tmp
     zcat ${fasta}.tmp | bgzip -@ ${task.cpus} -c > ${fasta}.gz
   fi
+  """
+  stub:
+  """
+  touch ${fasta}.gz
   """
 }
 
@@ -95,5 +103,9 @@ process concat_contamination {
 
   samtools faidx db.fa.gz
   mv db.fa.gz.fai db.fa.fai
+  """
+  stub:
+  """
+  touch db.fa.gz db.fa.fai
   """
 }
