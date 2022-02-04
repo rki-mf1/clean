@@ -166,8 +166,7 @@ process writeLog {
   publishDir "${params.output}/${name}/${params.tool}", mode: 'copy', pattern: "log.txt"
   
   input:
-    val name
-    val reads
+    tuple val(name), path (reads)
     val db
 
   output:

@@ -227,7 +227,7 @@ workflow clean_fasta {
     make_mapped_bam(minimap2.out.sam)
     idxstats_from_bam_mapped(make_mapped_bam.out.contamination_bam)
     // log & stats
-    writeLog(fasta_input_ch.map{ it -> it[0] }, fasta_input_ch.map{ it -> it[1] }, contamination)
+    writeLog(fasta_input_ch.map, contamination)
     minimap2Stats(make_mapped_bam.out.idxstats.join(minimap2.out.num_contigs).combine(Channel.from('NULL')))
   emit:
     stats = minimap2Stats.out.tsv
@@ -267,7 +267,7 @@ workflow clean_nano {
       compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads))
     }
     // log & stats
-    writeLog(nano_input_ch.map{ it -> it[0] }, nano_input_ch.map{ it -> it[1] }, contamination)
+    writeLog(nano_input_ch, contamination)
     get_number_of_reads(nano_input_ch)
 
     minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_reads.out).join( number_ambiguous_reads_ch ) )
@@ -291,7 +291,7 @@ workflow clean_illumina {
       // compress reads
       compress_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads))
       // log & stats
-      writeLog(illumina_input_ch.map{ it -> it[0] }, illumina_input_ch.map{ it -> it[1] }, contamination)
+      writeLog(illumina_input_ch, contamination)
       bbdukStats(bbduk.out.stats)
       stats = bbdukStats.out.tsv
     } else {
@@ -319,7 +319,7 @@ workflow clean_illumina {
         compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads))
       }
       // log & stats
-      writeLog(illumina_input_ch.map{ it -> it[0] }, illumina_input_ch.map{ it -> it[1] }, contamination)
+      writeLog(illumina_input_ch, contamination)
       get_number_of_reads(illumina_input_ch)
       minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_reads.out).join( number_ambiguous_reads_ch ) )
       stats = minimap2Stats.out.tsv
@@ -344,7 +344,7 @@ workflow clean_illumina_single {
       // compress reads
       compress_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads))
       // log & stats
-      writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
+      writeLog(illumina_single_end_input_ch, contamination)
       bbdukStats(bbduk.out.stats)
       stats = bbdukStats.out.tsv
     } else {
@@ -372,7 +372,7 @@ workflow clean_illumina_single {
         compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads))
       }
       // log & stats
-      writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
+      writeLog(illumina_single_end_input_ch, contamination)
       get_number_of_reads(illumina_single_end_input_ch)
       minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_reads.out).join( number_ambiguous_reads_ch ) )
       stats = minimap2Stats.out.tsv
