@@ -203,7 +203,7 @@ include { bbduk } from './modules/bbmap' addParams( mode: lib_type )
 
 include { filter_un_mapped_alignments; make_mapped_bam; filter_soft_clipped_alignments ; fastq_from_bam ; idxstats_from_bam as idxstats_from_bam_mapped ; idxstats_from_bam as idxstats_from_bam_softclipped ; filter_true_dcs_alignments } from './modules/alignment_processing' addParams( tool: tool, mode: lib_type, seq_type: seq_type )
 
-include { compress_reads; get_number_of_records as get_number_of_reads; get_number_of_records as get_number_of_ambiguous_reads; minimap2Stats; bbdukStats; writeLog } from './modules/utils' addParams( tool: tool, mode: lib_type, seq_type: seq_type )
+include { compress_reads; get_number_of_records as get_number_of_records; get_number_of_records as get_number_of_ambiguous_reads; minimap2Stats; bbdukStats; writeLog } from './modules/utils' addParams( tool: tool, mode: lib_type, seq_type: seq_type )
 
 include { qc_fasta; qc_nano; qc_illumina as qc_illumina; qc_illumina as qc_illumina_single ; qc } from './workflows/qc_wf'
 
@@ -249,7 +249,7 @@ workflow clean_nano {
     filter_un_mapped_alignments(minimap2.out.sam)
     make_mapped_bam(minimap2.out.sam)
     filter_true_dcs_alignments(make_mapped_bam.out.contamination_bam, nanoControlBedChannel)
-    idxstats_from_bam_mapped(filter_true_dcs_alignments.out)
+    idxstats_from_bam_mapped(filter_true_dcs_alignments.out.true_dcs)
     // filter soft clipped reads
     if (params.min_clip) {
       filter_soft_clipped_alignments(filter_true_dcs_alignments.out, params.min_clip)

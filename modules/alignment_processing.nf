@@ -104,7 +104,9 @@ process filter_true_dcs_alignments {
   path (bed)
 
   output:
-  tuple val(name), path ("${name}_filtered.bam")
+  tuple val(name), path ("${name}_no_dcs.bam"), emit: no_dcs
+  tuple val(name), path ("${name}_true_dcs.bam"), emit: true_dcs
+  tuple val(name), path ("${name}_false_dcs.bam"), emit: false_dcs
 
   script:
   """
