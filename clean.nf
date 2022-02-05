@@ -142,10 +142,10 @@ if ( params.fasta && params.list ) { fasta_input_ch = Channel
   seq_type = 'fasta'
   name = fasta_input_ch.map{ it -> it[0] }
 } else if ( params.fasta ) { fasta_input_ch = Channel
-    .fromPath( params.fasta, checkIfExists: true)
+    .fromPath( params.fasta, checkIfExists: true )
     .map { file -> tuple(file.simpleName, file) }
-    seq_type = 'fasta'
-    name = fasta_input_ch.map{ it -> it[0] }
+  seq_type = 'fasta'
+  name = fasta_input_ch.map{ it -> it[0] }
 }
 
 // load control fasta sequence
@@ -227,7 +227,7 @@ workflow clean_fasta {
     make_mapped_bam(minimap2.out.sam)
     idxstats_from_bam_mapped(make_mapped_bam.out.contamination_bam)
     // log & stats
-    writeLog(fasta_input_ch.map, contamination)
+    writeLog(fasta_input_ch, contamination)
     minimap2Stats(make_mapped_bam.out.idxstats.join(minimap2.out.num_contigs).combine(Channel.from('NULL')))
   emit:
     stats = minimap2Stats.out.tsv
