@@ -203,7 +203,7 @@ include { bbduk } from './modules/bbmap' addParams( mode: lib_type )
 
 include { filter_un_mapped_alignments; make_mapped_bam; filter_soft_clipped_alignments ; fastq_from_bam ; idxstats_from_bam as idxstats_from_bam_mapped ; idxstats_from_bam as idxstats_from_bam_softclipped ; filter_true_dcs_alignments } from './modules/alignment_processing' addParams( tool: tool, mode: lib_type, seq_type: seq_type )
 
-include { compress_reads; get_number_of_reads as get_number_of_reads; get_number_of_reads as get_number_of_ambiguous_reads; minimap2Stats; bbdukStats; writeLog } from './modules/utils' addParams( tool: tool, mode: lib_type, seq_type: seq_type )
+include { compress_reads; get_number_of_records as get_number_of_reads; get_number_of_records as get_number_of_ambiguous_reads; minimap2Stats; bbdukStats; writeLog } from './modules/utils' addParams( tool: tool, mode: lib_type, seq_type: seq_type )
 
 include { qc_fasta; qc_nano; qc_illumina as qc_illumina; qc_illumina as qc_illumina_single ; qc } from './workflows/qc_wf'
 
@@ -228,7 +228,8 @@ workflow clean_fasta {
     idxstats_from_bam_mapped(make_mapped_bam.out.contamination_bam)
     // log & stats
     writeLog(fasta_input_ch, contamination)
-    minimap2Stats(make_mapped_bam.out.idxstats.join(minimap2.out.num_contigs).combine(Channel.from('NULL')))
+    get_number_of_records(fasta_input_ch)
+    minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_records.out).combine(Channel.from('NULL')))
   emit:
     stats = minimap2Stats.out.tsv
     idxstats = idxstats_from_bam_mapped.out
@@ -268,9 +269,9 @@ workflow clean_nano {
     }
     // log & stats
     writeLog(nano_input_ch, contamination)
-    get_number_of_reads(nano_input_ch)
+    get_number_of_records(nano_input_ch)
 
-    minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_reads.out).join( number_ambiguous_reads_ch ) )
+    minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_records.out).join( number_ambiguous_reads_ch ) )
   emit:
     stats = minimap2Stats.out.tsv
     idxstats = idxstats_from_bam_mapped.out.mix(idxstats_from_bam_softclipped_out.ifEmpty([])).collect()
@@ -320,8 +321,8 @@ workflow clean_illumina {
       }
       // log & stats
       writeLog(illumina_input_ch, contamination)
-      get_number_of_reads(illumina_input_ch)
-      minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_reads.out).join( number_ambiguous_reads_ch ) )
+      get_number_of_records(illumina_input_ch)
+      minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_records.out).join( number_ambiguous_reads_ch ) )
       stats = minimap2Stats.out.tsv
     }
   emit:
@@ -373,8 +374,8 @@ workflow clean_illumina_single {
       }
       // log & stats
       writeLog(illumina_single_end_input_ch, contamination)
-      get_number_of_reads(illumina_single_end_input_ch)
-      minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_reads.out).join( number_ambiguous_reads_ch ) )
+      get_number_of_records(illumina_single_end_input_ch)
+      minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_records.out).join( number_ambiguous_reads_ch ) )
       stats = minimap2Stats.out.tsv
     }
     emit:

@@ -33,39 +33,49 @@ process compress_reads {
   """
 }
 
-process get_number_of_reads {
+process get_number_of_records {
   label 'smallTask'
 
   input:
   tuple val(name), path(reads)
 
   output:
-  tuple val(name), env(TOTALREADS), emit: totalreads
+  tuple val(name), env(TOTALRECORDS), emit: TOTALRECORDS
 
   script:
   if ( params.mode == 'paired' ) {
     """
     if [[ ${reads[0]} =~ \\.gz\$ ]]; then
-      TOTALREADS_1=\$(zcat ${reads[0]} | echo \$((`wc -l`/4)))
-      TOTALREADS_2=\$(zcat ${reads[1]} | echo \$((`wc -l`/4)))
+      TOTALRECORDS_1=\$(zcat ${reads[0]} | echo \$((`wc -l`/4)))
+      TOTALRECORDS_2=\$(zcat ${reads[1]} | echo \$((`wc -l`/4)))
     else
-      TOTALREADS_1=\$(cat ${reads[0]} | echo \$((`wc -l`/4)))
-      TOTALREADS_2=\$(cat ${reads[1]} | echo \$((`wc -l`/4)))
+      TOTALRECORDS_1=\$(cat ${reads[0]} | echo \$((`wc -l`/4)))
+      TOTALRECORDS_2=\$(cat ${reads[1]} | echo \$((`wc -l`/4)))
     fi
-    TOTALREADS=\$(( TOTALREADS_1+TOTALREADS_2 ))
+    TOTALRECORDS=\$(( TOTALRECORDS_1+TOTALRECORDS_2 ))
     """
-  } else {
+  } else if ( params.mode == 'single' && params.seq_type != 'fasta' ) {
     """
     if [[ ${reads} =~ \\.gz\$ ]]; then
-      TOTALREADS=\$(zcat ${reads} | echo \$((`wc -l`/4)))
+      TOTALRECORDS=\$(zcat ${reads} | echo \$((`wc -l`/4)))
     else
-      TOTALREADS=\$(cat ${reads} | echo \$((`wc -l`/4)))
+      TOTALRECORDS=\$(cat ${reads} | echo \$((`wc -l`/4)))
     fi
     """
+  } else if ( params.seq_type == 'fasta' ) {
+    """
+    if [[ ${reads} =~ \\.gz\$ ]]; then
+      TOTALCONTIGS=\$(zgrep '^>' ${reads} | wc -l)
+    else
+      TOTALCONTIGS=\$(grep '^>' ${reads} | wc -l)
+    fi
+    """
+  } else {
+    error "Invalid mode: ${params.mode} or seq_type: ${params.seq_type}"
   }
   stub:
   """
-  TOTALREADS=42
+  TOTALRECORDS=42
   """
 }
 

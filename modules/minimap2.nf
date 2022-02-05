@@ -6,7 +6,6 @@ process minimap2 {
     path (db)
 
   output:
-    tuple val(name), env(TOTALCONTIGS), emit: num_contigs optional true
     tuple val(name), path('*.sam'), path(input), emit: sam // input just for naming
 
   script:
@@ -31,12 +30,6 @@ process minimap2 {
     }
   } else if ( params.seq_type == 'fasta' ){
       """
-      if [[ ${fasta} =~ \\.gz\$ ]]; then
-        TOTALCONTIGS=\$(zgrep '^>' ${fasta} | wc -l)
-      else
-        TOTALCONTIGS=\$(grep '^>' ${fasta} | wc -l)
-      fi
-
       minimap2 -ax asm5 -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${fasta}
       """
   } else {
@@ -44,7 +37,6 @@ process minimap2 {
   }
   stub:
   """
-  TOTALCONTIGS=42
   touch ${name}.sam
   """
 }
