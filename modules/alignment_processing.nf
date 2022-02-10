@@ -65,6 +65,49 @@ process make_mapped_bam {
   """
 }
 
+process split_bam {
+  label 'minimap2'
+
+  input:
+      tuple val(name), path(bam)
+
+  output:
+    tuple val(name), path("${name}_mapped.bam")
+    tuple val(name), path("${name}_unmapped.bam")
+
+  script:
+  flag = params.mode == 'paired' ? 2 : 4
+  """
+  # paired -f 2 -F 2
+  # single -f 4 -F 4
+  samtools view -@ ${task.cpus} -b -f ${flag} ${bam} | samtools sort -o ${name}.mapped.bam -@ ${task.cpus}
+  samtools view -@ ${task.cpus} -b -F ${flag} ${bam} | samtools sort -o ${name}.mapped.bam -@ ${task.cpus}
+  """
+  stub:
+  """
+  touch ${name}_mapped.bam ${name}_unmapped.bam
+  """
+}
+
+process merge_bam {
+  label 'minimap2'
+
+  input:
+    path(bam)
+
+  output:
+    path("merged.bam")
+  
+  script:
+  """
+  samtools merge -@ ${task.cpus} -o merged.bam ${bam} # -h FILE ?
+  """
+  stub:
+  """
+  touch merged.bam
+  """
+}
+
 process filter_soft_clipped_alignments {
   label 'samclipy'
   label 'smallTask'
