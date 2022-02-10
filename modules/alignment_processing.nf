@@ -12,14 +12,14 @@ process filter_un_mapped_alignments {
   if ( params.mode == 'paired' ) {
     """
     # Use samtools -F 2 to discard only reads mapped in proper pair:
-    samtools fastq -F 2 -1 ${reads[0].baseName}.clean.fastq -2 ${reads[1].baseName}.clean.fastq ${name}.sam
-    samtools fastq -f 2 -1 ${reads[0].baseName}.mapped.fastq -2 ${reads[1].baseName}.mapped.fastq ${name}.sam
+    samtools fastq -@ ${task.cpus} -F 2 -1 ${reads[0].baseName}.clean.fastq -2 ${reads[1].baseName}.clean.fastq ${name}.sam
+    samtools fastq -@ ${task.cpus} -f 2 -1 ${reads[0].baseName}.mapped.fastq -2 ${reads[1].baseName}.mapped.fastq ${name}.sam
     """
   } else if ( params.mode == 'single' ) {
     dtype = (params.seq_type == 'fasta') ? 'a' : 'q'
     """
-    samtools fast${dtype} -f 4 -0 ${reads.baseName}.clean.fast${dtype} ${sam}
-    samtools fast${dtype} -F 4 -0 ${reads.baseName}.mapped.fast${dtype} ${sam}
+    samtools fast${dtype} -@ ${task.cpus} -f 4 -0 ${reads.baseName}.clean.fast${dtype} ${sam}
+    samtools fast${dtype} -@ ${task.cpus} -F 4 -0 ${reads.baseName}.mapped.fast${dtype} ${sam}
     """
   } else {
     error "Invalid mode: ${params.mode}"
@@ -46,13 +46,13 @@ process make_mapped_bam {
   script:
   if ( params.mode == 'paired' ) {
     """
-    samtools view -b -f 2 -F 2048 ${name}.sam | samtools sort -o ${name}.mapped.bam --threads ${task.cpus}
+    samtools view -@ ${task.cpus} -b -f 2 -F 2048 ${name}.sam | samtools sort -o ${name}.mapped.bam --threads ${task.cpus}
     samtools index ${name}.mapped.bam
     samtools idxstats ${name}.mapped.bam > idxstats.tsv
     """
   } else if ( params.mode == 'single' ) {
     """
-    samtools view -b -F 2052 ${name}.sam | samtools sort -o ${name}.mapped.bam --threads ${task.cpus}
+    samtools view -@ ${task.cpus} -b -F 2052 ${name}.sam | samtools sort -o ${name}.mapped.bam --threads ${task.cpus}
     samtools index ${name}.mapped.bam
     samtools idxstats  ${name}.mapped.bam > idxstats.tsv
     """
