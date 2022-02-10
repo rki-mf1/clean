@@ -84,6 +84,8 @@ Set hosts = ['hsa', 'mmu', 'cli', 'csa', 'gga', 'eco']
 if ( params.profile ) { exit 1, "--profile is wrong, use -profile" }
 if ( params.nano == '' &&  params.illumina == '' && params.fasta == '' && params.illumina_single_end == '' ) { exit 1, "Read files missing, use [--nano] or [--illumina] or [--fasta]"}
 
+if ( ! ( (params.nano != '' && (params.illumina == '' && params.fasta == '' && params.illumina_single_end == '')) || (params.illumina != '' && (params.nano == '' && params.fasta == '' && params.illumina_single_end == '')) || (params.fasta != '' && (params.illumina == '' && params.nano == '' && params.illumina_single_end == '')) || (params.illumina_single_end != '' && (params.illumina == '' && params.fasta == '' && params.nano == '') ) ) ) { exit 1, "Choose one input type: [--nano] or [--illumina] or [--fasta]" }
+
 if ( params.control ) { for( String ctr : params.control.split(',') ) if ( ! (ctr in controls ) ) { exit 1, "Wrong control defined (" + ctr + "), use one of these: " + controls } }
 if ( params.nano && params.control && 'dcs' in params.control.split(',') && 'eno' in params.control.split(',') ) { exit 1, "Please choose either eno (for ONT dRNA-Seq) or dcs (for ONT DNA-Seq)." }
 if ( params.host ) { for( String hst : params.host.split(',') ) if ( ! (hst in hosts ) ) { exit 1, "Wrong host defined (" + hst + "), use one of these: " + hosts } }
