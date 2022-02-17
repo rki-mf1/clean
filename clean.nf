@@ -451,7 +451,7 @@ workflow {
     stast_illumina = clean_illumina.out.stats
     fastqc = qc_illumina.out
 //  } else { fastqc = Channel.fromPath('no_illumina_input'); stast_illumina = Channel.fromPath('no_illumina_stats') } THIS FAILS IN CLOUD bc/ the cloud tries to stage a file of that name
-  } else { fastqc = Channel.empty(); stast_illumina = Channel..empty() }
+  } else { fastqc = Channel.empty(); stast_illumina = Channel.empty() }
 
   if (params.illumina_single_end) { 
     clean_illumina_single(illumina_single_end_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
