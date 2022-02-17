@@ -450,14 +450,16 @@ workflow {
     qc_illumina(clean_illumina.out.in, clean_illumina.out.out)
     stast_illumina = clean_illumina.out.stats
     fastqc = qc_illumina.out
-  } else { fastqc = Channel.fromPath('no_illumina_input'); stast_illumina = Channel.fromPath('no_illumina_stats') }
+//  } else { fastqc = Channel.fromPath('no_illumina_input'); stast_illumina = Channel.fromPath('no_illumina_stats') } THIS FAILS IN CLOUD bc/ the cloud tries to stage a file of that name
+  } else { fastqc = Channel.empty(); stast_illumina = Channel..empty() }
 
   if (params.illumina_single_end) { 
     clean_illumina_single(illumina_single_end_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
     qc_illumina_single(clean_illumina_single.out.in, clean_illumina_single.out.out)
     stast_illumina_single = clean_illumina_single.out.stats
     fastqc_single = qc_illumina_single.out
-  } else { fastqc_single = Channel.fromPath('no_illumina_single_input'); stast_illumina_single = Channel.fromPath('no_illumina_single_stats') }
+//  } else { fastqc_single = Channel.fromPath('no_illumina_single_input'); stast_illumina_single = Channel.fromPath('no_illumina_single_stats') }
+  } else { fastqc_single = Channel.empty(); stast_illumina_single = Channel.empty() }
 
   qc(multiqc_config, fastqc.concat(fastqc_single).collect(), nanoplot, quast, stast_fasta.concat(stast_nano).concat(stast_illumina).concat(stast_illumina_single).collect())
 }
