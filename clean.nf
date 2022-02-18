@@ -461,7 +461,7 @@ workflow {
 //  } else { fastqc_single = Channel.fromPath('no_illumina_single_input'); stast_illumina_single = Channel.fromPath('no_illumina_single_stats') }
   } else { fastqc_single = Channel.empty(); stast_illumina_single = Channel.empty() }
 
-  qc(multiqc_config, fastqc.concat(fastqc_single).collect(), nanoplot, quast, stast_fasta.concat(stast_nano).concat(stast_illumina).concat(stast_illumina_single).collect())
+  qc(multiqc_config, fastqc.concat(fastqc_single).collect().ifEmpty([]), nanoplot, quast, stast_fasta.concat(stast_nano).concat(stast_illumina).concat(stast_illumina_single).collect())
 }
 
 /**************************  
