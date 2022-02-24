@@ -85,7 +85,7 @@ process concat_contamination {
   
   script:
   """
-  cat * > db.fa.gz
+  cat *.gz > db.fa.gz
   samtools faidx db.fa.gz
   mv db.fa.gz.fai db.fa.fai
   """
