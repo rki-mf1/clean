@@ -436,30 +436,32 @@ workflow {
     qc_fasta(clean_fasta.out.in, clean_fasta.out.out)
     stast_fasta = clean_fasta.out.stats
     quast = qc_fasta.out.collect()
-  } else { quast = Channel.fromPath('no_fasta_input'); stast_fasta = Channel.fromPath('no_fasta_stats') }
+  } else { quast = Channel.empty(); stast_fasta = Channel.empty() }
 
   if (params.nano) { 
     clean_nano(nano_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
     qc_nano(clean_nano.out.in, clean_nano.out.out)
     stast_nano = clean_nano.out.stats
     nanoplot = qc_nano.out.collect()
-  } else { nanoplot = Channel.fromPath('no_nanopore_input'); stast_nano = Channel.fromPath('no_nano_stats') }
+  } else { nanoplot = Channel.empty(); stast_nano = Channel.empty() }
 
   if (params.illumina) { 
     clean_illumina(illumina_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
     qc_illumina(clean_illumina.out.in, clean_illumina.out.out)
     stast_illumina = clean_illumina.out.stats
     fastqc = qc_illumina.out
-  } else { fastqc = Channel.fromPath('no_illumina_input'); stast_illumina = Channel.fromPath('no_illumina_stats') }
+//  } else { fastqc = Channel.fromPath('no_illumina_input'); stast_illumina = Channel.fromPath('no_illumina_stats') } THIS FAILS IN CLOUD bc/ the cloud tries to stage a file of that name
+  } else { fastqc = Channel.empty(); stast_illumina = Channel.empty() }
 
   if (params.illumina_single_end) { 
     clean_illumina_single(illumina_single_end_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
     qc_illumina_single(clean_illumina_single.out.in, clean_illumina_single.out.out)
     stast_illumina_single = clean_illumina_single.out.stats
     fastqc_single = qc_illumina_single.out
-  } else { fastqc_single = Channel.fromPath('no_illumina_single_input'); stast_illumina_single = Channel.fromPath('no_illumina_single_stats') }
+//  } else { fastqc_single = Channel.fromPath('no_illumina_single_input'); stast_illumina_single = Channel.fromPath('no_illumina_single_stats') }
+  } else { fastqc_single = Channel.empty(); stast_illumina_single = Channel.empty() }
 
-  qc(multiqc_config, fastqc.concat(fastqc_single).collect(), nanoplot, quast, stast_fasta.concat(stast_nano).concat(stast_illumina).concat(stast_illumina_single).collect())
+  qc(multiqc_config, fastqc.concat(fastqc_single).collect().ifEmpty([]), nanoplot.ifEmpty([]), quast.ifEmpty([]), stast_fasta.concat(stast_nano).concat(stast_illumina).concat(stast_illumina_single).collect().ifEmpty([]))
 }
 
 /**************************  
