@@ -98,11 +98,10 @@ process multiqc {
   
   input:
   path(config)
-  path(fastqc)
-  path(nanoplot)
-  path(quast)
-  path(mapping_stats)
+  path(report)
+  path(bbduk_summary)
   path(idxstats)
+  path(flagstats)
     
   output:
   path "multiqc_report.html"
