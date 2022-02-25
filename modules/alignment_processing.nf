@@ -98,18 +98,18 @@ process merge_bam {
   label 'minimap2'
 
   input:
-    path(bam)
+    tuple val(name), val(type), path(bam)
 
   output:
-    path("merged.bam")
+   tuple val(name), val(type), path("${name}_${type}_merged.bam")
   
   script:
   """
-  samtools merge -@ ${task.cpus} -o merged.bam ${bam} # -h FILE ?
+  samtools merge -@ ${task.cpus} ${name}_${type}_merged.bam ${bam} # first bam is output
   """
   stub:
   """
-  touch merged.bam
+  touch ${name}_${type}_merged.bam
   """
 }
 
