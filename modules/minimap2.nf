@@ -6,37 +6,28 @@ process minimap2 {
     path (db)
 
   output:
-    tuple val(name), path('*.sam'), path(input), emit: sam // input just for naming
+    tuple val(name), path("${name}.bam"), emit: bam // input just for naming
 
   script:
-  if ( params.seq_type == 'nano' ) {
+  // -N is an internal algorithm option. It controls how many candidates alignment to extend. --secondary is an output option.
+  if ( params.input_type == 'nano' ) {
+    params = params.reads_rna ? "-ax splice -k14" : "-ax map-ont"
     """
-    PARAMS="-ax map-ont"
-    if [[ ${params.reads_rna} != 'false' ]]; then
-      PARAMS="-ax splice -k14"
-    fi
-    
-    minimap2 \$PARAMS -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${input}
+    minimap2 ${params} -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} ${db} ${input} | samtools view -bhS -@ ${task.cpus} > ${name}.bam
     """
-  } else if ( params.seq_type == 'illumina' ) {
-    if ( params.mode == 'paired' ) {
-      """
-      minimap2 -ax sr -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${input[0]} ${input[1]}
-      """
-    } else {
-      """
-      minimap2 -ax sr -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${input}
-      """
-    }
-  } else if ( params.seq_type == 'fasta' ){
-      """
-      minimap2 -ax asm5 -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} -o ${name}.sam ${db} ${fasta}
-      """
+  } else if ( params.input_type.contains('illumina') ) {
+    """
+    minimap2 -ax sr -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} ${db} ${input} | samtools view -bhS -@ ${task.cpus} > ${name}.bam
+    """
+  } else if ( params.input_type == 'fasta' ){
+    """
+    minimap2 -ax asm5 -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} ${db} ${fasta} | samtools view -bhS -@ ${task.cpus} > ${name}.bam
+    """
   } else {
-    error "Unknown seq_type: ${params.seq_type}"
+    error "Unknown input_type: ${params.input_type}"
   }
   stub:
   """
-  touch ${name}.sam
+  touch ${name}.bam
   """
 }
