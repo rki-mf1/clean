@@ -11,15 +11,15 @@ workflow qc {
   main:
     if ( input_type == 'fasta' ){
       quast(input)
-      report = quast.out.report_tsv.collect()
+      report = quast.out.report_tsv
     } else if ( input_type == 'nano' ) {
       nanoplot(input)
       format_nanoplot_report(nanoplot.out.html)
-      report = format_nanoplot_report.out.collect()
+      report = format_nanoplot_report.out
     } else if ( input_type.contains('illumina') ){
       fastqc(input)
-      report = fastqc.out.zip.map{ it -> it[-1] }.collect()
+      report = fastqc.out.zip.map{ it -> it[-1] }
     } else { error "Invalid input type: ${input_type}" }
 
-    multiqc(multiqc_config, report, bbduk_summary, idxstats.map{ it -> it[1] }, flagstats.map{ it -> it[1] })
+    multiqc(multiqc_config, report.collect(), bbduk_summary.collect(), idxstats.map{ it -> it[1] }.collect(), flagstats.map{ it -> it[1] }.collect())
 }
