@@ -162,240 +162,24 @@ lib_pairedness = params.input_type == 'illumina' ? 'paired' : 'single'
 * MODULES
 **************************/
 
-/* Comment section: */
+include { prepare_contamination } from './workflows/prepare_contamination_wf' addParams( tool: tool )
 
-include { prepare_contamination } from './workflows/prepare_contamination_wf' addParams( name: name, tool: tool )
+include { clean } from './workflows/clean_wf' addParams( tool: tool, lib_pairedness: lib_pairedness )
 
-include { minimap2 } from './modules/minimap2' addParams( mode: lib_type, seq_type: seq_type )
-include { bbduk } from './modules/bbmap' addParams( mode: lib_type )
+include { qc } from './workflows/qc_wf'
 
-include { filter_un_mapped_alignments; make_mapped_bam; filter_soft_clipped_alignments ; fastq_from_bam ; idxstats_from_bam as idxstats_from_bam_mapped ; idxstats_from_bam as idxstats_from_bam_softclipped ; filter_true_dcs_alignments } from './modules/alignment_processing' addParams( tool: tool, mode: lib_type, seq_type: seq_type )
-
-include { compress_reads; get_number_of_records as get_number_of_records; get_number_of_records as get_number_of_ambiguous_reads; minimap2Stats; bbdukStats; writeLog } from './modules/utils' addParams( tool: tool, mode: lib_type, seq_type: seq_type )
-
-include { qc_fasta; qc_nano; qc_illumina as qc_illumina; qc_illumina as qc_illumina_single ; qc } from './workflows/qc_wf'
-
-/************************** 
-* SUB WORKFLOWS
-**************************/
-
-/* Comment section: */
-
-workflow clean_fasta {
-  take: 
-    fasta_input_ch
-    contamination
-    
-  main:
-    // map
-    minimap2(fasta_input_ch, contamination)
-    // separate un/mapped reads, compress reads, make contamination bam
-    filter_un_mapped_alignments(minimap2.out.sam)
-    compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads))
-    make_mapped_bam(minimap2.out.sam)
-    idxstats_from_bam_mapped(make_mapped_bam.out.contamination_bam)
-    // log & stats
-    writeLog(fasta_input_ch, contamination)
-    get_number_of_records(fasta_input_ch)
-    minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_records.out).combine(Channel.from('NULL')))
-  emit:
-    stats = minimap2Stats.out.tsv
-    idxstats = idxstats_from_bam_mapped.out
-    in = fasta_input_ch.map{ it -> it.plus(1, 'all') }
-    out = compress_reads.out
-} 
-
-workflow clean_nano {
-  take: 
-    nano_input_ch
-    contamination
-
-  main:
-    // rename_reads(nano_input_ch, 'single')
-    minimap2(nano_input_ch, contamination)
-    // separate un/mapped reads, make contamination bam
-    filter_un_mapped_alignments(minimap2.out.sam)
-    make_mapped_bam(minimap2.out.sam)
-    filter_true_dcs_alignments(make_mapped_bam.out.contamination_bam, nanoControlBedChannel)
-    idxstats_from_bam_mapped(filter_true_dcs_alignments.out.true_dcs)
-    // filter soft clipped reads
-    if (params.min_clip) {
-      filter_soft_clipped_alignments(filter_true_dcs_alignments.out, params.min_clip)
-      fastq_from_bam(filter_soft_clipped_alignments.out.bam_am.mix(filter_soft_clipped_alignments.out.bam_unam))
-      number_ambiguous_reads_ch = get_number_of_ambiguous_reads(fastq_from_bam.out.filter{ it[1] == 'ambiguous'}.map{ it -> [it[0]]+[it[2]] })
-      idxstats_from_bam_softclipped(filter_soft_clipped_alignments.out.bam_am.map{ it -> [it[0]]+[it[2]] }.mix(filter_soft_clipped_alignments.out.bam_unam.map{ it -> [it[0]]+[it[2]] }))
-      idxstats_from_bam_softclipped_out = idxstats_from_bam_softclipped.out
-    } else {
-      number_ambiguous_reads_ch = nano_input_ch.map{ it -> it[0] }.combine(Channel.from('NULL'))
-      idxstats_from_bam_softclipped_out = Channel.empty()
-    }
-    // compress reads
-    if (params.min_clip) {
-      compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads).concat(fastq_from_bam.out))
-    } else {
-      compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads))
-    }
-    // log & stats
-    writeLog(nano_input_ch, contamination)
-    get_number_of_records(nano_input_ch)
-
-    minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_records.out).join( number_ambiguous_reads_ch ) )
-  emit:
-    stats = minimap2Stats.out.tsv
-    idxstats = idxstats_from_bam_mapped.out.mix(idxstats_from_bam_softclipped_out.ifEmpty([])).collect()
-    in = nano_input_ch.map{ it -> it.plus(1, 'all') }
-    out = compress_reads.out
-} 
-
-workflow clean_illumina {
-  take: 
-    illumina_input_ch
-    contamination
-
-  main:
-    // rename_reads(illumina_input_ch, 'paired')
-    if (params.bbduk){
-      // map
-      bbduk(illumina_input_ch, contamination)
-      // compress reads
-      compress_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads))
-      // log & stats
-      writeLog(illumina_input_ch, contamination)
-      bbdukStats(bbduk.out.stats)
-      stats = bbdukStats.out.tsv
-    } else {
-      // map
-      minimap2(illumina_input_ch, contamination)
-      // separate un/mapped reads, make contamination bam
-      filter_un_mapped_alignments(minimap2.out.sam)
-      make_mapped_bam(minimap2.out.sam)
-      idxstats_from_bam_mapped(make_mapped_bam.out.contamination_bam)
-      // filter soft clipped reads
-      if (params.min_clip) {
-        filter_soft_clipped_alignments(make_mapped_bam.out.contamination_bam, params.min_clip)
-        fastq_from_bam(filter_soft_clipped_alignments.out.bam_am.mix(filter_soft_clipped_alignments.out.bam_unam))
-        number_ambiguous_reads_ch = get_number_of_ambiguous_reads(fastq_from_bam.out.filter{ it[1] == 'ambiguous'}.map{ it -> [it[0]]+[it[2]] })
-        idxstats_from_bam_softclipped(filter_soft_clipped_alignments.out.bam_am.map{ it -> [it[0]]+[it[2]] }.mix(filter_soft_clipped_alignments.out.bam_unam.map{ it -> [it[0]]+[it[2]] }))
-        idxstats_from_bam_softclipped_out = idxstats_from_bam_softclipped.out
-      } else {
-        number_ambiguous_reads_ch = illumina_input_ch.map{ it -> it[0] }.combine(Channel.from('NULL'))
-        idxstats_from_bam_softclipped_out = Channel.empty()
-      }
-      // compress reads
-      if (params.min_clip) {
-        compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads).concat(fastq_from_bam.out))
-      } else {
-        compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads))
-      }
-      // log & stats
-      writeLog(illumina_input_ch, contamination)
-      get_number_of_records(illumina_input_ch)
-      minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_records.out).join( number_ambiguous_reads_ch ) )
-      stats = minimap2Stats.out.tsv
-    }
-  emit:
-    stats = stats
-    idxstats = idxstats_from_bam_mapped.out.mix(idxstats_from_bam_softclipped_out.ifEmpty([])).collect()
-    in = illumina_input_ch.map{ it -> it.plus(1, 'all') }
-    out = compress_reads.out
-} 
-
-workflow clean_illumina_single {
-  take:
-    illumina_single_end_input_ch
-    contamination
-
-  main:
-    // rename_reads(illumina_single_end_input_ch, 'single')
-    if (params.bbduk){
-      // map
-      bbduk(illumina_single_end_input_ch, contamination)
-      // compress reads
-      compress_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads))
-      // log & stats
-      writeLog(illumina_single_end_input_ch, contamination)
-      bbdukStats(bbduk.out.stats)
-      stats = bbdukStats.out.tsv
-    } else {
-      // map
-      minimap2(illumina_single_end_input_ch, contamination)
-      // separate un/mapped reads, make contamination bam
-      filter_un_mapped_alignments(minimap2.out.sam)
-      make_mapped_bam(minimap2.out.sam)
-      idxstats_from_bam_mapped(make_mapped_bam.out.contamination_bam)
-      // filter soft clipped reads
-      if (params.min_clip){
-        filter_soft_clipped_alignments(make_mapped_bam.out.contamination_bam, params.min_clip)
-        fastq_from_bam(filter_soft_clipped_alignments.out.bam_am.mix(filter_soft_clipped_alignments.out.bam_unam))
-        number_ambiguous_reads_ch = get_number_of_ambiguous_reads(fastq_from_bam.out.filter{ it[1] == 'ambiguous'}.map{ it -> [it[0]]+[it[2]] })
-        idxstats_from_bam_softclipped(filter_soft_clipped_alignments.out.bam_am.map{ it -> [it[0]]+[it[2]] }.mix(filter_soft_clipped_alignments.out.bam_unam.map{ it -> [it[0]]+[it[2]] }))
-        idxstats_from_bam_softclipped_out = idxstats_from_bam_softclipped.out
-      } else {
-        number_ambiguous_reads_ch = illumina_single_end_input_ch.map{ it -> it[0] }.combine(Channel.from('NULL'))
-        idxstats_from_bam_softclipped_out = Channel.empty()
-      }
-      // compress reads
-      if (params.min_clip) {
-        compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads).concat(fastq_from_bam.out))
-      } else {
-        compress_reads(filter_un_mapped_alignments.out.cleaned_reads.concat(filter_un_mapped_alignments.out.contaminated_reads))
-      }
-      // log & stats
-      writeLog(illumina_single_end_input_ch, contamination)
-      get_number_of_records(illumina_single_end_input_ch)
-      minimap2Stats(make_mapped_bam.out.idxstats.join(get_number_of_records.out).join( number_ambiguous_reads_ch ) )
-      stats = minimap2Stats.out.tsv
-    }
-    emit:
-      stats = stats
-      idxstats = idxstats_from_bam_mapped.out.mix(idxstats_from_bam_softclipped_out.ifEmpty([])).collect()
-      in = illumina_single_end_input_ch.map{ it -> it.plus(1, 'all') }
-      out = compress_reads.out
-} 
 
 /************************** 
 * WORKFLOW ENTRY POINT
 **************************/
 
-/* Comment section: */
-
 workflow {
   prepare_contamination(nanoControlFastaChannel, illuminaControlFastaChannel, rRNAChannel)
   contamination = prepare_contamination.out
 
-  if ( params.fasta ) {
-    clean_fasta(fasta_input_ch, contamination)
-    qc_fasta(clean_fasta.out.in, clean_fasta.out.out)
-    stats_fasta = clean_fasta.out.stats
-    idxstats_fasta = clean_fasta.out.idxstats
-    quast = qc_fasta.out.collect()
-  } else { quast = Channel.fromPath('no_fasta_input'); stats_fasta = Channel.fromPath('no_fasta_stats') ; idxstats_fasta = Channel.fromPath('no_fasta_idxstats') }
+  clean(input_ch, contamination)
 
-  if ( params.nano ) { 
-    clean_nano(nano_input_ch, contamination)
-    qc_nano(clean_nano.out.in, clean_nano.out.out)
-    stats_nano = clean_nano.out.stats
-    idxstats_nano = clean_nano.out.idxstats
-    nanoplot = qc_nano.out.collect()
-  } else { nanoplot = Channel.fromPath('no_nanopore_input'); stats_nano = Channel.fromPath('no_nano_stats') ; idxstats_nano = Channel.fromPath('no_nano_idxstats') }
-
-  if ( params.illumina ) { 
-    clean_illumina(illumina_input_ch, contamination)
-    qc_illumina(clean_illumina.out.in, clean_illumina.out.out)
-    stats_illumina = clean_illumina.out.stats
-    idxstats_illumina = clean_illumina.out.idxstats
-    fastqc = qc_illumina.out
-  } else { fastqc = Channel.fromPath('no_illumina_input'); stats_illumina = Channel.fromPath('no_illumina_stats') ; idxstats_illumina = Channel.fromPath('no_illumina_idxstats') }
-
-  if ( params.illumina_single_end ) { 
-    clean_illumina_single(illumina_single_end_input_ch, contamination)
-    qc_illumina_single(clean_illumina_single.out.in, clean_illumina_single.out.out)
-    stats_illumina_single = clean_illumina_single.out.stats
-    idxstats_illumina_single = clean_illumina_single.out.idxstats
-    fastqc_single = qc_illumina_single.out
-  } else { fastqc_single = Channel.fromPath('no_illumina_single_input'); stats_illumina_single = Channel.fromPath('no_illumina_single_stats') ; idxstats_illumina_single = Channel.fromPath('no_illumina_single_idxstats') }
-
-  qc(multiqc_config, fastqc.concat(fastqc_single).collect(), nanoplot, quast, idxstats_fasta.concat(idxstats_nano).concat(idxstats_illumina).concat(idxstats_illumina_single).collect(), stats_fasta.concat(stats_nano).concat(stats_illumina).concat(stats_illumina_single).collect())
+  qc(input_ch.map{ it -> tuple(it[0], 'input', it[1]) }.mix(clean.out.out_reads), params.input_type, clean.out.bbduk_summary, clean.out.idxstats, clean.out.flagstats, multiqc_config)
 }
 
 /**************************  
