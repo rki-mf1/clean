@@ -83,13 +83,13 @@ process get_number_of_records {
 process bbdukStats {
   label 'smallTask'
 
-  publishDir "${params.output}/${name}/bbduk", mode: 'copy', pattern: "stats.txt"
+  publishDir "${params.output}/bbduk", mode: 'copy', pattern: "${name}_stats.txt"
 
   input:
   tuple val(name), path (bbdukStats)
 
   output:
-  tuple val(name), path ('stats.txt')
+  tuple val(name), path ("${name}_stats.txt")
   path("${name}_bbduk_stats.tsv"), emit: tsv
 
   script:
@@ -100,8 +100,8 @@ process bbdukStats {
 
   FA=\$(awk -F '\\t' '/^[^#]/ {print "\\t\\t"\$2" ("\$3") aligned to "\$1}' ${bbdukStats})
 
-  touch stats.txt
-  cat <<EOF >> stats.txt
+  touch ${name}_stats.txt
+  cat <<EOF >> ${name}_stats.txt
   \$TOTAL reads in total; of these:
   \t\$MNUM (\$MPER) reads were properly mapped; of these:
   \$FA
@@ -115,18 +115,18 @@ process bbdukStats {
   """
   stub:
   """
-  touch stats.txt ${name}_bbduk_stats.tsv
+  touch ${name}_stats.txt ${name}_bbduk_stats.tsv
   """
 }
 
 process writeLog {
   label 'smallTask'
 
-  publishDir "${params.output}/${name}/${params.tool}", mode: 'copy', pattern: "log.txt"
+  publishDir "${params.output}/${params.tool}", mode: 'copy', pattern: "log.txt"
   
   input:
-    tuple val(name), path (reads)
     val db
+    path (reads)
 
   output:
     path 'log.txt'
@@ -138,7 +138,7 @@ process writeLog {
   Input reads:\t${reads}
   Contamination:\t${db}
   
-  Statistics summary:\t${params.output}/${name}/${params.tool}/stats.txt
+  Statistics summary:\t${params.output}/${params.tool}/stats.txt
   EOF
   """
   stub:
