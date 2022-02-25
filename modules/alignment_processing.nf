@@ -69,23 +69,28 @@ process split_bam {
   label 'minimap2'
 
   input:
-      tuple val(name), path(bam)
+    tuple val(name), path(bam)
 
   output:
-    tuple val(name), path("${name}_mapped.bam")
-    tuple val(name), path("${name}_unmapped.bam")
+    tuple val(name), val('mapped'), path("${name}.mapped.bam"), emit: mapped
+    tuple val(name), val('unmapped'), path("${name}.unmapped.bam"), emit: unmapped
 
   script:
-  flag = params.mode == 'paired' ? 2 : 4
-  """
-  # paired -f 2 -F 2
-  # single -f 4 -F 4
-  samtools view -@ ${task.cpus} -b -f ${flag} ${bam} | samtools sort -o ${name}.mapped.bam -@ ${task.cpus}
-  samtools view -@ ${task.cpus} -b -F ${flag} ${bam} | samtools sort -o ${name}.mapped.bam -@ ${task.cpus}
-  """
+  // includes supplementary alignments included (chimeric alignment, sometimes also not linear )
+  if ( params.lib_pairedness == 'paired' ){
+    """
+    samtools view -h -@ ${task.cpus} -f 2 ${bam} | samtools sort -o ${name}.mapped.bam -@ ${task.cpus}
+    samtools view -h -@ ${task.cpus} -F 2 ${bam} | samtools sort -o ${name}.unmapped.bam -@ ${task.cpus}
+    """
+  } else if ( params.lib_pairedness == 'single' ) {
+    """
+    samtools view -h -@ ${task.cpus} -F 4 ${bam} | samtools sort -o ${name}.mapped.bam -@ ${task.cpus}
+    samtools view -h -@ ${task.cpus} -f 4 ${bam} | samtools sort -o ${name}.unmapped.bam -@ ${task.cpus}
+    """
+  } else { error "Invalid pairedness: ${params.lib_pairedness}" }
   stub:
   """
-  touch ${name}_mapped.bam ${name}_unmapped.bam
+  touch ${name}.mapped.bam ${name}.unmapped.bam
   """
 }
 
@@ -162,7 +167,6 @@ process filter_true_dcs_alignments {
   stub:
   """
   touch ${name}_no_dcs.bam ${name}_true_dcs.bam ${name}_false_dcs.bam
-
   """
 }
 
