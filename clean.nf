@@ -419,19 +419,19 @@ def helpMSG() {
     Use the ${c_dim}--host${c_reset} and ${c_dim}--control${c_reset} flag to download a host database or specify your ${c_dim}--own${c_reset} FASTA. 
     
     ${c_yellow}Usage example:${c_reset}
-    nextflow run clean.nf --nano '*/*.fastq' --host eco --control dcs 
+    nextflow run clean.nf --input_type nano --input '*/*.fastq' --host eco --control dcs 
     or
-    nextflow run clean.nf --illumina '*/*.R{1,2}.fastq' --own some_host.fasta --bbduk 
+    nextflow run clean.nf --input_type illumina --input '*/*.R{1,2}.fastq' --own some_host.fasta --bbduk 
     or
-    nextflow run clean.nf --illumina 'test/illumina*.R{1,2}.fastq.gz' --nano data/nanopore.fastq.gz --fasta data/assembly.fasta --host eco --control phix
+    nextflow run clean.nf --input_type illumina --input 'test/illumina*.R{1,2}.fastq.gz' --nano data/nanopore.fastq.gz --fasta data/assembly.fasta --host eco --control phix
 
     ${c_yellow}Input:${c_reset}
-    ${c_green}--nano ${c_reset}               '*.fasta' or '*.fastq.gz'   -> one sample per file
-    ${c_green}--illumina ${c_reset}           '*.R{1,2}.fastq.gz'         -> file pairs
-    ${c_green}--illumina_single_end${c_reset} '*.fastq.gz'                -> one sample per file
-    ${c_green}--fasta ${c_reset}              '*.fasta.gz'                -> one sample per file
+    ${c_green}--input_type nano                --input${c_reset} '*.fasta' or '*.fastq.gz'   -> one sample per file
+    ${c_green}--input_type illumina            --input${c_reset} '*.R{1,2}.fastq.gz'         -> file pairs
+    ${c_green}--input_type illumina_single_end --input${c_reset} '*.fastq.gz'                -> one sample per file
+    ${c_green}--input_type fasta               --input${c_reset} '*.fasta.gz'                -> one sample per file
     ${c_dim} ...read above input from csv files:${c_reset} ${c_green}--list ${c_reset} 
-                         ${c_dim}required format: name,path for --nano and --fasta; name,pathR1,pathR2 for --illumina; name,path for --illumina_single_end${c_reset}   
+                         ${c_dim}required format: name,path for --input_type nano and --input_type fasta; name,pathR1,pathR2 for --illumina input_type; name,path for --input_type illumina_single_end${c_reset}   
 
     ${c_yellow}Decontamination options:${c_reset}
     ${c_green}--host${c_reset}         comma separated list of reference genomes for decontamination, downloaded based on this parameter [default: $params.host]
