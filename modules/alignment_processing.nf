@@ -145,7 +145,7 @@ process filter_soft_clipped_alignments {
 process filter_true_dcs_alignments {
   label 'bed_samtools'
 
-  publishDir "${params.output}/${name}/${params.tool}", mode: 'copy', pattern: "*.bam*"
+  publishDir "${params.output}/${params.tool}", mode: 'copy', pattern: "*.bam*"
 
   input:
   tuple val(name), path (bam)
@@ -155,6 +155,8 @@ process filter_true_dcs_alignments {
   tuple val(name), val('mapped'), path ("${name}_no_dcs.bam"), emit: no_dcs
   tuple val(name), val('mapped'), path ("${name}_true_dcs.bam"), emit: true_dcs
   tuple val(name), val('unmapped'), path ("${name}_false_dcs.bam"), emit: false_dcs
+  tuple val(name), path ('*.bam.bai')
+  path('dcs.bam')
 
   script:
   """
@@ -163,10 +165,14 @@ process filter_true_dcs_alignments {
   samtools view -b -h -e 'rname!="Lambda_3.6kb"' ${bam} > ${name}_no_dcs.bam
   bedtools intersect -wa -ubam -a dcs.bam -b ${dcs_ends_bed} > ${name}_true_dcs.bam
   bedtools intersect -v -ubam -a dcs.bam -b ${dcs_ends_bed} > ${name}_false_dcs.bam
+  samtools index dcs.bam
+  samtools index ${name}_no_dcs.bam
+  samtools index ${name}_true_dcs.bam
+  samtools index ${name}_false_dcs.bam
   """ 
   stub:
   """
-  touch ${name}_no_dcs.bam ${name}_true_dcs.bam ${name}_false_dcs.bam
+  touch ${name}_no_dcs.bam ${name}_true_dcs.bam ${name}_false_dcs.bam ${name}_no_dcs.bam.bai ${name}_true_dcs.bam.bai ${name}_false_dcs.bam.bai
   """
 }
 
