@@ -76,11 +76,10 @@ process check_own {
 process concat_contamination {
   label 'minimap2'
   
-  publishDir "${params.output}/${name}/${params.tool}", mode: 'copy', pattern: "db.fa.gz"
-  publishDir "${params.output}/${name}/${params.tool}", mode: 'copy', pattern: "db.fa.fai"
+  publishDir "${params.output}/", mode: 'copy', pattern: "db.fa.gz"
+  publishDir "${params.output}/", mode: 'copy', pattern: "db.fa.fai"
 
   input:
-  val name
   path fastas
 
   output:
