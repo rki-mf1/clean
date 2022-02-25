@@ -1,7 +1,7 @@
 process compress_reads {
   label 'basics'
 
-  publishDir "${params.output}/${name}/${params.tool}", mode: 'copy', pattern: "*.gz"
+  publishDir "${params.output}/${params.tool}", mode: 'copy', pattern: "*.gz"
 
   input:
   tuple val(name), val(type), path(reads)
@@ -10,7 +10,7 @@ process compress_reads {
   tuple val(name), val(type), path("*.fast{q,a}.gz")
 
   script:
-  if ( params.mode == 'paired' ) {
+  if ( params.lib_pairedness == 'paired' ) {
     """
     pigz -fc -p ${task.cpus} ${reads[0]} > ${name}_1.${type}.fastq.gz 
     pigz -fc -p ${task.cpus} ${reads[1]} > ${name}_2.${type}.fastq.gz
@@ -19,17 +19,18 @@ process compress_reads {
       pigz -fc -p ${task.cpus} ${reads[2]} > ${name}.${type}_singleton.fastq.gz
     fi
     """
-  } else if ( params.mode == 'single' ) {
-    dtype = (params.seq_type == 'fasta') ? 'a' : 'q'
+  } else if ( params.lib_pairedness == 'single' ) {
+    dtype = (params.input_type == 'fasta') ? 'a' : 'q'
     """
     pigz -fc -p ${task.cpus} ${reads} > ${name}.${type}.fast${dtype}.gz
     """
   } else {
-    error "Invalid mode: ${params.mode}"
+    error "Invalid mode: ${params.lib_pairedness}"
   }
   stub:
+  dtype = (params.input_type == 'fasta') ? 'a' : 'q'
   """
-  touch ${name}.${type}.fasta.gz ${name}.${type}.fastq.gz
+  touch ${name}.${type}.fast${dtype}.gz
   """
 }
 
@@ -43,7 +44,7 @@ process get_number_of_records {
   tuple val(name), env(TOTALRECORDS), emit: TOTALRECORDS
 
   script:
-  if ( params.mode == 'paired' ) {
+  if ( params.lib_pairedness == 'paired' ) {
     """
     if [[ ${reads[0]} =~ \\.gz\$ ]]; then
       TOTALRECORDS_1=\$(zcat ${reads[0]} | echo \$((`wc -l`/4)))
@@ -54,7 +55,7 @@ process get_number_of_records {
     fi
     TOTALRECORDS=\$(( TOTALRECORDS_1+TOTALRECORDS_2 ))
     """
-  } else if ( params.mode == 'single' && params.seq_type != 'fasta' ) {
+  } else if ( params.lib_pairedness == 'single' && params.input_type != 'fasta' ) {
     """
     if [[ ${reads} =~ \\.gz\$ ]]; then
       TOTALRECORDS=\$(zcat ${reads} | echo \$((`wc -l`/4)))
@@ -62,7 +63,7 @@ process get_number_of_records {
       TOTALRECORDS=\$(cat ${reads} | echo \$((`wc -l`/4)))
     fi
     """
-  } else if ( params.seq_type == 'fasta' ) {
+  } else if ( params.input_type == 'fasta' ) {
     """
     if [[ ${reads} =~ \\.gz\$ ]]; then
       TOTALCONTIGS=\$(zgrep '^>' ${reads} | wc -l)
@@ -71,7 +72,7 @@ process get_number_of_records {
     fi
     """
   } else {
-    error "Invalid mode: ${params.mode} or seq_type: ${params.seq_type}"
+    error "Invalid pairedness: ${params.lib_pairedness} or input_type: ${params.input_type}"
   }
   stub:
   """
