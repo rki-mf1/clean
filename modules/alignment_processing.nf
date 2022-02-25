@@ -117,28 +117,28 @@ process filter_soft_clipped_alignments {
   label 'samclipy'
   label 'smallTask'
 
-  publishDir "${params.output}/${name}/${params.tool}", mode: 'copy', pattern: "*.bam*"
+  publishDir "${params.output}/${params.tool}", mode: 'copy', pattern: "*.bam*"
 
   input:
   tuple val(name), path (bam)
   val (minClip)
   
   output:
-  tuple val(name), val('ambiguous'), path ('*.ambiguous.bam'), emit: bam_am
-  tuple val(name), val('contamination'), path ('*.contamination.bam'), emit: bam_unam
+  tuple val(name), val('unmapped'), path ('*.softclipped.bam'), emit: bam_clipped
+  tuple val(name), val('mapped'), path ('*.passedclipped.bam'), emit: bam_ok_clipped
   tuple val(name), path ('*.bam.bai')
   
   script:
   """
   git clone https://github.com/MarieLataretu/samclipy.git --branch v0.0.2 || git clone git@github.com:MarieLataretu/samclipy.git --branch v0.0.2 
-  samtools view -h ${bam} | python samclipy/samclipy.py --invert --minClip ${minClip} | samtools sort > ${name}.ambiguous.bam
-  samtools view -h ${bam} | python samclipy/samclipy.py --minClip ${minClip} | samtools sort > ${name}.contamination.bam
-  samtools index ${name}.ambiguous.bam
-  samtools index ${name}.contamination.bam
+  samtools view -h ${bam} | python samclipy/samclipy.py --invert --minClip ${minClip} | samtools sort > ${name}.softclipped.bam
+  samtools view -h ${bam} | python samclipy/samclipy.py --minClip ${minClip} | samtools sort > ${name}.passedclipped.bam
+  samtools index ${name}.softclipped.bam
+  samtools index ${name}.passedclipped.bam
   """
   stub:
   """
-  touch ${name}.ambiguous.bam ${name}.contamination.bam ${name}.ambiguous.bam.bai ${name}.contamination.bam.bai
+  touch ${name}.softclipped.bam ${name}.passedclipped.bam ${name}.softclipped.bam.bai ${name}.passedclipped.bam.bai
   """
 }
 
