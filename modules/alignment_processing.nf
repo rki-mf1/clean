@@ -101,15 +101,15 @@ process merge_bam {
     tuple val(name), val(type), path(bam)
 
   output:
-   tuple val(name), val(type), path("${name}_${type}_merged.bam")
+   tuple val(name), val(type), path("${bam[0].baseName}_merged.bam")
   
   script:
   """
-  samtools merge -@ ${task.cpus} ${name}_${type}_merged.bam ${bam} # first bam is output
+  samtools merge -@ ${task.cpus} ${bam[0].baseName}_merged.bam ${bam} # first bam is output
   """
   stub:
   """
-  touch ${name}_${type}_merged.bam
+  touch ${bam[0].baseName}_merged.bam
   """
 }
 
