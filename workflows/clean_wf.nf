@@ -19,8 +19,8 @@ workflow clean {
             bbdukStats(bbduk.out.stats)
             // define output
             bbduk_summary = bbdukStats.out.tsv
-            idxstats = []
-            flagstats = []
+            idxstats = Channel.empty()
+            flagstats = Channel.empty()
             out_reads = bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads)
         } 
         else {
@@ -45,7 +45,7 @@ workflow clean {
             // log & stats
             writeLog(contamination, input.map{ it -> it[1] }.collect())
             // define output
-            bbduk_summary = []
+            bbduk_summary = Channel.empty()
             idxstats = idxstats_from_bam.out
             flagstats = flagstats_from_bam.out
             out_reads = compress_reads.out

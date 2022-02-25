@@ -21,5 +21,5 @@ workflow qc {
       report = fastqc.out.zip.map{ it -> it[-1] }
     } else { error "Invalid input type: ${input_type}" }
 
-    multiqc(multiqc_config, report.collect(), bbduk_summary.collect(), idxstats.map{ it -> it[1] }.collect(), flagstats.map{ it -> it[1] }.collect())
+    multiqc(multiqc_config, report.collect(), bbduk_summary.collect().ifEmpty([]), idxstats.map{ it -> it[1] }.collect().ifEmpty([]), flagstats.map{ it -> it[1] }.collect().ifEmpty([]))
 }
