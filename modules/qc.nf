@@ -13,7 +13,8 @@ process fastqc {
   """
   stub:
   """
-  touch ${name}_fastqc.zip
+  # is weird when stubbing on paired data
+  touch ${reads.baseName}_fastqc.zip
   """
 }
 
@@ -69,6 +70,7 @@ process format_nanoplot_report {
 process quast {
   label 'quast'
   errorStrategy { task.exitStatus in 4 ? 'ignore' : 'terminate' }
+  // fails if something is empty
 
   input:
   tuple val(name), val(type), path(fasta)
