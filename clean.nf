@@ -130,6 +130,7 @@ if ( params.control ) {
 } else {
   nanoControlFastaChannel = Channel.empty()
   illuminaControlFastaChannel = Channel.empty()
+  nanoControlBedChannel = []
 }
 
 // load rRNA DB
@@ -177,7 +178,7 @@ workflow {
   prepare_contamination(nanoControlFastaChannel, illuminaControlFastaChannel, rRNAChannel)
   contamination = prepare_contamination.out
 
-  clean(input_ch, contamination)
+  clean(input_ch, contamination, nanoControlBedChannel)
 
   qc(input_ch.map{ it -> tuple(it[0], 'input', it[1]) }.mix(clean.out.out_reads), params.input_type, clean.out.bbduk_summary, clean.out.idxstats, clean.out.flagstats, multiqc_config)
 }
