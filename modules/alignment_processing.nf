@@ -197,10 +197,10 @@ process idxstats_from_bam {
   label 'minimap2'
 
   input:
-  tuple val(name), path(bam)
+  tuple val(name), path(bam), path(bai)
 
   output:
-  path('*_idxstats.tsv')
+  tuple val(name), path('*_idxstats.tsv')
 
   script:
   """
