@@ -10,12 +10,12 @@ Author: hoelzer.martin@gmail.com
 
 // Parameters sanity checking
 
-Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'nano', 'illumina', 'illumina_single_end', 'fasta', 'list', 'host', 'own', 'control', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'min_clip', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
+Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'input', 'input_type', 'list', 'host', 'own', 'control', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'min_clip', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
 def parameter_diff = params.keySet() - valid_params
 if (parameter_diff.size() != 0){
     exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
 }
-if (params.illumina_single_end.contains('.clean.') || params.illumina.contains('.clean.') || params.nano.contains('.clean.') || params.fasta.contains('.clean.') ) { 
+if (params.input.contains('.clean.') ) { 
   exit 1, "ERROR: Input files cannot contain `.clean.`\n" 
 }
 
@@ -80,14 +80,15 @@ if ( workflow.profile.contains('singularity') ) {
 
 Set controls = ['phix', 'dcs', 'eno']
 Set hosts = ['hsa', 'mmu', 'cli', 'csa', 'gga', 'eco']
+Set input_types = ['nano', 'illumina', 'illumina_single_end', 'fasta']
 
 if ( params.profile ) { exit 1, "--profile is wrong, use -profile" }
-if ( params.nano == '' &&  params.illumina == '' && params.fasta == '' && params.illumina_single_end == '' ) { exit 1, "Read files missing, use [--nano] or [--illumina] or [--fasta]"}
+if ( params.input == '' || !params.input_type == '' ) { exit 1, "Missing required input parameters [--input] and [--input_type]" }
 
-if ( ! ( (params.nano != '' && (params.illumina == '' && params.fasta == '' && params.illumina_single_end == '')) || (params.illumina != '' && (params.nano == '' && params.fasta == '' && params.illumina_single_end == '')) || (params.fasta != '' && (params.illumina == '' && params.nano == '' && params.illumina_single_end == '')) || (params.illumina_single_end != '' && (params.illumina == '' && params.fasta == '' && params.nano == '') ) ) ) { exit 1, "Choose one input type: [--nano] or [--illumina] or [--fasta]" }
+if ( params.input_type ) { if ( ! (params.input_type in input_types ) ) { exit 1, "Choose one of the the input types with --input_type: " + input_types } } 
 
 if ( params.control ) { for( String ctr : params.control.split(',') ) if ( ! (ctr in controls ) ) { exit 1, "Wrong control defined (" + ctr + "), use one of these: " + controls } }
-if ( params.nano && params.control && 'dcs' in params.control.split(',') && 'eno' in params.control.split(',') ) { exit 1, "Please choose either eno (for ONT dRNA-Seq) or dcs (for ONT DNA-Seq)." }
+if ( params.input_type == 'nano' && params.control && 'dcs' in params.control.split(',') && 'eno' in params.control.split(',') ) { exit 1, "Please choose either eno (for ONT dRNA-Seq) or dcs (for ONT DNA-Seq)." }
 if ( params.host ) { for( String hst : params.host.split(',') ) if ( ! (hst in hosts ) ) { exit 1, "Wrong host defined (" + hst + "), use one of these: " + hosts } }
 if ( !params.host && !params.own && !params.control && !params.rm_rrna ) { exit 1, "Please provide a control (--control), a host tag (--host), a FASTA file (--own) or set --rm_rrna for rRNA removal for the clean up."}
 
@@ -95,59 +96,24 @@ if ( !params.host && !params.own && !params.control && !params.rm_rrna ) { exit 
 * INPUT CHANNELS 
 **************************/
 
-// nanopore reads input & --list support
-if ( params.nano && params.list ) { nano_input_ch = Channel
-  .fromPath( params.nano, checkIfExists: true )
-  .splitCsv()
-  .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
-  seq_type = 'nano'
-  name = nano_input_ch.map{ it -> it[0] }
-} else if ( params.nano ) { nano_input_ch = Channel
-    .fromPath( params.nano, checkIfExists: true)
+if ( params.input_type == 'illumina' ) {
+  if ( params.list ) { input_ch = Channel
+    .fromPath( params.input, checkIfExists: true )
+    .splitCsv()
+    .map { row -> [row[0], [file("${row[1]}", checkIfExists: true), file("${row[2]}", checkIfExists: true)]] }
+  } else { input_ch = Channel
+      .fromFilePairs( params.input , checkIfExists: true )
+  }
+} else {
+  if ( params.list ) {
+    input_ch = Channel
+     .fromPath( params.input, checkIfExists: true )
+     .splitCsv()
+     .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
+  } else { input_ch = Channel
+    .fromPath( params.input, checkIfExists: true)
     .map { file -> tuple(file.simpleName, file) }
-    seq_type = 'nano'
-    name = nano_input_ch.map{ it -> it[0] }
-}
-
-// illumina paired-end reads input & --list support
-if ( params.illumina && params.list ) { illumina_input_ch = Channel
-  .fromPath( params.illumina, checkIfExists: true )
-  .splitCsv()
-  .map { row -> [row[0], [file("${row[1]}", checkIfExists: true), file("${row[2]}", checkIfExists: true)]] }
-  seq_type = 'illumina'
-  name = illumina_input_ch.map{ it -> it[0] }
-} else if ( params.illumina ) { illumina_input_ch = Channel
-  .fromFilePairs( params.illumina , checkIfExists: true )
-  seq_type = 'illumina'
-  name = illumina_input_ch.map{ it -> it[0] }
-}
-
-// illumina single-end reads input & --list support
-if ( params.illumina_single_end && params.list ) { illumina_single_end_input_ch = Channel
-  .fromPath( params.illumina_single_end, checkIfExists: true )
-  .splitCsv()
-  .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
-  seq_type = 'illumina'
-  name = illumina_single_end_input_ch.map{ it -> it[0] }
-} else if ( params.illumina_single_end ) { illumina_single_end_input_ch = Channel
-  .fromPath( params.illumina_single_end, checkIfExists: true )
-  .map { file -> tuple(file.simpleName, file) } 
-  seq_type = 'illumina'
-  name = illumina_single_end_input_ch.map{ it -> it[0] }
-}
-
-// assembly fasta input & --list support
-if ( params.fasta && params.list ) { fasta_input_ch = Channel
-  .fromPath( params.fasta, checkIfExists: true )
-  .splitCsv()
-  .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
-  seq_type = 'fasta'
-  name = fasta_input_ch.map{ it -> it[0] }
-} else if ( params.fasta ) { fasta_input_ch = Channel
-    .fromPath( params.fasta, checkIfExists: true )
-    .map { file -> tuple(file.simpleName, file) }
-  seq_type = 'fasta'
-  name = fasta_input_ch.map{ it -> it[0] }
+  }
 }
 
 // load control fasta sequence
@@ -190,7 +156,7 @@ if ( params.own && params.list ) {
 multiqc_config = Channel.fromPath( workflow.projectDir + '/assets/multiqc_config.yml', checkIfExists: true )
 
 tool = params.bbduk ? 'bbduk' : 'minimap2'
-lib_type = params.illumina ? 'paired' : 'single'
+lib_pairedness = params.input_type == 'illumina' ? 'paired' : 'single'
 
 /************************** 
 * MODULES
