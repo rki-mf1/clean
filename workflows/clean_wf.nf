@@ -1,7 +1,7 @@
 include { minimap2 } from '../modules/minimap2'
 include { bbduk } from '../modules/bbmap'
 include { compress_reads; writeLog ; bbdukStats } from '../modules/utils'
-include { split_bam; fastq_from_bam ; idxstats_from_bam ; flagstats_from_bam ; index_bam ; sort_bam ; filter_true_dcs_alignments ; merge_bam as merge_bam1 ; merge_bam as merge_bam2 } from '../modules/alignment_processing'
+include { split_bam; fastq_from_bam ; idxstats_from_bam ; flagstats_from_bam ; index_bam ; sort_bam ; filter_true_dcs_alignments ; merge_bam as merge_bam1 ; merge_bam as merge_bam2 ; merge_bam as merge_bam3 ; merge_bam as merge_bam4 ; filter_soft_clipped_alignments } from '../modules/alignment_processing'
 
 workflow clean {
     take:
@@ -30,18 +30,18 @@ workflow clean {
             split_bam(minimap2.out.bam)
             contamination_bam = split_bam.out.mapped
             cleaned_bam = split_bam.out.unmapped
-
             if ( params.control && 'dcs' in params.control.split(',') ) {
                 filter_true_dcs_alignments(contamination_bam.map{ it -> [it[0], it[2]] }, dcs_ends_bed)
                 
                 contamination_bam = merge_bam1(contamination_bam.mix(filter_true_dcs_alignments.out.true_dcs).mix(filter_true_dcs_alignments.out.no_dcs).groupTuple(by: [0,1]))
                 cleaned_bam = merge_bam2(cleaned_bam.mix(filter_true_dcs_alignments.out.false_dcs).groupTuple(by: [0,1]))
             }
-            // if ( params.min_clip ) {
-        //         filter_soft_clipped_alignments(contamination_bam, params.min_clip)
-        //         contamination_bam = filter_soft_clipped_alignments.out.bam_unam
-        //         cleaned_bam = concat_bams(cleaned_bam.mix(filter_soft_clipped_alignments.out.bam_am)
-        //     }
+            if ( params.min_clip ) {
+                filter_soft_clipped_alignments(contamination_bam.map{ it -> tuple(it[0], it[2]) }, params.min_clip)
+
+                contamination_bam = merge_bam3(contamination_bam.mix(filter_soft_clipped_alignments.out.bam_ok_clipped).groupTuple(by: [0,1]))
+                cleaned_bam = merge_bam4(cleaned_bam.mix(filter_soft_clipped_alignments.out.bam_clipped).groupTuple(by: [0,1]))
+            }
             fastq_from_bam(contamination_bam.mix(cleaned_bam))
             // compress reads
             compress_reads(fastq_from_bam.out)
