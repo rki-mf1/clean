@@ -176,16 +176,16 @@ process fastq_from_bam {
   tuple val(name), val(type), path('*.fastq')
 
   script:
-  if ( params.mode == 'paired' ) {
+  if ( params.lib_pairedness == 'paired' ) {
     """
     samtools fastq -@ ${task.cpus} -1 ${bam.baseName}_1.fastq -2 ${bam.baseName}_2.fastq -s ${bam.baseName}_singleton.fastq ${bam}
     """
-  } else if ( params.mode == 'single' ) {
+  } else if ( params.lib_pairedness == 'single' ) {
     """
     samtools fastq -@ ${task.cpus} -0 ${bam.baseName}.fastq ${bam}
     """
   } else {
-    error "Invalid mode: ${params.mode}"
+    error "Invalid pairedness: ${params.lib_pairedness}"
   }
   stub:
   """
