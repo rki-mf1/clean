@@ -211,3 +211,62 @@ process idxstats_from_bam {
   touch ${bam.baseName}_idxstats.tsv
   """
 }
+
+process flagstats_from_bam {
+  label 'minimap2'
+
+  publishDir "${params.output}/minimap2", mode: 'copy', pattern: "${bam.baseName}_flagstats.txt" 
+
+  input:
+  tuple val(name), path(bam), path(bai)
+
+  output:
+  tuple val(name), path('*_flagstats.txt')
+
+  script:
+  """
+  samtools flagstats ${bam} > ${bam.baseName}_flagstats.txt
+  """
+  stub:
+  """
+  touch ${bam.baseName}_flagstats.txt
+  """
+}
+
+process sort_bam {
+  label 'minimap2'
+
+  input:
+  tuple val(name), path(bam)
+
+  output:
+  tuple val(name), path("${bam.baseName}_sorted.bam")
+
+  script:
+  """
+  samtools sort -@ ${task.cpus} ${bam} > ${bam.baseName}_sorted.bam
+  """
+  stub:
+  """
+  touch ${bam.baseName}_sorted.bam
+  """
+}
+
+process index_bam {
+  label 'minimap2'
+
+  input:
+  tuple val(name), path(bam)
+
+  output:
+  tuple val(name), path(bam), path('*.bai')
+
+  script:
+  """
+  samtools index -@ ${task.cpus} ${bam}
+  """
+  stub:
+  """
+  touch ${bam}.bai
+  """
+}
