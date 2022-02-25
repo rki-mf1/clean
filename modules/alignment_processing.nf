@@ -152,17 +152,17 @@ process filter_true_dcs_alignments {
   path (dcs_ends_bed)
 
   output:
-  tuple val(name), path ("${name}_no_dcs.bam"), emit: no_dcs
-  tuple val(name), path ("${name}_true_dcs.bam"), emit: true_dcs
-  tuple val(name), path ("${name}_false_dcs.bam"), emit: false_dcs
+  tuple val(name), val('mapped'), path ("${name}_no_dcs.bam"), emit: no_dcs
+  tuple val(name), val('mapped'), path ("${name}_true_dcs.bam"), emit: true_dcs
+  tuple val(name), val('unmapped'), path ("${name}_false_dcs.bam"), emit: false_dcs
 
   script:
   """
   # true spike in: 1-65 || 1-92; 3513-3560 (len 48)
-  samtools view -b -h -e 'rname=="Lambda_3.6kb"' ${bam} > tmp.bam
-  samtools view -b -h -e 'rname!="Lambda_3.6kb"' ${bam} > _no_dcs.bam
-  bedtools intersect -wa -ubam -header -a tmp.bam -b ${dcs_ends_bed} > ${name}_true_dcs.bam
-  bedtools intersect -v -ubam -header -a tmp.bam -b ${dcs_ends_bed} > ${name}_false_dcs.bam
+  samtools view -b -h -e 'rname=="Lambda_3.6kb"' ${bam} > dcs.bam
+  samtools view -b -h -e 'rname!="Lambda_3.6kb"' ${bam} > ${name}_no_dcs.bam
+  bedtools intersect -wa -ubam -a dcs.bam -b ${dcs_ends_bed} > ${name}_true_dcs.bam
+  bedtools intersect -v -ubam -a dcs.bam -b ${dcs_ends_bed} > ${name}_false_dcs.bam
   """ 
   stub:
   """
