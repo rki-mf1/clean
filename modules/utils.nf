@@ -80,58 +80,6 @@ process get_number_of_records {
   """
 }
 
-process minimap2Stats {
-  label 'smallTask'
-  
-  publishDir "${params.output}/${name}/minimap2", mode: 'copy', pattern: "stats.txt" 
-
-  input:
-  tuple val(name), path(idxstats), val (totalreads), val(ambiguousreads)
-
-  output:
-  tuple val(name), path ('stats.txt')
-  path("${name}_minimap2_stats.tsv"), emit: tsv
-
-  script:
-
-  if ("${ambiguousreads}" == 'NULL'){
-    header = 'Sample Name\tClean reads\tUnambiguous mapped reads'
-    visible_val = ""
-    val = '0'
-  } else {
-    header = 'Sample Name\tClean reads\tUnambiguous mapped reads\tAmbiguous mapped reads'
-    visible_val = "\t${ambiguousreads}"
-    val = "${ambiguousreads}"
-  }
-
-  """
-  MAPPEDSUM=\$(awk -F '\\t' '{sum += \$3} END {print sum}' idxstats.tsv)
-  UNPROMAPPEDSUM=\$(awk -F '\\t' '/^[^*]/ {sum += \$4} END {print sum}' idxstats.tsv)
-  PROPMAP=\$((\$MAPPEDSUM-\$UNPROMAPPEDSUM))
-
-  MAP=\$(awk -v map=\$MAPPEDSUM -v unpromap=\$UNPROMAPPEDSUM -v tot=${totalreads} 'BEGIN {perc=(map-unpromap)/tot*100; print map-unpromap " ("  perc " %) reads were properly mapped; of these:"}')
-
-  FA=\$(awk -v tot=${totalreads} -F '\\t' '/^[^*]/ {propmap=\$3-\$4; if (propmap != 0) print "\\t\\t" propmap " (" propmap/tot*100  "%) reads aligned to " \$1}' idxstats.tsv;)
-
-  touch stats.txt
-  cat <<EOF >> stats.txt
-  ${totalreads} reads in total; of these:
-  \t\$MAP
-  \$FA
-  EOF
-
-  touch ${name}_minimap2_stats.tsv
-  cat <<EOF >> ${name}_minimap2_stats.tsv
-  ${header}
-  ${name}\t\$((${totalreads}-\$PROPMAP))\t\$((\$PROPMAP-${val}))${visible_val}
-  EOF
-  """
-  stub:
-  """
-  touch stats.txt ${name}_minimap2_stats.tsv
-  """
-}
-
 process bbdukStats {
   label 'smallTask'
 
