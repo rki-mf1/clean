@@ -30,7 +30,7 @@ workflow clean {
             split_bam(minimap2.out.bam)
             contamination_bam = split_bam.out.mapped
             cleaned_bam = split_bam.out.unmapped
-            if ( params.control && 'dcs' in params.control.split(',') ) {
+            if ( params.control && 'dcs' in params.control.split(',') && params.dcs_strict ) {
                 filter_true_dcs_alignments(contamination_bam.map{ it -> [it[0], it[2]] }, dcs_ends_bed)
                 
                 contamination_bam = merge_bam1(contamination_bam.mix(filter_true_dcs_alignments.out.true_dcs).mix(filter_true_dcs_alignments.out.no_dcs).groupTuple(by: [0,1]))
