@@ -92,8 +92,8 @@ process quast {
 
 process multiqc {
   label 'multiqc'
-  label 'smallTask'
-  
+ // label 'smallTask' // this is tricky for the cloud, because only one container can be mounted. Thus comment this as hot fix
+   
   publishDir "${params.output}/${params.multiqc_dir}", pattern: 'multiqc_report.html'
   
   input:
