@@ -20,7 +20,7 @@ Per default [minimap2](https://github.com/lh3/minimap2) is used for aligning you
 
 You can simply specify provided hosts and controls for the cleanup or use your own FASTA files. The reads are then mapped against the specified host, control and user defined FASTA files. All reads that map are considered as contamination. In case of Illumina paired-end reads, both mates need to be aligned.
 
-If Nanopore (`--nano`) and Illumina (`--illumina`) reads and control(s) (`--control`) are set, the control is selectively concatenated with the host and own FASTA: `dcs` for Nanopore DNA-Seq, `eno` for Nanopore RNA-Seq and `phix` from Illumina data.
+If Nanopore (`--input_type nano`) and Illumina (`--input_type illumina`) reads and control(s) (`--control`) are set, the control is selectively concatenated with the host and own FASTA: `dcs` for Nanopore DNA-Seq, `eno` for Nanopore RNA-Seq and `phix` from Illumina data.
 Else, specified host, control and user defined FASTA files are concatenated.
 
 ### Filter soft-clipped contamination reads
