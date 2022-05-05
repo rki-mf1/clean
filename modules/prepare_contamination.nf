@@ -60,11 +60,12 @@ process check_own {
   """
   # -L for following a symbolic link
   if ! ( file -L $fasta | grep -q 'gzip compressed' ); then
+    sed -i -e '\$a\\' ${fasta}
     bgzip -@ ${task.cpus} < ${fasta} > ${fasta}.gz
     # now $fasta'.gz'
   else
     mv ${fasta} ${fasta}.tmp
-    zcat ${fasta}.tmp | bgzip -@ ${task.cpus} -c > ${fasta}.gz
+    zcat ${fasta}.tmp | sed -e '\$a\\' | bgzip -@ ${task.cpus} -c > ${fasta}.gz
   fi
   """
   stub:
