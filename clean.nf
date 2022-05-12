@@ -126,6 +126,7 @@ if ( params.control ) {
     nanoControlBedChannel = Channel.fromPath( workflow.projectDir + '/data/controls/dcs_artificial_ends.bed' , checkIfExists: true )
   } else if ( 'eno' in params.control.split(',') ) {
     nanoControlFastaChannel = Channel.fromPath( workflow.projectDir + '/data/controls/eno.fa.gz' , checkIfExists: true )
+    nanoControlBedChannel = []
   } else { nanoControlFastaChannel = Channel.empty() }
 } else {
   nanoControlFastaChannel = Channel.empty()
