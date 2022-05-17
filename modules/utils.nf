@@ -132,13 +132,12 @@ process writeLog {
     path 'log.txt'
   
   script:
+
   """
   touch log.txt
   cat <<EOF >> log.txt
   Input reads:\t${reads}
   Contamination:\t${db}
-  
-  Statistics summary:\t${params.output}/${params.tool}/stats.txt
   EOF
   """
   stub:
