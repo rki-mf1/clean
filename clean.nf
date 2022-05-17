@@ -10,7 +10,7 @@ Author: hoelzer.martin@gmail.com
 
 // Parameters sanity checking
 
-Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'input', 'input_type', 'list', 'host', 'own', 'control', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'min_clip', 'dcs_strict', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
+Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'input', 'input_type', 'list', 'host', 'own', 'control', 'keep', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'min_clip', 'dcs_strict', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
 def parameter_diff = params.keySet() - valid_params
 if (parameter_diff.size() != 0){
     exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
@@ -153,6 +153,18 @@ if ( params.own && params.list ) {
 } else if ( params.own ) {
   ownFastaChannel = Channel
     .fromPath( params.own, checkIfExists: true)
+} else {
+  ownFastaChannel = Channel.empty()
+}
+
+// user defined fasta sequence to keep
+if ( params.keep && params.list ) {
+  keepFastaChannel = Channel
+    .fromPath( params.keep, checkIfExists: true)
+    .splitCsv().flatten().map{ it -> file( it, checkIfExists: true ) }
+} else if ( params.keep ) {
+  keepFastaChannel = Channel
+    .fromPath( params.keep, checkIfExists: true)
 }
 
 multiqc_config = Channel.fromPath( workflow.projectDir + '/assets/multiqc_config.yml', checkIfExists: true )
@@ -165,8 +177,10 @@ lib_pairedness = params.input_type == 'illumina' ? 'paired' : 'single'
 **************************/
 
 include { prepare_contamination } from './workflows/prepare_contamination_wf' addParams( tool: tool )
+include { check_own as prepare_keep } from './modules/prepare_contamination'
 
 include { clean } from './workflows/clean_wf' addParams( tool: tool, lib_pairedness: lib_pairedness )
+include { clean as keep_map } from './workflows/clean_wf' addParams( tool: tool, lib_pairedness: lib_pairedness )
 
 include { qc } from './workflows/qc_wf'
 
@@ -178,6 +192,13 @@ include { qc } from './workflows/qc_wf'
 workflow {
   prepare_contamination(nanoControlFastaChannel, illuminaControlFastaChannel, rRNAChannel)
   contamination = prepare_contamination.out
+
+  if (params.keep){
+    prepare_keep(keepFastaChannel)
+    keep_fasta = prepare_keep.out
+    keep_fasta.view()
+    keep_map(input_ch, keep_fasta, nanoControlBedChannel)
+  }
 
   clean(input_ch, contamination, nanoControlBedChannel)
 
