@@ -59,7 +59,7 @@ process check_own {
   script:
   """
   # -L for following a symbolic link
-  if ! ( file -L $fasta | grep -q 'gzip compressed' ); then
+  if ! ( file -L $fasta | grep -q 'BGZF; gzip compatible\\|gzip compressed' ); then
     sed -i -e '\$a\\' ${fasta}
     bgzip -@ ${task.cpus} < ${fasta} > ${fasta}.gz
     # now $fasta'.gz'
