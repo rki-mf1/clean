@@ -184,6 +184,7 @@ include { clean as keep_map } from './workflows/clean_wf' addParams( tool: tool,
 
 include { qc } from './workflows/qc_wf'
 
+include { get_read_names; split_bam } from './modules/utils'
 
 /************************** 
 * WORKFLOW ENTRY POINT
@@ -193,14 +194,22 @@ workflow {
   prepare_contamination(nanoControlFastaChannel, illuminaControlFastaChannel, rRNAChannel)
   contamination = prepare_contamination.out
 
+  clean(input_ch, contamination, nanoControlBedChannel)
+
   if (params.keep){
     prepare_keep(keepFastaChannel)
     keep_fasta = prepare_keep.out
-    keep_fasta.view()
     keep_map(input_ch, keep_fasta, nanoControlBedChannel)
+    keep_reads = keep_map.out.contamination_bam
+    get_read_names(keep_reads)
+    split_bam(get_read_names.out, keep_reads)
+    // clean_mapped in keep_mapped
+    // yes -> mv to clean_unmapped
+    //     which align is longer?
+    // no -> ok
+  } else {
+    keep_reads = Channel.empty()
   }
-
-  clean(input_ch, contamination, nanoControlBedChannel)
 
   qc(input_ch.map{ it -> tuple(it[0], 'input', it[1]) }.mix(clean.out.out_reads), params.input_type, clean.out.bbduk_summary, clean.out.idxstats, clean.out.flagstats, multiqc_config)
 }

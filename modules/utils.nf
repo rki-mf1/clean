@@ -80,6 +80,57 @@ process get_number_of_records {
   """
 }
 
+process get_read_names {
+  label 'minimap2'
+
+  input:
+  tuple val(name), val(type), path(bam)
+  
+  output:
+  path("${name}_read_names.csv")
+  
+  script:
+  """
+  samtools view ${bam} | cut -f1 | sort | uniq > ${name}_read_names.csv
+  """
+}
+
+process split_bam {
+  label 'pysam'
+  echo true
+
+  input:
+  path(read_name_list)
+  tuple val(name), val(type), path(mapped_bam)
+
+  output:
+  tuple val(name), val(type), path('mapped.fq'), emit: mapped
+  tuple val(name), val(type), path('unmapped.fq'), emit: unmapped
+
+  script:
+  """
+  #!/usr/bin/env python3
+
+  import pysam
+
+  reads = set()
+  with open('${read_name_list}', 'r') as infile:
+    for line in infile:
+      reads.add(line.strip())
+  print(reads)
+  
+  # split bam into mapped (not in list)
+  # and "unmapped" (in list)
+
+  bamfile = pysam.AlignmentFile('nanopore.mapped.bam', 'rb')
+  for read in bamfile.fetch(until_eof=True):
+    if ( read.query_name in reads):
+      #write to unmapped
+    else:
+      # write to mapped
+  """
+}
+
 process bbdukStats {
   label 'smallTask'
 
