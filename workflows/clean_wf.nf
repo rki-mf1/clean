@@ -23,6 +23,8 @@ workflow clean {
             idxstats = Channel.empty()
             flagstats = Channel.empty()
             out_reads = bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads)
+            contamination_bam = Channel.empty()
+            cleaned_bam = Channel.empty()
         } 
         else {
             minimap2(input, contamination) | sort_bam | index_bam | ( idxstats_from_bam & flagstats_from_bam )
@@ -59,4 +61,6 @@ workflow clean {
         idxstats
         flagstats
         out_reads
+        contamination_bam
+        cleaned_bam
 }
