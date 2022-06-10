@@ -1,7 +1,7 @@
 include { minimap2 } from '../modules/minimap2'
 include { bbduk } from '../modules/bbmap'
 include { compress_reads; writeLog ; bbdukStats } from '../modules/utils'
-include { split_bam; fastq_from_bam ; idxstats_from_bam ; flagstats_from_bam ; index_bam ; sort_bam ; filter_true_dcs_alignments ; merge_bam as merge_bam1 ; merge_bam as merge_bam2 ; merge_bam as merge_bam3 ; merge_bam as merge_bam4 ; filter_soft_clipped_alignments } from '../modules/alignment_processing'
+include { split_bam; fastq_from_bam ; idxstats_from_bam ; flagstats_from_bam ; index_bam as index_bam; index_bam as index_bam2; sort_bam ; filter_true_dcs_alignments ; merge_bam as merge_bam1 ; merge_bam as merge_bam2 ; merge_bam as merge_bam3 ; merge_bam as merge_bam4 ; filter_soft_clipped_alignments } from '../modules/alignment_processing'
 
 workflow clean {
     take:
@@ -23,7 +23,7 @@ workflow clean {
             idxstats = Channel.empty()
             flagstats = Channel.empty()
             out_reads = bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads)
-            contamination_bam = Channel.empty()
+            contamination_bam_bai = Channel.empty()
             cleaned_bam = Channel.empty()
         } 
         else {
@@ -44,6 +44,9 @@ workflow clean {
                 contamination_bam = merge_bam3(contamination_bam.mix(filter_soft_clipped_alignments.out.bam_ok_clipped).groupTuple(by: [0,1]))
                 cleaned_bam = merge_bam4(cleaned_bam.mix(filter_soft_clipped_alignments.out.bam_clipped).groupTuple(by: [0,1]))
             }
+            index_bam2(contamination_bam.map{ it -> [it[0], it[2]]})
+            contamination_bam_bai = index_bam2.out
+
             fastq_from_bam(contamination_bam.mix(cleaned_bam))
             // compress reads
             compress_reads(fastq_from_bam.out)
@@ -61,6 +64,6 @@ workflow clean {
         idxstats
         flagstats
         out_reads
-        contamination_bam
+        contamination_bam_bai
         cleaned_bam
 }
