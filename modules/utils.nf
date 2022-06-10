@@ -84,7 +84,7 @@ process get_read_names {
   label 'minimap2'
 
   input:
-  tuple val(name), val(type), path(bam)
+  tuple val(name), path(bam)
   
   output:
   path("${name}_read_names.csv")
@@ -95,17 +95,31 @@ process get_read_names {
   """
 }
 
+process filter_fastq_by_name {
+  input:
+  path(read_name_list)
+  tuple val(name), val(mapped), path(reads_mapped), val(unmapped), path(reads_unmapped)
+
+  // output:
+  
+  script:
+  """
+  zcat ${reads_mapped} | paste - - - - | grep -v -F -f ${read_name_list} | tr "\t" "\n" > leave_in_mapped.fq
+  zcat ${reads_mapped} | paste - - - - | grep -F -f ${read_name_list} | tr "\t" "\n" > move_to_mapped.fq
+  """
+}
+
 process split_bam {
   label 'pysam'
   echo true
 
   input:
   path(read_name_list)
-  tuple val(name), val(type), path(mapped_bam)
+  tuple val(name), path(mapped_bam), path(mapped_bai)
 
   output:
-  tuple val(name), val(type), path('mapped.fq'), emit: mapped
-  tuple val(name), val(type), path('unmapped.fq'), emit: unmapped
+  tuple val(name), val('mapped'), path('mapped.fq'), emit: mapped
+  tuple val(name), val('unmapped'), path('unmapped.fq'), emit: unmapped
 
   script:
   """
@@ -122,12 +136,14 @@ process split_bam {
   # split bam into mapped (not in list)
   # and "unmapped" (in list)
 
-  bamfile = pysam.AlignmentFile('nanopore.mapped.bam', 'rb')
+  bamfile = pysam.AlignmentFile('${mapped_bam}', 'rb')
   for read in bamfile.fetch(until_eof=True):
-    if ( read.query_name in reads):
+    if (read.query_name in reads):
       #write to unmapped
+      pass
     else:
       # write to mapped
+      pass
   """
 }
 
