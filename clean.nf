@@ -184,7 +184,7 @@ include { clean as keep_map } from './workflows/clean_wf' addParams( tool: tool,
 
 include { qc } from './workflows/qc_wf'
 
-include { get_read_names; split_bam } from './modules/utils'
+include { get_read_names; filter_fastq_by_name } from './modules/utils'
 
 /************************** 
 * WORKFLOW ENTRY POINT
@@ -200,9 +200,13 @@ workflow {
     prepare_keep(keepFastaChannel)
     keep_fasta = prepare_keep.out
     keep_map(input_ch, keep_fasta, nanoControlBedChannel)
-    keep_reads = keep_map.out.contamination_bam
-    get_read_names(keep_reads)
-    split_bam(get_read_names.out, keep_reads)
+    keep_reads = keep_map.out.contamination_bam_bai
+    get_read_names(keep_reads.map{it -> [it[0], it[1]]})
+    // works also for multiple samples?
+    mapped = clean.out.out_reads.filter{ it[1] == 'mapped' }
+    unmapped = clean.out.out_reads.filter{ it[1] == 'unmapped' }
+    filter_fastq_by_name(get_read_names.out, mapped.join(unmapped))
+    // split_bam(get_read_names.out.view(), keep_reads.view())
     // clean_mapped in keep_mapped
     // yes -> mv to clean_unmapped
     //     which align is longer?
