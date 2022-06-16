@@ -93,59 +93,82 @@ process get_read_names {
   """
   samtools view ${bam} | cut -f1 | sort | uniq > ${name}_read_names.csv
   """
+  stub:
+  """
+  touch ${name}_read_names.csv
+  """
 }
 
 process filter_fastq_by_name {
+  label 'basics'
+
   input:
-  path(read_name_list)
+  path(keep_read_name_list)
   tuple val(name), val(mapped), path(reads_mapped), val(unmapped), path(reads_unmapped)
 
-  // output:
-  
-  script:
-  """
-  zcat ${reads_mapped} | paste - - - - | grep -v -F -f ${read_name_list} | tr "\t" "\n" > leave_in_mapped.fq
-  zcat ${reads_mapped} | paste - - - - | grep -F -f ${read_name_list} | tr "\t" "\n" > move_to_mapped.fq
-  """
-}
-
-process split_bam {
-  label 'pysam'
-  echo true
-
-  input:
-  path(read_name_list)
-  tuple val(name), path(mapped_bam), path(mapped_bai)
-
   output:
-  tuple val(name), val('mapped'), path('mapped.fq'), emit: mapped
-  tuple val(name), val('unmapped'), path('unmapped.fq'), emit: unmapped
-
-  script:
-  """
-  #!/usr/bin/env python3
-
-  import pysam
-
-  reads = set()
-  with open('${read_name_list}', 'r') as infile:
-    for line in infile:
-      reads.add(line.strip())
-  print(reads)
+  tuple val(name), val(mapped), path(reads_mapped, includeInputs: true)
+  tuple val(name), val(unmapped), path(reads_unmapped, includeInputs: true)
   
-  # split bam into mapped (not in list)
-  # and "unmapped" (in list)
-
-  bamfile = pysam.AlignmentFile('${mapped_bam}', 'rb')
-  for read in bamfile.fetch(until_eof=True):
-    if (read.query_name in reads):
-      #write to unmapped
-      pass
-    else:
-      # write to mapped
-      pass
+  script:
+  if ( params.lib_pairedness == 'paired' ) {
+    """
+    zcat ${reads_mapped[0]} | paste - - - - | grep -v -F -f ${keep_read_name_list} | tr "\t" "\n" | pigz -fc -p ${task.cpus} > ${reads_mapped[0]}
+    zcat ${reads_mapped[0]} | paste - - - - | grep -F -f ${keep_read_name_list} | tr "\t" "\n" | pigz -fc -p ${task.cpus} >> ${reads_unmapped[0]}
+    zcat ${reads_mapped[1]} | paste - - - - | grep -v -F -f ${keep_read_name_list} | tr "\t" "\n" | pigz -fc -p ${task.cpus} > ${reads_mapped[1]}
+    zcat ${reads_mapped[1]} | paste - - - - | grep -F -f ${keep_read_name_list} | tr "\t" "\n" | pigz -fc -p ${task.cpus} >> ${reads_unmapped[1]}
+    """
+  } else if ( params.lib_pairedness == 'single' ) {
+    """
+    zcat ${reads_mapped} | paste - - - - | grep -v -F -f ${keep_read_name_list} | tr "\t" "\n" | pigz -fc -p ${task.cpus} > ${reads_mapped}
+    zcat ${reads_mapped} | paste - - - - | grep -F -f ${keep_read_name_list} | tr "\t" "\n" | pigz -fc -p ${task.cpus} >> ${reads_unmapped}
+    """
+  } else {
+    error "Invalid mode: ${params.lib_pairedness}"
+  }
+  stub:
+  """
+  touch ${reads_unmapped} ${reads_mapped}
   """
 }
+
+// process split_bam {
+//   label 'pysam'
+//   echo true
+
+//   input:
+//   path(read_name_list)
+//   tuple val(name), path(mapped_bam), path(mapped_bai)
+
+//   output:
+//   tuple val(name), val('mapped'), path('mapped.fq'), emit: mapped
+//   tuple val(name), val('unmapped'), path('unmapped.fq'), emit: unmapped
+
+//   script:
+//   """
+//   #!/usr/bin/env python3
+
+//   import pysam
+
+//   reads = set()
+//   with open('${read_name_list}', 'r') as infile:
+//     for line in infile:
+//       reads.add(line.strip())
+//   print(reads)
+  
+//   # split bam into mapped (not in list)
+//   # and "unmapped" (in list)
+
+//   bamfile = pysam.AlignmentFile('${mapped_bam}', 'rb')
+//   for read in bamfile.fetch(until_eof=True):
+//     if (read.query_name in reads):
+//       #write to unmapped
+//       pass
+//     else:
+//       # write to mapped
+//       pass
+//   """
+// }
 
 process bbdukStats {
   label 'smallTask'
