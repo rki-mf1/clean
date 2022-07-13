@@ -193,7 +193,6 @@ workflow {
   contamination = prepare_contamination.out
 
   clean(input_ch, contamination, nanoControlBedChannel)
-  clean.out.out_reads.view()
 
   if (params.keep){
     prepare_keep(keepFastaChannel)
