@@ -204,11 +204,9 @@ workflow {
 
     keep(input_ch, keep_fasta, nanoControlBedChannel, mapped, unmapped)
 
-  } else {
-    keep_reads = Channel.empty()
   }
 
-  qc(input_ch.map{ it -> tuple(it[0], 'input', it[1]) }.mix(clean.out.out_reads), params.input_type, clean.out.bbduk_summary, clean.out.idxstats.mix(keep.out.idxstats), clean.out.flagstats.mix(keep.out.flagstats), multiqc_config)
+  qc(input_ch.map{ it -> tuple(it[0], 'input', it[1]) }.mix(clean.out.out_reads), params.input_type, clean.out.bbduk_summary, clean.out.idxstats, clean.out.flagstats, multiqc_config)
 }
 
 /**************************  
