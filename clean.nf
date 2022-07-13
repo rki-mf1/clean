@@ -180,11 +180,9 @@ include { prepare_contamination } from './workflows/prepare_contamination_wf' ad
 include { check_own as prepare_keep } from './modules/prepare_contamination'
 
 include { clean } from './workflows/clean_wf' addParams( tool: tool, lib_pairedness: lib_pairedness )
-include { clean as keep_map } from './workflows/clean_wf' addParams( tool: tool, lib_pairedness: lib_pairedness )
+include { keep } from './workflows/keep_wf' addParams( tool: tool, lib_pairedness: lib_pairedness )
 
 include { qc } from './workflows/qc_wf'
-
-include { get_read_names; filter_fastq_by_name } from './modules/utils'
 
 /************************** 
 * WORKFLOW ENTRY POINT
@@ -195,27 +193,22 @@ workflow {
   contamination = prepare_contamination.out
 
   clean(input_ch, contamination, nanoControlBedChannel)
+  clean.out.out_reads.view()
 
   if (params.keep){
     prepare_keep(keepFastaChannel)
     keep_fasta = prepare_keep.out
-    keep_map(input_ch, keep_fasta, nanoControlBedChannel)
-    keep_reads = keep_map.out.contamination_bam_bai
-    get_read_names(keep_reads.map{it -> [it[0], it[1]]})
-    // works also for multiple samples?
+
     mapped = clean.out.out_reads.filter{ it[1] == 'mapped' }
     unmapped = clean.out.out_reads.filter{ it[1] == 'unmapped' }
-    filter_fastq_by_name(get_read_names.out, mapped.join(unmapped))
-    // split_bam(get_read_names.out.view(), keep_reads.view())
-    // clean_mapped in keep_mapped
-    // yes -> mv to clean_unmapped
-    //     which align is longer?
-    // no -> ok
+
+    keep(input_ch, keep_fasta, nanoControlBedChannel, mapped, unmapped)
+
   } else {
     keep_reads = Channel.empty()
   }
 
-  qc(input_ch.map{ it -> tuple(it[0], 'input', it[1]) }.mix(clean.out.out_reads), params.input_type, clean.out.bbduk_summary, clean.out.idxstats, clean.out.flagstats, multiqc_config)
+  qc(input_ch.map{ it -> tuple(it[0], 'input', it[1]) }.mix(clean.out.out_reads), params.input_type, clean.out.bbduk_summary, clean.out.idxstats.mix(keep.out.idxstats), clean.out.flagstats.mix(keep.out.flagstats), multiqc_config)
 }
 
 /**************************  
