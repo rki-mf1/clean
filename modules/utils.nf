@@ -1,7 +1,11 @@
 process compress_reads {
   label 'basics'
 
-  publishDir "${params.output}/${params.tool}", mode: 'copy', pattern: "*.gz"
+
+  if ( ! params.keep ) {
+    publishDir "${params.output}/${params.tool}", mode: 'copy', pattern: "*.gz"
+  }
+  // else published by filter_fastq_by_name
 
   input:
   tuple val(name), val(type), path(reads)
@@ -102,13 +106,17 @@ process get_read_names {
 process filter_fastq_by_name {
   label 'basics'
 
+  if ( params.keep ) {
+    publishDir "${params.output}/${params.tool}", mode: 'copy', pattern: "*.gz"
+  }
+
   input:
   path(keep_read_name_list)
   tuple val(name), val(mapped), path(reads_mapped), val(unmapped), path(reads_unmapped)
 
   output:
-  tuple val(name), val(mapped), path(reads_mapped, includeInputs: true)
-  tuple val(name), val(unmapped), path(reads_unmapped, includeInputs: true)
+  tuple val(name), val(mapped), path(reads_mapped, includeInputs: true), emit: mapped_no_keep
+  tuple val(name), val(unmapped), path(reads_unmapped, includeInputs: true), emit: unmapped_keep
   
   script:
   if ( params.lib_pairedness == 'paired' ) {
