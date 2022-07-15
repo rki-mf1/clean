@@ -140,10 +140,10 @@ process idxstats_from_bam {
   label 'minimap2'
 
   input:
-  tuple val(name), path(bam), path(bai)
+  tuple val(name), val(type), path(bam), path(bai)
 
   output:
-  tuple val(name), path('*_idxstats.tsv')
+  tuple val(name), val(type), path('*_idxstats.tsv')
 
   script:
   """
@@ -180,10 +180,10 @@ process sort_bam {
   label 'minimap2'
 
   input:
-  tuple val(name), path(bam)
+  tuple val(name), val(type), path(bam)
 
   output:
-  tuple val(name), path("${bam.baseName}_sorted.bam")
+  tuple val(name), val(type), path("${bam.baseName}.sorted.bam")
 
   script:
   """
