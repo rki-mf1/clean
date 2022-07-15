@@ -6,7 +6,7 @@ process minimap2 {
     path (db)
 
   output:
-    tuple val(name), path("${name}.bam"), emit: bam // input just for naming
+    tuple val(name), val('raw'), path("${name}.bam"), emit: bam // input just for naming
 
   script:
   // -N is an internal algorithm option. It controls how many candidates alignment to extend. --secondary is an output option.

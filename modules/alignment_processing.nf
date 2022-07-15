@@ -2,7 +2,7 @@ process split_bam {
   label 'minimap2'
 
   input:
-    tuple val(name), path(bam)
+    tuple val(name), val(type), path(bam)
 
   output:
     tuple val(name), val('mapped'), path("${name}.mapped.bam"), emit: mapped
@@ -199,10 +199,10 @@ process index_bam {
   label 'minimap2'
 
   input:
-  tuple val(name), path(bam)
+  tuple val(name), val(type), path(bam)
 
   output:
-  tuple val(name), path(bam), path('*.bai')
+  tuple val(name), val(type), path(bam), path('*.bai')
 
   script:
   """
