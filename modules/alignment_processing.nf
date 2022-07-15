@@ -78,7 +78,7 @@ process filter_soft_clipped_alignments {
 process filter_true_dcs_alignments {
   label 'bed_samtools'
 
-  publishDir "${params.output}/${params.tool}", mode: 'copy', pattern: "*.bam*"
+  publishDir "${params.output}/${params.tool}", mode: params.publish_dir_mode, pattern: "*.bam*"
 
   input:
   tuple val(name), path (bam)
