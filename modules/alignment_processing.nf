@@ -198,6 +198,9 @@ process sort_bam {
 process index_bam {
   label 'minimap2'
 
+  publishDir "${params.output}/${params.tool}", mode: params.publish_dir_mode, pattern: "*.bam"
+  publishDir "${params.output}/${params.tool}", mode: params.publish_dir_mode, pattern: "*.bam.bai"
+
   input:
   tuple val(name), val(type), path(bam)
 

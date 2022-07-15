@@ -3,7 +3,7 @@ process compress_reads {
 
 
   if ( ! params.keep ) {
-    publishDir "${params.output}/${params.tool}", mode: 'copy', pattern: "*.gz"
+    publishDir "${params.output}/${params.tool}", mode: params.publish_dir_mode, pattern: "*.gz"
   }
   // else published by filter_fastq_by_name
 
@@ -107,7 +107,7 @@ process filter_fastq_by_name {
   label 'basics'
 
   if ( params.keep ) {
-    publishDir "${params.output}/${params.tool}", mode: 'copy', pattern: "*.gz"
+    publishDir "${params.output}/${params.tool}", mode: params.publish_dir_mode, pattern: "*.gz"
   }
 
   input:
@@ -181,7 +181,7 @@ process filter_fastq_by_name {
 process bbdukStats {
   label 'smallTask'
 
-  publishDir "${params.output}/bbduk", mode: 'copy', pattern: "${name}_stats.txt"
+  publishDir "${params.output}/bbduk", mode: params.publish_dir_mode, pattern: "${name}_stats.txt"
 
   input:
   tuple val(name), path (bbdukStats)
@@ -220,7 +220,7 @@ process bbdukStats {
 process writeLog {
   label 'smallTask'
 
-  publishDir "${params.output}/${params.tool}", mode: 'copy', pattern: "log.txt"
+  publishDir "${params.output}/${params.tool}", mode: params.publish_dir_mode, pattern: "log.txt"
   
   input:
     val db
