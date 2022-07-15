@@ -200,8 +200,10 @@ workflow {
 
     mapped = clean.out.out_reads.filter{ it[1] == 'mapped' }
     unmapped = clean.out.out_reads.filter{ it[1] == 'unmapped' }
-
-    keep(input_ch, keep_fasta, nanoControlBedChannel, mapped, unmapped)
+    
+    un_mapped_clean_fastq = mapped.join(unmapped)
+    
+    keep(input_ch.map{ it -> ['keep_'+it[0], it[1]]}, keep_fasta.collect(), nanoControlBedChannel, un_mapped_clean_fastq)
 
   }
 

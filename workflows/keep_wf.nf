@@ -8,18 +8,17 @@ workflow keep {
         input
         keep_reference
         dcs_ends_bed
-        mapped_clean_fastq
-        unmapped_clean_fastq
+        un_mapped_clean_fastq
 
     main:
-        keep_map(input.map{ it -> ['keep_'+it[0], it[1]]}, keep_reference, dcs_ends_bed)
+        keep_map(input, keep_reference, dcs_ends_bed)
         
         keep_reads_bam = keep_map.out.bams_bai.filter{ it[1] == 'mapped' }
         get_read_names(keep_reads_bam.map{it -> [it[0], it[2]]})
         // works also for multiple samples?
         
         // mv keep mapped reads from cleaned mapped to clean unmapped
-        filter_fastq_by_name(get_read_names.out, mapped_clean_fastq.join(unmapped_clean_fastq))
+        filter_fastq_by_name(get_read_names.out.map{ it -> [it[0].replaceAll("^keep_",""), it[1]] }.join(un_mapped_clean_fastq))
 
         // QC
         idxstats = idxstats_from_bam(keep_reads_bam)
