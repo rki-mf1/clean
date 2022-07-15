@@ -14,14 +14,14 @@ workflow keep {
     main:
         keep_map(input.map{ it -> ['keep_'+it[0], it[1]]}, keep_reference, dcs_ends_bed)
         
-        keep_reads_bam = keep_map.out.contamination_bam_bai
-        get_read_names(keep_reads_bam.map{it -> [it[0], it[1]]})
+        keep_reads_bam = keep_map.out.bams_bai.filter{ it[1] == 'mapped' }
+        get_read_names(keep_reads_bam.map{it -> [it[0], it[2]]})
         // works also for multiple samples?
         
         // mv keep mapped reads from cleaned mapped to clean unmapped
         filter_fastq_by_name(get_read_names.out, mapped_clean_fastq.join(unmapped_clean_fastq))
 
-        //  QC
+        // QC
         idxstats = idxstats_from_bam(keep_reads_bam)
         flagstats = flagstats_from_bam(keep_reads_bam)
 
