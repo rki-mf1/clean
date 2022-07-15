@@ -85,9 +85,9 @@ process filter_true_dcs_alignments {
   path (dcs_ends_bed)
 
   output:
-  tuple val(name), val('mapped'), path ("${name}_no_dcs.bam"), emit: no_dcs
-  tuple val(name), val('mapped'), path ("${name}_true_dcs.bam"), emit: true_dcs
-  tuple val(name), val('unmapped'), path ("${name}_false_dcs.bam"), emit: false_dcs
+  tuple val(name), val('mapped'), path ("${name}.no_dcs.bam"), emit: no_dcs
+  tuple val(name), val('mapped'), path ("${name}.true_dcs.bam"), emit: true_dcs
+  tuple val(name), val('unmapped'), path ("${name}.false_dcs.bam"), emit: false_dcs
   tuple val(name), path ('*.bam.bai')
   path('dcs.bam')
 
@@ -95,17 +95,17 @@ process filter_true_dcs_alignments {
   """
   # true spike in: 1-65 || 1-92; 3513-3560 (len 48)
   samtools view -b -h -e 'rname=="Lambda_3.6kb"' ${bam} > dcs.bam
-  samtools view -b -h -e 'rname!="Lambda_3.6kb"' ${bam} > ${name}_no_dcs.bam
-  bedtools intersect -wa -ubam -a dcs.bam -b ${dcs_ends_bed} > ${name}_true_dcs.bam
-  bedtools intersect -v -ubam -a dcs.bam -b ${dcs_ends_bed} > ${name}_false_dcs.bam
+  samtools view -b -h -e 'rname!="Lambda_3.6kb"' ${bam} > ${name}.no_dcs.bam
+  bedtools intersect -wa -ubam -a dcs.bam -b ${dcs_ends_bed} > ${name}.true_dcs.bam
+  bedtools intersect -v -ubam -a dcs.bam -b ${dcs_ends_bed} > ${name}.false_dcs.bam
   samtools index dcs.bam
-  samtools index ${name}_no_dcs.bam
-  samtools index ${name}_true_dcs.bam
-  samtools index ${name}_false_dcs.bam
+  samtools index ${name}.no_dcs.bam
+  samtools index ${name}.true_dcs.bam
+  samtools index ${name}.false_dcs.bam
   """ 
   stub:
   """
-  touch ${name}_no_dcs.bam ${name}_true_dcs.bam ${name}_false_dcs.bam ${name}_no_dcs.bam.bai ${name}_true_dcs.bam.bai ${name}_false_dcs.bam.bai
+  touch ${name}.no_dcs.bam ${name}.true_dcs.bam ${name}.false_dcs.bam ${name}.no_dcs.bam.bai ${name}.true_dcs.bam.bai ${name}.false_dcs.bam.bai
   """
 }
 
@@ -187,11 +187,11 @@ process sort_bam {
 
   script:
   """
-  samtools sort -@ ${task.cpus} ${bam} > ${bam.baseName}_sorted.bam
+  samtools sort -@ ${task.cpus} ${bam} > ${bam.baseName}.sorted.bam
   """
   stub:
   """
-  touch ${bam.baseName}_sorted.bam
+  touch ${bam.baseName}.sorted.bam
   """
 }
 
