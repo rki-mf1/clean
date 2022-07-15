@@ -91,7 +91,7 @@ process get_read_names {
   tuple val(name), path(bam)
   
   output:
-  path("${name}_read_names.csv")
+  tuple val(name), path("${name}_read_names.csv")
   
   script:
   """
@@ -111,8 +111,7 @@ process filter_fastq_by_name {
   }
 
   input:
-  path(keep_read_name_list)
-  tuple val(name), val(mapped), path(reads_mapped), val(unmapped), path(reads_unmapped)
+  tuple val(name), path(keep_read_name_list), val(mapped), path(reads_mapped), val(unmapped), path(reads_unmapped)
 
   output:
   tuple val(name), val(mapped), path(reads_mapped, includeInputs: true), emit: mapped_no_keep
