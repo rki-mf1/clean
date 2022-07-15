@@ -161,10 +161,10 @@ process flagstats_from_bam {
   publishDir "${params.output}/minimap2", mode: params.publish_dir_mode, pattern: "${bam.baseName}_flagstats.txt" 
 
   input:
-  tuple val(name), path(bam), path(bai)
+  tuple val(name), val(type), path(bam), path(bai)
 
   output:
-  tuple val(name), path('*_flagstats.txt')
+  tuple val(name), val(type), path('*_flagstats.txt')
 
   script:
   """
