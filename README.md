@@ -104,4 +104,6 @@ Included in this repository are:
 
 ## Flowchart
 
-![chart](figures/dag.png)
+![chart](data/figures/workflow.png)
+
+<sub><sub>The icons and diagram components that make up the schematic view were originally designed by James A. Fellow Yates & nf-core under a CCO license (public domain).</sub></sub>
