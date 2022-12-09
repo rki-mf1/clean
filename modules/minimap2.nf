@@ -21,7 +21,7 @@ process minimap2 {
     """
   } else if ( params.input_type == 'fasta' ){
     """
-    minimap2 -ax asm5 -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} ${db} ${fasta} | samtools view -bhS -@ ${task.cpus} > ${name}.bam
+    minimap2 -ax asm5 -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} ${db} ${input} | samtools view -bhS -@ ${task.cpus} > ${name}.bam
     """
   } else {
     error "Unknown input_type: ${params.input_type}"
