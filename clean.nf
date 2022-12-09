@@ -277,6 +277,7 @@ def helpMSG() {
                              docker
                              singularity
                              conda
+                             mamba
 
                              ebi (lsf,singularity; preconfigured for the EBI cluster)
                              yoda (lsf,singularity; preconfigured for the EBI YODA cluster)
