@@ -33,7 +33,7 @@ process filter_un_mapped_alignments {
 process make_mapped_bam {
   label 'minimap2'
 
-  publishDir "${params.output}/${name}/${params.tool}", mode: 'copy', pattern: "*.mapped.bam*"
+  publishDir "${params.output}/${name}/${params.tool}/${name}", mode: 'copy', pattern: "*.mapped.bam*"
 
   input:
     tuple val(name), path(sam), path(reads)

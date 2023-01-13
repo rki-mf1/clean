@@ -1,7 +1,7 @@
 process compress_reads {
   label 'basics'
 
-  publishDir "${params.output}/${params.tool}", mode: 'copy', pattern: "*.gz"
+  publishDir "${params.output}/${params.tool}/${name}", mode: 'copy', pattern: "*.gz"
 
   input:
   tuple val(name), val(type), path(reads)
@@ -83,7 +83,7 @@ process get_number_of_records {
 process bbdukStats {
   label 'smallTask'
 
-  publishDir "${params.output}/bbduk", mode: 'copy', pattern: "${name}_stats.txt"
+  publishDir "${params.output}/bbduk/${name}", mode: 'copy', pattern: "${name}_stats.txt"
 
   input:
   tuple val(name), path (bbdukStats)

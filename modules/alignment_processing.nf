@@ -50,7 +50,7 @@ process filter_soft_clipped_alignments {
   label 'samclipy'
   label 'smallTask'
 
-  publishDir "${params.output}/${params.tool}", mode: 'copy', pattern: "*.bam*"
+  publishDir "${params.output}/${params.tool}/${name}", mode: 'copy', pattern: "*.bam*"
 
   input:
   tuple val(name), path (bam)
@@ -78,7 +78,7 @@ process filter_soft_clipped_alignments {
 process filter_true_dcs_alignments {
   label 'bed_samtools'
 
-  publishDir "${params.output}/${params.tool}", mode: 'copy', pattern: "*.bam*"
+  publishDir "${params.output}/${params.tool}/${name}", mode: 'copy', pattern: "*.bam*"
 
   input:
   tuple val(name), path (bam)
@@ -158,7 +158,7 @@ process idxstats_from_bam {
 process flagstats_from_bam {
   label 'minimap2'
 
-  publishDir "${params.output}/minimap2", mode: 'copy', pattern: "${bam.baseName}_flagstats.txt" 
+  publishDir "${params.output}/minimap2/${name}", mode: 'copy', pattern: "${bam.baseName}_flagstats.txt" 
 
   input:
   tuple val(name), path(bam), path(bai)
