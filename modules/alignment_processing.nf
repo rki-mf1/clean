@@ -139,6 +139,8 @@ process fastq_from_bam {
 process idxstats_from_bam {
   label 'minimap2'
 
+  publishDir "${params.output}/minimap2/${name}", mode: 'copy', pattern: "${bam.baseName}_idxstats.tsv" 
+
   input:
   tuple val(name), path(bam), path(bai)
 
