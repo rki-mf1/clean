@@ -185,15 +185,16 @@ process sort_bam {
   tuple val(name), path(bam)
 
   output:
-  tuple val(name), path("${bam.baseName}_sorted.bam")
+  tuple val(name), path("${bam.baseName}.bam")
 
   script:
   """
-  samtools sort -@ ${task.cpus} ${bam} > ${bam.baseName}_sorted.bam
+  mv ${bam} ${bam}.tmp
+  samtools sort -@ ${task.cpus} ${bam}.tmp > ${bam.baseName}.bam
   """
   stub:
   """
-  touch ${bam.baseName}_sorted.bam
+  touch ${bam.baseName}.bam
   """
 }
 
