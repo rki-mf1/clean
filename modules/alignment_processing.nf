@@ -34,7 +34,7 @@ process merge_bam {
     tuple val(name), val(type), path(bam)
 
   output:
-   tuple val(name), val(type), path("${bam[0].baseName}_merged.bam")
+  tuple val(name), val(type), path("${bam[0].baseName}_merged.bam")
   
   script:
   """
@@ -139,42 +139,42 @@ process fastq_from_bam {
 process idxstats_from_bam {
   label 'minimap2'
 
-  publishDir "${params.output}/minimap2/${name}", mode: 'copy', pattern: "${bam.baseName}_idxstats.tsv" 
+  publishDir "${params.output}/minimap2/${name}", mode: 'copy', pattern: "${bam.baseName}.idxstats.tsv" 
 
   input:
   tuple val(name), path(bam), path(bai)
 
   output:
-  tuple val(name), path('*_idxstats.tsv')
+  tuple val(name), path('*.idxstats.tsv')
 
   script:
   """
-  samtools idxstats ${bam} > ${bam.baseName}_idxstats.tsv
+  samtools idxstats ${bam} > ${bam.baseName}.idxstats.tsv
   """
   stub:
   """
-  touch ${bam.baseName}_idxstats.tsv
+  touch ${bam.baseName}.idxstats.tsv
   """
 }
 
 process flagstats_from_bam {
   label 'minimap2'
 
-  publishDir "${params.output}/minimap2/${name}", mode: 'copy', pattern: "${bam.baseName}_flagstats.txt" 
+  publishDir "${params.output}/minimap2/${name}", mode: 'copy', pattern: "${bam.baseName}.flagstats.txt" 
 
   input:
   tuple val(name), path(bam), path(bai)
 
   output:
-  tuple val(name), path('*_flagstats.txt')
+  tuple val(name), path('*.flagstats.txt')
 
   script:
   """
-  samtools flagstats ${bam} > ${bam.baseName}_flagstats.txt
+  samtools flagstats ${bam} > ${bam.baseName}.flagstats.txt
   """
   stub:
   """
-  touch ${bam.baseName}_flagstats.txt
+  touch ${bam.baseName}.flagstats.txt
   """
 }
 
