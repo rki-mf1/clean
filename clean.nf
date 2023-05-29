@@ -143,6 +143,8 @@ if ( params.rm_rrna ){
 
 if ( params.host ) {
   hostNameChannel = Channel.from( params.host ).splitCsv().flatten()
+} else {
+  hostNameChannel = Channel.empty()
 }
 
 // user defined fasta sequence
@@ -176,7 +178,7 @@ include { qc } from './workflows/qc_wf'
 **************************/
 
 workflow {
-  prepare_contamination(nanoControlFastaChannel, illuminaControlFastaChannel, rRNAChannel)
+  prepare_contamination(nanoControlFastaChannel, illuminaControlFastaChannel, rRNAChannel, hostNameChannel, ownFastaChannel)
   contamination = prepare_contamination.out
 
   clean(input_ch, contamination, nanoControlBedChannel)

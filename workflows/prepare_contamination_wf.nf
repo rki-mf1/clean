@@ -10,10 +10,12 @@ workflow prepare_contamination {
     nanoControlFastaChannel
     illuminaControlFastaChannel
     rRNAChannel
+    hostNameChannel
+    ownFastaChannel
 
   main:
-    prepare_auto_host()
-    prepare_own_host()
+    prepare_auto_host(hostNameChannel)
+    prepare_own_host(ownFastaChannel)
 
     contamination_collection = prepare_auto_host.out.collect()
           .mix(nanoControlFastaChannel)
@@ -27,6 +29,8 @@ workflow prepare_contamination {
 }
 
 workflow prepare_auto_host {
+  take:
+    hostNameChannel
   main:
     if ( params.host ) {
       if ( params.cloudProcess ) {
@@ -50,6 +54,8 @@ workflow prepare_auto_host {
 }
 
 workflow prepare_own_host {
+  take:
+    ownFastaChannel
   main:
     if ( params.own ) {
       check_own(ownFastaChannel)
