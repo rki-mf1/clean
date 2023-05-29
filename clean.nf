@@ -155,6 +155,8 @@ if ( params.own && params.list ) {
 } else if ( params.own ) {
   ownFastaChannel = Channel
     .fromPath( params.own, checkIfExists: true)
+} else {
+  ownFastaChannel = Channel.empty()
 }
 
 multiqc_config = Channel.fromPath( workflow.projectDir + '/assets/multiqc_config.yml', checkIfExists: true )
