@@ -265,6 +265,10 @@ def helpMSG() {
     --condaCacheDir         defines the path where environments (conda) are cached [default: $params.condaCacheDir]
     --singularityCacheDir   defines the path where images (singularity) are cached [default: $params.singularityCacheDir] 
 
+    ${c_yellow}Miscellaneous:${c_reset}
+    --cleanup_work_dir      deletes all files in the work directory after a successful completion of a run [default: $params.cleanup_work_dir]
+                            ${c_dim}warning: if ture, the option will prevent the use of the resume feature!${c_reset} 
+
     ${c_yellow}Profile:${c_reset}
     You can merge different profiles for different setups, e.g.
 
