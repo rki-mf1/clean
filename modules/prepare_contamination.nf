@@ -41,6 +41,10 @@ process download_host {
     zcat *.gz | bgzip -@ ${task.cpus} -c > ${host}.fa.gz
   fi
   """
+  stub:
+  """
+  touch ${host}.fa.gz
+  """
 }
 
 process check_own {
@@ -64,30 +68,44 @@ process check_own {
     zcat ${fasta}.tmp | sed -e '\$a\\' | bgzip -@ ${task.cpus} -c > ${fasta}.gz
   fi
   """
+  stub:
+  """
+  touch ${fasta}.gz
+  """
 }
 
 process concat_contamination {
-  label 'minimap2' // sets conda env (and cpus)
-  label 'smallTask' // overrides cpus
+  label 'minimap2'
   
-  publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "db.fa.gz"
-  publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "db.fa.fai"
-  publishDir "${params.output}/${name}/${tool}", mode: 'copy', pattern: "db.fa.gz.gzi"
+  publishDir "${params.output}/", mode: 'copy', pattern: "db.fa.gz"
+  publishDir "${params.output}/", mode: 'copy', pattern: "db.fa.fai"
 
   input:
-  val name
-  val tool
-  path '*'
+  path fastas
 
   output:
   path 'db.fa.gz', emit: fa
-  path 'db.fa.fai'
-  path 'db.fa.gz.gzi'
+  path 'db.fa.fai', emit: fai
   
   script:
+  len = fastas.collect().size()
   """
-  cat *.gz > db.fa.gz
+  if [[ ${len} -gt 1 ]] 
+  then
+    for FASTA in ${fastas}
+    do
+        NAME="\${FASTA%%.*}"
+        zcat \$FASTA | awk -v n=\$NAME '/>/{sub(">","&"n"_")}1' | bgzip -@ ${task.cpus} -c >> db.fa.gz
+    done
+  else
+    mv ${fastas} db.fa.gz
+  fi
+
   samtools faidx db.fa.gz
   mv db.fa.gz.fai db.fa.fai
+  """
+  stub:
+  """
+  touch db.fa.gz db.fa.fai
   """
 }

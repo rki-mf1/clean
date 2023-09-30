@@ -10,10 +10,13 @@ Author: hoelzer.martin@gmail.com
 
 // Parameters sanity checking
 
-Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'nano', 'illumina', 'illumina_single_end', 'fasta', 'list', 'host', 'own', 'control', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
+Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'input', 'input_type', 'list', 'host', 'own', 'control', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'min_clip', 'dcs_strict', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'cleanup_work_dir', 'condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
 def parameter_diff = params.keySet() - valid_params
 if (parameter_diff.size() != 0){
     exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
+}
+if (params.input.contains('.clean.') ) { 
+  exit 1, "ERROR: Input files cannot contain `.clean.`\n" 
 }
 
 /************************** 
@@ -77,391 +80,112 @@ if ( workflow.profile.contains('singularity') ) {
 
 Set controls = ['phix', 'dcs', 'eno']
 Set hosts = ['hsa', 'mmu', 'cli', 'csa', 'gga', 'eco']
+Set input_types = ['nano', 'illumina', 'illumina_single_end', 'fasta']
 
-if (params.profile) { exit 1, "--profile is wrong, use -profile" }
-if (params.nano == '' &&  params.illumina == '' && params.fasta == '' && params.illumina_single_end == '' ) { exit 1, "Read files missing, use [--nano] or [--illumina] or [--fasta]"}
-if (params.control) { for( String ctr : params.control.split(',') ) if ( ! (ctr in controls ) ) { exit 1, "Wrong control defined (" + ctr + "), use one of these: " + controls } }
-if (params.nano && params.control && 'dcs' in params.control.split(',') && 'eno' in params.control.split(',')) { exit 1, "Please choose either eno (for ONT dRNA-Seq) or dcs (for ONT DNA-Seq)." }
-if (params.host) { for( String hst : params.host.split(',') ) if ( ! (hst in hosts ) ) { exit 1, "Wrong host defined (" + hst + "), use one of these: " + hosts } }
-if (!params.host && !params.own && !params.control && !params.rm_rrna) { exit 1, "Please provide a control (--control), a host tag (--host), a FASTA file (--own) or set --rm_rrna for rRNA removal for the clean up."}
+if ( params.profile ) { exit 1, "--profile is wrong, use -profile" }
+if ( params.input == '' || !params.input_type == '' ) { exit 1, "Missing required input parameters [--input] and [--input_type]" }
+
+if ( params.input_type ) { if ( ! (params.input_type in input_types ) ) { exit 1, "Choose one of the the input types with --input_type: " + input_types } } 
+
+if ( params.control ) { for( String ctr : params.control.split(',') ) if ( ! (ctr in controls ) ) { exit 1, "Wrong control defined (" + ctr + "), use one of these: " + controls } }
+if ( params.input_type == 'nano' && params.control && 'dcs' in params.control.split(',') && 'eno' in params.control.split(',') ) { exit 1, "Please choose either eno (for ONT dRNA-Seq) or dcs (for ONT DNA-Seq)." }
+if ( params.host ) { for( String hst : params.host.split(',') ) if ( ! (hst in hosts ) ) { exit 1, "Wrong host defined (" + hst + "), use one of these: " + hosts } }
+if ( !params.host && !params.own && !params.control && !params.rm_rrna ) { exit 1, "Please provide a control (--control), a host tag (--host), a FASTA file (--own) or set --rm_rrna for rRNA removal for the clean up."}
 
 /************************** 
 * INPUT CHANNELS 
 **************************/
 
-// nanopore reads input & --list support
-if (params.nano && params.list) { nano_input_ch = Channel
-  .fromPath( params.nano, checkIfExists: true )
-  .splitCsv()
-  .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] } 
-} else if (params.nano) { nano_input_ch = Channel
-    .fromPath( params.nano, checkIfExists: true)
+if ( params.input_type == 'illumina' ) {
+  if ( params.list ) { input_ch = Channel
+    .fromPath( params.input, checkIfExists: true )
+    .splitCsv()
+    .map { row -> [row[0], [file("${row[1]}", checkIfExists: true), file("${row[2]}", checkIfExists: true)]] }
+  } else { input_ch = Channel
+      .fromFilePairs( params.input , checkIfExists: true )
+  }
+} else {
+  if ( params.list ) {
+    input_ch = Channel
+     .fromPath( params.input, checkIfExists: true )
+     .splitCsv()
+     .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
+  } else { input_ch = Channel
+    .fromPath( params.input, checkIfExists: true)
     .map { file -> tuple(file.simpleName, file) }
-}
-
-// illumina paired-end reads input & --list support
-if (params.illumina && params.list) { illumina_input_ch = Channel
-  .fromPath( params.illumina, checkIfExists: true )
-  .splitCsv()
-  .map { row -> [row[0], [file("${row[1]}", checkIfExists: true), file("${row[2]}", checkIfExists: true)]] }
-} else if (params.illumina) { illumina_input_ch = Channel
-  .fromFilePairs( params.illumina , checkIfExists: true )
-}
-
-// illumina single-end reads input & --list support
-if (params.illumina_single_end && params.list) { illumina_single_end_input_ch = Channel
-  .fromPath( params.illumina_single_end, checkIfExists: true )
-  .splitCsv()
-  .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
-} else if (params.illumina_single_end) { illumina_single_end_input_ch = Channel
-  .fromPath( params.illumina_single_end, checkIfExists: true )
-  .map { file -> tuple(file.simpleName, file) } 
-}
-
-// assembly fasta input & --list support
-if (params.fasta && params.list) { fasta_input_ch = Channel
-  .fromPath( params.fasta, checkIfExists: true )
-  .splitCsv()
-  .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
-} else if (params.fasta) { fasta_input_ch = Channel
-    .fromPath( params.fasta, checkIfExists: true)
-    .map { file -> tuple(file.simpleName, file) }
+  }
 }
 
 // load control fasta sequence
-if (params.control) {
+if ( params.control ) {
   if ( 'phix' in params.control.split(',') ) {
     illuminaControlFastaChannel = Channel.fromPath( workflow.projectDir + '/data/controls/phix.fa.gz' , checkIfExists: true )
   } else { illuminaControlFastaChannel = Channel.empty() }
   if ( 'dcs' in params.control.split(',') ) {
     nanoControlFastaChannel = Channel.fromPath( workflow.projectDir + '/data/controls/dcs.fa.gz' , checkIfExists: true )
+    nanoControlBedChannel = Channel.fromPath( workflow.projectDir + '/data/controls/dcs_artificial_ends.bed' , checkIfExists: true )
   } else if ( 'eno' in params.control.split(',') ) {
     nanoControlFastaChannel = Channel.fromPath( workflow.projectDir + '/data/controls/eno.fa.gz' , checkIfExists: true )
+    nanoControlBedChannel = []
   } else { nanoControlFastaChannel = Channel.empty() }
 } else {
   nanoControlFastaChannel = Channel.empty()
   illuminaControlFastaChannel = Channel.empty()
+  nanoControlBedChannel = []
 }
 
 // load rRNA DB
-if (params.rm_rrna){
+if ( params.rm_rrna ){
   rRNAChannel = Channel.fromPath( workflow.projectDir + '/data/rRNA/*.fasta.gz', checkIfExists: true )
 } else{
   rRNAChannel = Channel.empty()
 }
 
-if (params.host) {
+if ( params.host ) {
   hostNameChannel = Channel.from( params.host ).splitCsv().flatten()
+} else {
+  hostNameChannel = Channel.empty()
 }
 
 // user defined fasta sequence
-if (params.own && params.list) {
+if ( params.own && params.list ) {
   ownFastaChannel = Channel
     .fromPath( params.own, checkIfExists: true)
     .splitCsv().flatten().map{ it -> file( it, checkIfExists: true ) }
-} else if (params.own) {
+} else if ( params.own ) {
   ownFastaChannel = Channel
     .fromPath( params.own, checkIfExists: true)
+} else {
+  ownFastaChannel = Channel.empty()
 }
 
 multiqc_config = Channel.fromPath( workflow.projectDir + '/assets/multiqc_config.yml', checkIfExists: true )
+
+tool = params.bbduk ? 'bbduk' : 'minimap2'
+lib_pairedness = params.input_type == 'illumina' ? 'paired' : 'single'
 
 /************************** 
 * MODULES
 **************************/
 
-/* Comment section: */
+include { prepare_contamination } from './workflows/prepare_contamination_wf' addParams( tool: tool )
 
-include { download_host; check_own; concat_contamination } from './modules/get_host'
+include { clean } from './workflows/clean_wf' addParams( tool: tool, lib_pairedness: lib_pairedness )
 
-include { minimap2_fasta; minimap2_nano; minimap2_illumina } from './modules/minimap2'
-include { bbduk } from './modules/bbmap'
+include { qc } from './workflows/qc_wf'
 
-include { compress_reads; get_number_of_reads; minimap2Stats; bbdukStats; writeLog } from './modules/utils'
-
-include { fastqc; nanoplot; format_nanoplot_report; quast; multiqc } from './modules/qc'
-
-/************************** 
-* DATABASES
-**************************/
-
-/* Comment section:
-The Database Section is designed to "auto-get" pre prepared databases.
-It is written for local use and cloud use via params.cloudProcess.
-*/
-
-workflow prepare_host {
-  main:
-    if (params.host) {
-      if (params.cloudProcess) {
-        host_preload = file("${params.databases}/hosts/${params.host}.fa.gz")
-        if (host_preload.exists()) {
-          host = Channel.fromPath(host_preload)
-        } else {
-          download_host(hostNameChannel)
-          host = download_host.out
-        }
-      } else {
-        download_host(hostNameChannel)
-        host = download_host.out
-      }
-    }
-    else {
-      host = Channel.empty()
-    }
-    if (params.own) {
-      check_own(ownFastaChannel)
-      checkedOwn = check_own.out
-    }
-    else {
-      checkedOwn = Channel.empty()
-    }
-  emit:
-    host = host
-    checkedOwn = checkedOwn
-}
-
-/************************** 
-* SUB WORKFLOWS
-**************************/
-
-/* Comment section: */
-
-workflow clean_fasta {
-  take: 
-    fasta_input_ch
-    host
-    checkedOwn
-    rRNAChannel
-
-  main:
-    contamination = host.collect()
-      .mix(illuminaControlFastaChannel)
-      .mix(nanoControlFastaChannel)
-      .mix(checkedOwn)
-      .mix(rRNAChannel).collect()
-    concat_contamination( fasta_input_ch.map{ it -> it[0] }, 'minimap2', contamination )
-    minimap2_fasta(fasta_input_ch, concat_contamination.out.fa)
-    writeLog(fasta_input_ch.map{ it -> it[0] }, 'minimap2', fasta_input_ch.map{ it -> it[1] }, contamination)
-    minimap2Stats(minimap2_fasta.out.stats)
-  emit:
-    stats = minimap2Stats.out.tsv
-    in = fasta_input_ch.map{ it -> it.plus(1, 'all') }
-    out = minimap2_fasta.out.cleaned_contigs.concat(minimap2_fasta.out.contaminated_contigs)
-} 
-
-workflow clean_nano {
-  take: 
-    nano_input_ch
-    host
-    checkedOwn
-    rRNAChannel
-
-  main:
-    if (params.nano && params.illumina) {
-      contamination = host.collect()
-        .mix(nanoControlFastaChannel)
-        .mix(checkedOwn)
-        .mix(rRNAChannel).collect()
-      concat_contamination( nano_input_ch.map{ it -> it[0] }, 'minimap2', contamination )
-    } else {
-      contamination = host.collect()
-        .mix(nanoControlFastaChannel)
-        .mix(illuminaControlFastaChannel)
-        .mix(checkedOwn)
-        .mix(rRNAChannel).collect()
-      concat_contamination( nano_input_ch.map{ it -> it[0] }, 'minimap2', contamination )
-    }
-    // rename_reads(nano_input_ch, 'single')
-    minimap2_nano(nano_input_ch, concat_contamination.out.fa)
-    writeLog(nano_input_ch.map{ it -> it[0] }, 'minimap2', nano_input_ch.map{ it -> it[1] }, contamination)
-    get_number_of_reads(nano_input_ch, 'single')
-    minimap2Stats(minimap2_nano.out.idxstats.join(get_number_of_reads.out))
-    compress_reads(minimap2_nano.out.cleaned_reads.concat(minimap2_nano.out.contaminated_reads), 'single', 'minimap2')
-  emit:
-    stats = minimap2Stats.out.tsv
-    in = nano_input_ch.map{ it -> it.plus(1, 'all') }
-    out = compress_reads.out
-} 
-
-workflow clean_illumina {
-  take: 
-    illumina_input_ch
-    host
-    checkedOwn
-    rRNAChannel
-
-  main:
-    if (params.nano && params.illumina) {
-      contamination = host.collect()
-        .mix(illuminaControlFastaChannel)
-        .mix(checkedOwn)
-        .mix(rRNAChannel).collect()
-      concat_contamination( illumina_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
-    } else {
-      contamination = host.collect()
-        .mix(nanoControlFastaChannel)
-        .mix(illuminaControlFastaChannel)
-        .mix(checkedOwn)
-        .mix(rRNAChannel).collect()
-      concat_contamination( illumina_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
-    }
-    // rename_reads(illumina_input_ch, 'paired')
-    if (params.bbduk){
-      bbduk(illumina_input_ch, concat_contamination.out.fa, 'paired')
-      writeLog(illumina_input_ch.map{ it -> it[0] }, 'bbduk', illumina_input_ch.map{ it -> it[1] }, contamination)
-      bbdukStats(bbduk.out.stats)
-      compress_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'paired', 'bbduk')
-      stats = bbdukStats.out.tsv
-    } else {
-      minimap2_illumina(illumina_input_ch, concat_contamination.out.fa, 'paired')
-      writeLog(illumina_input_ch.map{ it -> it[0] }, 'minimap2', illumina_input_ch.map{ it -> it[1] }, contamination)
-      get_number_of_reads(illumina_input_ch, 'paired')
-      minimap2Stats(minimap2_illumina.out.idxstats.join(get_number_of_reads.out))
-      compress_reads(minimap2_illumina.out.cleaned_reads.concat(minimap2_illumina.out.contaminated_reads), 'paired', 'minimap2')
-      stats = minimap2Stats.out.tsv
-    }
-  emit:
-    stats = stats
-    in = illumina_input_ch.map{ it -> it.plus(1, 'all') }
-    out = compress_reads.out
-} 
-
-workflow clean_illumina_single {
-  take:
-    illumina_single_end_input_ch
-    host
-    checkedOwn
-    rRNAChannel
-
-  main:
-    if (params.nano && params.illumina) {
-      contamination = host.collect()
-        .mix(illuminaControlFastaChannel)
-        .mix(checkedOwn)
-        .mix(rRNAChannel).collect()
-      concat_contamination( illumina_single_end_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
-    } else {
-      contamination = host.collect()
-        .mix(nanoControlFastaChannel)
-        .mix(illuminaControlFastaChannel)
-        .mix(checkedOwn)
-        .mix(rRNAChannel).collect()
-      concat_contamination( illumina_single_end_input_ch.map{ it -> it[0] }, params.bbduk ? 'bbduk' : 'minimap2', contamination )
-    }
-    // rename_reads(illumina_single_end_input_ch, 'single')
-    if (params.bbduk){
-      bbduk(illumina_single_end_input_ch, concat_contamination.out.fa, 'single')
-      writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'bbduk', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
-      bbdukStats(bbduk.out.stats)
-      stats = bbdukStats.out.tsv
-      compress_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads), 'single', 'bbduk')
-    } else {
-      minimap2_illumina(illumina_single_end_input_ch, concat_contamination.out.fa, 'single')
-      writeLog(illumina_single_end_input_ch.map{ it -> it[0] }, 'minimap2', illumina_single_end_input_ch.map{ it -> it[1] }, contamination)
-      get_number_of_reads(illumina_single_end_input_ch, 'single')
-      minimap2Stats(minimap2_illumina.out.idxstats.join(get_number_of_reads.out))
-      stats = minimap2Stats.out.tsv
-      compress_reads(minimap2_illumina.out.cleaned_reads.concat(minimap2_illumina.out.contaminated_reads), 'single', 'minimap2')
-    }
-    emit:
-      stats = stats
-      in = illumina_single_end_input_ch.map{ it -> it.plus(1, 'all') }
-      out = compress_reads.out
-} 
-
-workflow qc_fasta {
-  take:
-    fasta_input
-    fasta_output
-  main:
-    quast(fasta_input.concat(fasta_output))
-  emit:
-    quast.out.report_tsv
-}
-
-workflow qc_nano {
-  take:
-    nano_input
-    nano_output
-  main:
-    nanoplot(nano_input.concat(nano_output))
-    format_nanoplot_report(nanoplot.out.html)
-  emit:
-    format_nanoplot_report.out
-}
-
-workflow qc_illumina {
-  take:
-    illumina_input
-    illumina_output
-  main:
-    fastqc(illumina_input.concat(illumina_output))
-  emit:
-    fastqc.out.zip.map{ it -> it[-1] }
-}
-
-workflow qc_illumina_single {
-  take:
-    illumina_input
-    illumina_output
-  main:
-    fastqc(illumina_input.concat(illumina_output))
-  emit:
-    fastqc.out.zip.map{ it -> it[-1] }
-}
-
-workflow qc{
-  take:
-    multiqc_config
-    fastqc
-    nanoplot
-    quast
-    mapping_stats
-  main:
-    multiqc(multiqc_config, fastqc, nanoplot, quast, mapping_stats)
-}
 
 /************************** 
 * WORKFLOW ENTRY POINT
 **************************/
 
-/* Comment section: */
-
 workflow {
-  prepare_host()
+  prepare_contamination(nanoControlFastaChannel, illuminaControlFastaChannel, rRNAChannel, hostNameChannel, ownFastaChannel)
+  contamination = prepare_contamination.out
 
-  if (params.fasta) {
-    clean_fasta(fasta_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
-    qc_fasta(clean_fasta.out.in, clean_fasta.out.out)
-    stast_fasta = clean_fasta.out.stats
-    quast = qc_fasta.out.collect()
-  } else { quast = Channel.empty(); stast_fasta = Channel.empty() }
+  clean(input_ch, contamination, nanoControlBedChannel)
 
-  if (params.nano) { 
-    clean_nano(nano_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
-    qc_nano(clean_nano.out.in, clean_nano.out.out)
-    stast_nano = clean_nano.out.stats
-    nanoplot = qc_nano.out.collect()
-  } else { nanoplot = Channel.empty(); stast_nano = Channel.empty() }
-
-  if (params.illumina) { 
-    clean_illumina(illumina_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
-    qc_illumina(clean_illumina.out.in, clean_illumina.out.out)
-    stast_illumina = clean_illumina.out.stats
-    fastqc = qc_illumina.out
-//  } else { fastqc = Channel.fromPath('no_illumina_input'); stast_illumina = Channel.fromPath('no_illumina_stats') } THIS FAILS IN CLOUD bc/ the cloud tries to stage a file of that name
-  } else { fastqc = Channel.empty(); stast_illumina = Channel.empty() }
-
-  if (params.illumina_single_end) { 
-    clean_illumina_single(illumina_single_end_input_ch, prepare_host.out.host, prepare_host.out.checkedOwn, rRNAChannel)
-    qc_illumina_single(clean_illumina_single.out.in, clean_illumina_single.out.out)
-    stast_illumina_single = clean_illumina_single.out.stats
-    fastqc_single = qc_illumina_single.out
-//  } else { fastqc_single = Channel.fromPath('no_illumina_single_input'); stast_illumina_single = Channel.fromPath('no_illumina_single_stats') }
-  } else { fastqc_single = Channel.empty(); stast_illumina_single = Channel.empty() }
-
-  qc(multiqc_config, fastqc.concat(fastqc_single).collect().ifEmpty([]), nanoplot.ifEmpty([]), quast.ifEmpty([]), stast_fasta.concat(stast_nano).concat(stast_illumina).concat(stast_illumina_single).collect().ifEmpty([]))
+  qc(input_ch.map{ it -> tuple(it[0], 'input', it[1]) }.mix(clean.out.out_reads), params.input_type, clean.out.bbduk_summary, clean.out.idxstats, clean.out.flagstats, multiqc_config)
 }
 
 /**************************  
@@ -485,19 +209,19 @@ def helpMSG() {
     Use the ${c_dim}--host${c_reset} and ${c_dim}--control${c_reset} flag to download a host database or specify your ${c_dim}--own${c_reset} FASTA. 
     
     ${c_yellow}Usage example:${c_reset}
-    nextflow run clean.nf --nano '*/*.fastq' --host eco --control dcs 
+    nextflow run clean.nf --input_type nano --input '*/*.fastq' --host eco --control dcs 
     or
-    nextflow run clean.nf --illumina '*/*.R{1,2}.fastq' --own some_host.fasta --bbduk 
+    nextflow run clean.nf --input_type illumina --input '*/*.R{1,2}.fastq' --own some_host.fasta --bbduk 
     or
-    nextflow run clean.nf --illumina 'test/illumina*.R{1,2}.fastq.gz' --nano data/nanopore.fastq.gz --fasta data/assembly.fasta --host eco --control phix
+    nextflow run clean.nf --input_type illumina --input 'test/illumina*.R{1,2}.fastq.gz' --nano data/nanopore.fastq.gz --fasta data/assembly.fasta --host eco --control phix
 
     ${c_yellow}Input:${c_reset}
-    ${c_green}--nano ${c_reset}               '*.fasta' or '*.fastq.gz'   -> one sample per file
-    ${c_green}--illumina ${c_reset}           '*.R{1,2}.fastq.gz'         -> file pairs
-    ${c_green}--illumina_single_end${c_reset} '*.fastq.gz'                -> one sample per file
-    ${c_green}--fasta ${c_reset}              '*.fasta.gz'                -> one sample per file
+    ${c_green}--input_type nano                --input${c_reset} '*.fasta' or '*.fastq.gz'   -> one sample per file
+    ${c_green}--input_type illumina            --input${c_reset} '*.R{1,2}.fastq.gz'         -> file pairs
+    ${c_green}--input_type illumina_single_end --input${c_reset} '*.fastq.gz'                -> one sample per file
+    ${c_green}--input_type fasta               --input${c_reset} '*.fasta.gz'                -> one sample per file
     ${c_dim} ...read above input from csv files:${c_reset} ${c_green}--list ${c_reset} 
-                         ${c_dim}required format: name,path for --nano and --fasta; name,pathR1,pathR2 for --illumina; name,path for --illumina_single_end${c_reset}   
+                         ${c_dim}required format: name,path for --input_type nano and --input_type fasta; name,pathR1,pathR2 for --illumina input_type; name,path for --input_type illumina_single_end${c_reset}   
 
     ${c_yellow}Decontamination options:${c_reset}
     ${c_green}--host${c_reset}         comma separated list of reference genomes for decontamination, downloaded based on this parameter [default: $params.host]
@@ -520,6 +244,10 @@ def helpMSG() {
     ${c_green}--bbduk_qin${c_reset}     set quality ASCII encoding for bbduk [default: $params.bbduk_qin; options are: 64, 33, auto]
     ${c_green}--reads_rna${c_reset}           add this flag for noisy direct RNA-Seq Nanopore data [default: $params.reads_rna]
 
+    ${c_green}--min_clip${c_reset}      filter mapped reads by soft-clipped length (left + right). If >= 1 total
+                     number; if < 1 relative to read length
+    ${c_green}--dcs_strict${c_reset}    filter out alignments that cover artificial ends of the ONT DCS to discriminate between Lambda Phage and DCS
+
     ${c_yellow}Compute options:${c_reset}
     --cores             max cores per process for local use [default $params.cores]
     --max_cores         max cores used on the machine for local use [default $params.max_cores]
@@ -537,6 +265,10 @@ def helpMSG() {
     --condaCacheDir         defines the path where environments (conda) are cached [default: $params.condaCacheDir]
     --singularityCacheDir   defines the path where images (singularity) are cached [default: $params.singularityCacheDir] 
 
+    ${c_yellow}Miscellaneous:${c_reset}
+    --cleanup_work_dir      deletes all files in the work directory after a successful completion of a run [default: $params.cleanup_work_dir]
+                            ${c_dim}warning: if ture, the option will prevent the use of the resume feature!${c_reset} 
+
     ${c_yellow}Profile:${c_reset}
     You can merge different profiles for different setups, e.g.
 
@@ -553,6 +285,7 @@ def helpMSG() {
                              docker
                              singularity
                              conda
+                             mamba
 
                              ebi (lsf,singularity; preconfigured for the EBI cluster)
                              yoda (lsf,singularity; preconfigured for the EBI YODA cluster)

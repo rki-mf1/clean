@@ -2,11 +2,11 @@
 
 A decontamination workflow for short reads, long reads and assemblies.
 
-![](https://img.shields.io/badge/nextflow-19.10.0-brightgreen)
+![](https://img.shields.io/badge/nextflow-21.04.0-brightgreen)
 ![](https://img.shields.io/badge/uses-docker-blue.svg)
 ![](https://img.shields.io/badge/uses-conda-yellow.svg)
 
-Email: hoelzerm@rki.de, marie.lataretu@uni-jena.de
+Email: hoelzerm@rki.de, lataretum@rki.de
 
 ## Objective
 
@@ -20,8 +20,12 @@ Per default [minimap2](https://github.com/lh3/minimap2) is used for aligning you
 
 You can simply specify provided hosts and controls for the cleanup or use your own FASTA files. The reads are then mapped against the specified host, control and user defined FASTA files. All reads that map are considered as contamination. In case of Illumina paired-end reads, both mates need to be aligned.
 
-If Nanopore (`--nano`) and Illumina (`--illumina`) reads and control(s) (`--control`) are set, the control is selectively concatenated with the host and own FASTA: `dcs` for Nanopore DNA-Seq, `eno` for Nanopore RNA-Seq and `phix` from Illumina data.
+If Nanopore (`--input_type nano`) and Illumina (`--input_type illumina`) reads and control(s) (`--control`) are set, the control is selectively concatenated with the host and own FASTA: `dcs` for Nanopore DNA-Seq, `eno` for Nanopore RNA-Seq and `phix` from Illumina data.
 Else, specified host, control and user defined FASTA files are concatenated.
+
+### Filter soft-clipped contamination reads
+
+We saw many soft-clipped reads after the mapping, that probably aren't contamination. With `--min_clip` the user can set a threshold for the number of soft-clipped positions (sum of both ends). If `--min_clip` is greater 1, the total number is considered, else the fraction of soft-clipped positions to the read length. The output consists of all mapped, soft-clipped and mapped reads passing the filer.
 
 ## Requirements
 
@@ -37,7 +41,7 @@ and/or
 
 - [Docker](https://docs.docker.com/get-docker/)
 
-In default `docker` is used; tp switch to `conda`use `-profile conda`.
+In default `docker` is used; to switch to `conda` use `-profile conda`.
 
 ## Execution examples
 
@@ -57,11 +61,11 @@ Clean Nanopore data by filtering against a combined reference of the _E. coli_ g
 
 ```bash
 # uses Docker per default
-nextflow run hoelzer/clean --nano ~/.nextflow/assets/hoelzer/clean/test/nanopore.fastq.gz \
+nextflow run hoelzer/clean --input_type nano --input ~/.nextflow/assets/hoelzer/clean/test/nanopore.fastq.gz \
 --host eco --control dcs
 
 # use conda instead of Docker
-nextflow run hoelzer/clean --nano ~/.nextflow/assets/hoelzer/clean/test/nanopore.fastq.gz \
+nextflow run hoelzer/clean --input_type nano --input ~/.nextflow/assets/hoelzer/clean/test/nanopore.fastq.gz \
 --host eco --control dcs -profile conda
 ```
 
@@ -69,19 +73,11 @@ Clean Illumina paired-end data against your own reference FASTA using bbduk inst
 
 ```bash
 # enter your home dir!
-nextflow run hoelzer/clean --illumina '/home/martin/.nextflow/assets/hoelzer/clean/test/illumina*.R{1,2}.fastq.gz' \
+nextflow run hoelzer/clean --input_type illumina --input '/home/martin/.nextflow/assets/hoelzer/clean/test/illumina*.R{1,2}.fastq.gz' \
 --own ~/.nextflow/assets/hoelzer/clean/test/ref.fasta.gz --bbduk
 ```
 
 Clean some Illumina, Nanopore, and assembly files against the mouse and phiX genomes.  
-
-```bash
-# enter your home dir!
-nextflow run hoelzer/clean --illumina '/home/martin/.nextflow/assets/hoelzer/clean/test/illumina*.R{1,2}.fastq.gz' \
---nano ~/.nextflow/assets/hoelzer/clean/test/nanopore.fastq.gz \
---fasta ~/.nextflow/assets/hoelzer/clean/test/assembly.fasta \
---host mmu --control phix
-```
 
 ## Supported species and control sequences
 
@@ -106,6 +102,18 @@ Included in this repository are:
 
 ... for reasons. More can be easily added! Just write me, add an issue or make a pull request.
 
-## Flowchart
+## Workflow
 
-![chart](figures/dag.png)
+![chart](figures/clean_workflow_latest.png)
+
+## Citations
+
+If you use `CLEAN` in your work, please consider citing our preprint:
+ 
+> Targeted decontamination of sequencing data with CLEAN
+>
+> Marie Lataretu, Sebastian Krautwurst, Adrian Viehweger, Christian Brandt, Martin Hölzer
+>
+> bioRxiv 2023.08.05.552089; doi: https://doi.org/10.1101/2023.08.05.552089 
+
+Additionally, an extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file.

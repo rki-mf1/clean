@@ -11,6 +11,11 @@ process fastqc {
   """
   fastqc --noextract -t ${task.cpus} ${reads}
   """
+  stub:
+  """
+  # is weird when stubbing on paired data
+  touch ${reads.baseName}_fastqc.zip
+  """
 }
 
 process nanoplot {
@@ -30,6 +35,10 @@ process nanoplot {
   NanoPlot -t ${task.cpus} --pickle NanoPlot-data.pickle --title ${name}_${type} --color darkslategrey --N50 --plots hex --loglength -f pdf
   mv NanoPlot-report.html ${name}_${type}_read_quality_report.html
   mv NanoStats.txt ${name}_${type}_read_quality.txt
+  """
+  stub:
+  """
+  touch ${name}_${type}_read_quality_report.html ${name}_${type}_read_quality.txt fuu.png fuu.pdf
   """
 }
 
@@ -52,11 +61,16 @@ process format_nanoplot_report {
     cat tmp ${nanoplot_report}.tmp > ${nanoplot_report.baseName}_mqc.html
     rm -f *tmp
     """
+    stub:
+    """
+    touch ${nanoplot_report.baseName}_mqc.html
+    """
 }
 
 process quast {
   label 'quast'
   errorStrategy { task.exitStatus in 4 ? 'ignore' : 'terminate' }
+  // fails if something is empty
 
   input:
   tuple val(name), val(type), path(fasta)
@@ -70,6 +84,10 @@ process quast {
   quast.py -o quast_${name}_${type} -t ${task.cpus} ${fasta}
   cp quast_${name}_${type}/report.tsv ${name}_${type}_report.tsv
   """
+  stub:
+  """
+  touch ${name}_${type}_report.tsv quast_${name}_${type}
+  """
 }
 
 process multiqc {
@@ -80,10 +98,10 @@ process multiqc {
   
   input:
   path(config)
-  path(fastqc)
-  path(nanoplot)
-  path(quast)
-  path(mapping_stats)
+  path(report)
+  path(bbduk_summary)
+  path(idxstats)
+  path(flagstats)
     
   output:
   path "multiqc_report.html"
@@ -91,5 +109,9 @@ process multiqc {
   script:
   """
   multiqc . -s -c ${config}
+  """
+  stub:
+  """
+  touch multiqc_report.html
   """
 }
