@@ -4,7 +4,7 @@
 
 ### Changed
 
-- changed input parameters:
+- changed input parameter usage:
   - before: `--[nano|illumina|illumina_single_end|fasta]` 
   - now: `--input_type [nano|illumina|illumina_single_end|fasta] --input *.fastq`
 - changed workflow figure to a nicer figure
