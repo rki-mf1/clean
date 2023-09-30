@@ -2,11 +2,11 @@
 
 A decontamination workflow for short reads, long reads and assemblies.
 
-![](https://img.shields.io/badge/nextflow-19.10.0-brightgreen)
+![](https://img.shields.io/badge/nextflow-21.04.0-brightgreen)
 ![](https://img.shields.io/badge/uses-docker-blue.svg)
 ![](https://img.shields.io/badge/uses-conda-yellow.svg)
 
-Email: hoelzerm@rki.de, marie.lataretu@uni-jena.de
+Email: hoelzerm@rki.de, lataretum@rki.de
 
 ## Objective
 
@@ -102,8 +102,20 @@ Included in this repository are:
 
 ... for reasons. More can be easily added! Just write me, add an issue or make a pull request.
 
-## Flowchart
+## Workflow
 
 ![chart](data/figures/workflow.png)
 
 <sub><sub>The icons and diagram components that make up the schematic view were originally designed by James A. Fellow Yates & nf-core under a CCO license (public domain).</sub></sub>
+
+## Citations
+
+If you use `CLEAN` in your work, please consider citing our preprint:
+ 
+> Targeted decontamination of sequencing data with CLEAN
+>
+> Marie Lataretu, Sebastian Krautwurst, Adrian Viehweger, Christian Brandt, Martin Hölzer
+>
+> bioRxiv 2023.08.05.552089; doi: https://doi.org/10.1101/2023.08.05.552089 
+
+Additionally, an extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file.

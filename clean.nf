@@ -10,7 +10,7 @@ Author: hoelzer.martin@gmail.com
 
 // Parameters sanity checking
 
-Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'input', 'input_type', 'list', 'host', 'own', 'control', 'keep', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'min_clip', 'dcs_strict', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process', 'publish_dir_mode'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
+Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'input', 'input_type', 'list', 'host', 'own', 'control', 'keep', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'min_clip', 'dcs_strict', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'cleanup_work_dir','condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process', 'publish_dir_mode'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
 def parameter_diff = params.keySet() - valid_params
 if (parameter_diff.size() != 0){
     exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
@@ -143,6 +143,8 @@ if ( params.rm_rrna ){
 
 if ( params.host ) {
   hostNameChannel = Channel.from( params.host ).splitCsv().flatten()
+} else {
+  hostNameChannel = Channel.empty()
 }
 
 // user defined fasta sequence
@@ -189,7 +191,7 @@ include { qc } from './workflows/qc_wf'
 **************************/
 
 workflow {
-  prepare_contamination(nanoControlFastaChannel, illuminaControlFastaChannel, rRNAChannel)
+  prepare_contamination(nanoControlFastaChannel, illuminaControlFastaChannel, rRNAChannel, hostNameChannel, ownFastaChannel)
   contamination = prepare_contamination.out
 
   clean(input_ch, contamination, nanoControlBedChannel)
@@ -266,7 +268,7 @@ def helpMSG() {
     ${c_green}--bbduk_qin${c_reset}     set quality ASCII encoding for bbduk [default: $params.bbduk_qin; options are: 64, 33, auto]
     ${c_green}--reads_rna${c_reset}           add this flag for noisy direct RNA-Seq Nanopore data [default: $params.reads_rna]
 
-    ${c_green}--min_clip${c_reset}      filter mapped reads by soft-clipped lenth (left + right). If >= 1 total
+    ${c_green}--min_clip${c_reset}      filter mapped reads by soft-clipped length (left + right). If >= 1 total
                      number; if < 1 relative to read length
     ${c_green}--dcs_strict${c_reset}    filter out alignments that cover artificial ends of the ONT DCS to discriminate between Lambda Phage and DCS
 
@@ -287,6 +289,10 @@ def helpMSG() {
     --condaCacheDir         defines the path where environments (conda) are cached [default: $params.condaCacheDir]
     --singularityCacheDir   defines the path where images (singularity) are cached [default: $params.singularityCacheDir] 
 
+    ${c_yellow}Miscellaneous:${c_reset}
+    --cleanup_work_dir      deletes all files in the work directory after a successful completion of a run [default: $params.cleanup_work_dir]
+                            ${c_dim}warning: if ture, the option will prevent the use of the resume feature!${c_reset} 
+
     ${c_yellow}Profile:${c_reset}
     You can merge different profiles for different setups, e.g.
 
@@ -303,6 +309,7 @@ def helpMSG() {
                              docker
                              singularity
                              conda
+                             mamba
 
                              ebi (lsf,singularity; preconfigured for the EBI cluster)
                              yoda (lsf,singularity; preconfigured for the EBI YODA cluster)

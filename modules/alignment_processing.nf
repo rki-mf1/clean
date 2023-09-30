@@ -34,7 +34,7 @@ process merge_bam {
     tuple val(name), val(type), path(bam)
 
   output:
-   tuple val(name), val(type), path("${bam[0].baseName}_merged.bam")
+  tuple val(name), val(type), path("${bam[0].baseName}_merged.bam")
   
   script:
   """
@@ -111,33 +111,40 @@ process filter_true_dcs_alignments {
 
 process fastq_from_bam {
   label 'minimap2'
+  publishDir "${params.output}/${params.tool}/${name}", mode: 'copy', pattern: "*.gz"
 
   input:
   tuple val(name), val(type), path(bam)
 
   output:
-  tuple val(name), val(type), path('*.fastq')
+  tuple val(name), val(type), path('*.fast*.gz')
 
   script:
   if ( params.lib_pairedness == 'paired' ) {
     """
     samtools fastq -@ ${task.cpus} -1 ${bam.baseName}_1.fastq -2 ${bam.baseName}_2.fastq -s ${bam.baseName}_singleton.fastq ${bam}
+    gzip --no-name *.fastq
     """
   } else if ( params.lib_pairedness == 'single' ) {
+    dtype = (params.input_type == 'fasta') ? 'a' : 'q'
     """
-    samtools fastq -@ ${task.cpus} -0 ${bam.baseName}.fastq ${bam}
+    samtools fastq -@ ${task.cpus} -0 ${bam.baseName}.fast${dtype} ${bam}
+    gzip --no-name *.fast${dtype}
     """
   } else {
     error "Invalid pairedness: ${params.lib_pairedness}"
   }
   stub:
+  dtype = (params.input_type == 'fasta') ? 'a' : 'q'
   """
-  touch ${bam.baseName}_1.fastq ${bam.baseName}_2.fastq
+  touch ${bam.baseName}_1.fast${dtype}.gz ${bam.baseName}_2.fast${dtype}.gz
   """
 }
 
 process idxstats_from_bam {
   label 'minimap2'
+
+  publishDir "${params.output}/minimap2/${name}", mode: 'copy', pattern: "${bam.baseName}.idxstats.tsv" 
 
   input:
   tuple val(name), val(type), path(bam), path(bai)
@@ -147,11 +154,11 @@ process idxstats_from_bam {
 
   script:
   """
-  samtools idxstats ${bam} > ${bam.baseName}_idxstats.tsv
+  samtools idxstats ${bam} > ${bam.baseName}.idxstats.tsv
   """
   stub:
   """
-  touch ${bam.baseName}_idxstats.tsv
+  touch ${bam.baseName}.idxstats.tsv
   """
 }
 
@@ -168,11 +175,11 @@ process flagstats_from_bam {
 
   script:
   """
-  samtools flagstats ${bam} > ${bam.baseName}_flagstats.txt
+  samtools flagstats ${bam} > ${bam.baseName}.flagstats.txt
   """
   stub:
   """
-  touch ${bam.baseName}_flagstats.txt
+  touch ${bam.baseName}.flagstats.txt
   """
 }
 
@@ -187,11 +194,12 @@ process sort_bam {
 
   script:
   """
-  samtools sort -@ ${task.cpus} ${bam} > ${bam.baseName}.sorted.bam
+  mv ${bam} ${bam}.tmp
+  samtools sort -@ ${task.cpus} ${bam}.tmp > ${bam.baseName}.bam
   """
   stub:
   """
-  touch ${bam.baseName}.sorted.bam
+  touch ${bam.baseName}.bam
   """
 }
 
