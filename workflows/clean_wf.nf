@@ -1,6 +1,6 @@
 include { minimap2 } from '../modules/minimap2'
 include { bbduk } from '../modules/bbmap'
-include { compress_reads; writeLog ; bbdukStats } from '../modules/utils'
+include { writeLog ; bbdukStats } from '../modules/utils'
 include { split_bam; fastq_from_bam ; idxstats_from_bam ; flagstats_from_bam ; index_bam ; sort_bam ; filter_true_dcs_alignments ; merge_bam as merge_bam1 ; merge_bam as merge_bam2 ; merge_bam as merge_bam3 ; merge_bam as merge_bam4 ; filter_soft_clipped_alignments } from '../modules/alignment_processing'
 
 workflow clean {
@@ -13,8 +13,6 @@ workflow clean {
         if ( params.bbduk ) {
             // map
             bbduk(input, contamination)
-            // compress reads
-            compress_reads(bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads))
             // log & stats
             writeLog(contamination, input.map{ it -> it[1] }.collect())
             bbdukStats(bbduk.out.stats)
@@ -43,15 +41,13 @@ workflow clean {
                 cleaned_bam = merge_bam4(cleaned_bam.mix(filter_soft_clipped_alignments.out.bam_clipped).groupTuple(by: [0,1]))
             }
             fastq_from_bam(contamination_bam.mix(cleaned_bam))
-            // compress reads
-            compress_reads(fastq_from_bam.out)
             // log & stats
             writeLog(contamination, input.map{ it -> it[1] }.collect())
             // define output
             bbduk_summary = Channel.empty()
             idxstats = idxstats_from_bam.out
             flagstats = flagstats_from_bam.out
-            out_reads = compress_reads.out
+            out_reads = fastq_from_bam.out
         }
 
     emit:

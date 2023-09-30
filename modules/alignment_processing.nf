@@ -111,28 +111,33 @@ process filter_true_dcs_alignments {
 
 process fastq_from_bam {
   label 'minimap2'
+  publishDir "${params.output}/${params.tool}/${name}", mode: 'copy', pattern: "*.gz"
 
   input:
   tuple val(name), val(type), path(bam)
 
   output:
-  tuple val(name), val(type), path('*.fastq')
+  tuple val(name), val(type), path('*.fast*.gz')
 
   script:
   if ( params.lib_pairedness == 'paired' ) {
     """
     samtools fastq -@ ${task.cpus} -1 ${bam.baseName}_1.fastq -2 ${bam.baseName}_2.fastq -s ${bam.baseName}_singleton.fastq ${bam}
+    gzip --no-name *.fastq
     """
   } else if ( params.lib_pairedness == 'single' ) {
+    dtype = (params.input_type == 'fasta') ? 'a' : 'q'
     """
-    samtools fastq -@ ${task.cpus} -0 ${bam.baseName}.fastq ${bam}
+    samtools fastq -@ ${task.cpus} -0 ${bam.baseName}.fast${dtype} ${bam}
+    gzip --no-name *.fast${dtype}
     """
   } else {
     error "Invalid pairedness: ${params.lib_pairedness}"
   }
   stub:
+  dtype = (params.input_type == 'fasta') ? 'a' : 'q'
   """
-  touch ${bam.baseName}_1.fastq ${bam.baseName}_2.fastq
+  touch ${bam.baseName}_1.fast${dtype}.gz ${bam.baseName}_2.fast${dtype}.gz
   """
 }
 
