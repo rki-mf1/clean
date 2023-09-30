@@ -1,6 +1,6 @@
 # Changelog
 
-## [v1.0.0-alpha] - 2023-09-30
+## [v1.0.0-beta] - 2023-09-30
 
 ### Changed
 
