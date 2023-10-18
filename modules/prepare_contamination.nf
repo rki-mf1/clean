@@ -40,6 +40,10 @@ process download_host {
     wget ftp://ftp.ensemblgenomes.org/pub/release-45/bacteria//fasta/bacteria_90_collection/escherichia_coli_k_12/dna/Escherichia_coli_k_12.ASM80076v1.dna.toplevel.fa.gz
     zcat *.gz | bgzip -@ ${task.cpus} -c > ${host}.fa.gz
   fi
+  if [ $host == 'sc2' ]; then
+    wget "https://www.ebi.ac.uk/ena/browser/api/fasta/MN908947.3?download=true" -O sc2.fa
+    cat sc2.fa | bgzip -@ ${task.cpus} -c > ${host}.fa.gz
+  fi
   """
   stub:
   """
