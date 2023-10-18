@@ -79,7 +79,7 @@ if ( workflow.profile.contains('singularity') ) {
 }
 
 Set controls = ['phix', 'dcs', 'eno']
-Set hosts = ['hsa', 'mmu', 'cli', 'csa', 'gga', 'eco']
+Set hosts = ['hsa', 'mmu', 'cli', 'csa', 'gga', 'eco', 'sc2']
 Set input_types = ['nano', 'illumina', 'illumina_single_end', 'fasta']
 
 if ( params.profile ) { exit 1, "--profile is wrong, use -profile" }
