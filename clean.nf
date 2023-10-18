@@ -231,7 +231,8 @@ def helpMSG() {
                                         - csa [NCBI: GCF_000409795.2_Chlorocebus_sabeus_1.1_genomic]
                                         - gga [NCBI: Gallus_gallus.GRCg6a.dna.toplevel]
                                         - cli [NCBI: GCF_000337935.1_Cliv_1.0_genomic]
-                                        - eco [Ensembl: Escherichia_coli_k_12.ASM80076v1.dna.toplevel]${c_reset}
+                                        - eco [Ensembl: Escherichia_coli_k_12.ASM80076v1.dna.toplevel]
+                                        - sc2 [ENA: MN908947.3 (Wuhan-Hu-1 complete genome)]${c_reset}
     ${c_green}--control${c_reset}       comma separated list of common controls used in Illumina or Nanopore sequencing [default: $params.control]
                                         ${c_dim}Currently supported are:
                                         - phix [Illumina: enterobacteria_phage_phix174_sensu_lato_uid14015, NC_001422]
