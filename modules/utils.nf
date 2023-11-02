@@ -64,7 +64,7 @@ process get_read_names {
 }
 
 process filter_fastq_by_name {
-  label 'basics'
+  label 'minimap2'  // We don't need minimap2 but the container has pigz
 
   if ( params.keep ) {
     publishDir "${params.output}/${params.tool}", mode: params.publish_dir_mode, pattern: "*.gz"
