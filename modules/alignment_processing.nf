@@ -150,7 +150,7 @@ process idxstats_from_bam {
   tuple val(name), val(type), path(bam), path(bai)
 
   output:
-  tuple val(name), val(type), path('*_idxstats.tsv')
+  tuple val(name), val(type), path('*.idxstats.tsv')
 
   script:
   """
@@ -165,13 +165,13 @@ process idxstats_from_bam {
 process flagstats_from_bam {
   label 'minimap2'
 
-  publishDir "${params.output}/minimap2", mode: params.publish_dir_mode, pattern: "${bam.baseName}_flagstats.txt" 
+  publishDir "${params.output}/minimap2", mode: params.publish_dir_mode, pattern: "${bam.baseName}.flagstats.txt"
 
   input:
   tuple val(name), val(type), path(bam), path(bai)
 
   output:
-  tuple val(name), val(type), path('*_flagstats.txt')
+  tuple val(name), val(type), path('*.flagstats.txt')
 
   script:
   """
@@ -195,7 +195,7 @@ process sort_bam {
   script:
   """
   mv ${bam} ${bam}.tmp
-  samtools sort -@ ${task.cpus} ${bam}.tmp > ${bam.baseName}.bam
+  samtools sort -@ ${task.cpus} ${bam}.tmp > ${bam.baseName}.sorted.bam
   """
   stub:
   """
