@@ -175,30 +175,3 @@ process bbdukStats {
   touch ${name}_stats.txt ${name}_bbduk_stats.tsv
   """
 }
-
-process writeLog {
-  label 'smallTask'
-
-  publishDir "${params.output}/${params.tool}", mode: params.publish_dir_mode, pattern: "log.txt"
-  
-  input:
-    val db
-    path (reads)
-
-  output:
-    path 'log.txt'
-  
-  script:
-
-  """
-  touch log.txt
-  cat <<EOF >> log.txt
-  Input reads:\t${reads}
-  Contamination:\t${db}
-  EOF
-  """
-  stub:
-  """
-  touch log.txt
-  """
-}
