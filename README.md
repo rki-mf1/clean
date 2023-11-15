@@ -108,6 +108,49 @@ Included in this repository are:
 
 <sub><sub>The icons and diagram components that make up the schematic view were originally designed by James A. Fellow Yates & nf-core under a CCO license (public domain).</sub></sub>
 
+## Results
+
+Running the pipeline will create a directory called `results/` in the current directory with some or all of the following directories and files:
+
+```text
+results/
+	clean/
+		<sample_name>.fastq.gz
+	removed/
+		<sample_name>.fastq.gz
+	intermedate/
+		to-remove/
+			mapped.fastq.gz
+			unmapped.fastq.gz
+			mapped.bam
+			unmapped.bam
+			dcs-strict/
+				no-dcs.bam
+				true-dcs.bam
+				false-dcs.bam
+			soft-clipped/
+				soft-clipped.bam
+				passed-clipped.bam
+		to-keep/
+			mapped.fastq.gz
+			unmapped.fastq.gz
+			mapped.bam
+			unmapped.bam
+			dcs-strict/
+				no-dcs.bam
+				true-dcs.bam
+				false-dcs.bam
+			soft-clipped/
+				soft-clipped.bam
+				passed-clipped.bam
+	logs/\*.html
+	qc/multiqc_report.html
+```
+
+The most important files you are likely interested in are `results/clean/<sample_name>.fastq.gz`, which are the "cleaned" reads. These are the input reads that *do not* map to the host, control, own fasta or rRNA files (or the subset of these that you provided), plus those reads that map to the "keep" sequence if you used the `--keep` option. Any files that were removed from your input fasta file are placed in `results/removed/<sample_name>.fastq.gz`.
+
+For debugging purposes we also provide various intermediate results in the `intermediate/` folder.
+
 ## Citations
 
 If you use `CLEAN` in your work, please consider citing our preprint:

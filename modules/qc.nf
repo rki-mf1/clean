@@ -94,7 +94,7 @@ process multiqc {
   label 'multiqc'
  // label 'smallTask' // this is tricky for the cloud, because only one container can be mounted. Thus comment this as hot fix
    
-  publishDir "${params.output}/${params.multiqc_dir}", mode: params.publish_dir_mode,  pattern: 'multiqc_report.html'
+  publishDir "${params.output}/${params.multiqc_dir}", mode: params.publish_dir_mode,  pattern: 'multiqc_report.html', enabled: false
   
   input:
   path(config)

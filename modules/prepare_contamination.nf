@@ -2,7 +2,7 @@ process download_host {
   label 'minimap2'
 
   if (params.cloudProcess) {
-    publishDir "${params.databases}/hosts", mode: params.publish_dir_mode, pattern: "*.fa.gz" 
+    publishDir "${params.databases}/hosts", mode: params.publish_dir_mode, pattern: "*.fa.gz"
   }
   else {
     storeDir "${params.databases}/hosts"
@@ -78,9 +78,6 @@ process check_own {
 process concat_contamination {
   label 'minimap2'
   
-  publishDir "${params.output}/", mode: params.publish_dir_mode, pattern: "db.fa.gz"
-  publishDir "${params.output}/", mode: params.publish_dir_mode, pattern: "db.fa.fai"
-
   input:
   path fastas
 

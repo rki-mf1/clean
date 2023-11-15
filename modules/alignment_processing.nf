@@ -50,7 +50,7 @@ process filter_soft_clipped_alignments {
   label 'samclipy'
   label 'smallTask'
 
-  publishDir "${params.output}/${params.tool}", mode: params.publish_dir_mode, pattern: "*.bam*"
+  publishDir "${params.output}/${params.tool}", mode: params.publish_dir_mode, pattern: "*.bam*", enabled: false
 
   input:
   tuple val(name), path (bam)
@@ -78,7 +78,7 @@ process filter_soft_clipped_alignments {
 process filter_true_dcs_alignments {
   label 'bed_samtools'
 
-  publishDir "${params.output}/${params.tool}", mode: params.publish_dir_mode, pattern: "*.bam*"
+  publishDir "${params.output}/${params.tool}", mode: params.publish_dir_mode, pattern: "*.bam*", enabled: false
 
   input:
   tuple val(name), path (bam)
@@ -111,7 +111,7 @@ process filter_true_dcs_alignments {
 
 process fastq_from_bam {
   label 'minimap2'
-  publishDir "${params.output}/${params.tool}/${name}", mode: 'copy', pattern: "*.gz"
+  publishDir "${params.output}/${params.tool}/${name}", mode: 'copy', pattern: "*.gz", enabled: false
 
   input:
   tuple val(name), val(type), path(bam)
@@ -144,7 +144,7 @@ process fastq_from_bam {
 process idxstats_from_bam {
   label 'minimap2'
 
-  publishDir "${params.output}/minimap2/${name}", mode: 'copy', pattern: "${bam.baseName}.idxstats.tsv" 
+  publishDir "${params.output}/minimap2/${name}", mode: 'copy', pattern: "${bam.baseName}.idxstats.tsv" , enabled: false
 
   input:
   tuple val(name), val(type), path(bam), path(bai)
@@ -165,7 +165,7 @@ process idxstats_from_bam {
 process flagstats_from_bam {
   label 'minimap2'
 
-  publishDir "${params.output}/minimap2", mode: params.publish_dir_mode, pattern: "${bam.baseName}.flagstats.txt"
+  publishDir "${params.output}/minimap2", mode: params.publish_dir_mode, pattern: "${bam.baseName}.flagstats.txt" , enabled: false
 
   input:
   tuple val(name), val(type), path(bam), path(bai)
@@ -206,8 +206,8 @@ process sort_bam {
 process index_bam {
   label 'minimap2'
 
-  publishDir "${params.output}/${params.tool}", mode: params.publish_dir_mode, pattern: "*.bam"
-  publishDir "${params.output}/${params.tool}", mode: params.publish_dir_mode, pattern: "*.bam.bai"
+  publishDir "${params.output}/${params.tool}", mode: params.publish_dir_mode, pattern: "*.bam", enabled: false
+  publishDir "${params.output}/${params.tool}", mode: params.publish_dir_mode, pattern: "*.bam.bai", enabled: false
 
   input:
   tuple val(name), val(type), path(bam)

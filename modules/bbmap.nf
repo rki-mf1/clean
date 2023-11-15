@@ -1,7 +1,7 @@
 process bbduk {
   label 'bbmap'
   
-  publishDir "${params.output}/${params.tool}/${name}", mode: 'copy', pattern: "*.gz"
+  publishDir "${params.output}/${params.tool}/${name}", mode: 'copy', pattern: "*.gz", enabled: false
   
   input:
   tuple val(name), path(reads)

@@ -67,7 +67,16 @@ process filter_fastq_by_name {
   label 'minimap2'  // We don't need minimap2 but the container has pigz
 
   if ( params.keep ) {
-    publishDir "${params.output}/${params.tool}", mode: params.publish_dir_mode, pattern: "*.gz"
+    publishDir ( 
+      path: params.output,
+      mode: params.publish_dir_mode,
+      pattern: "*.gz",
+      saveAs: { fn ->
+            fn.endsWith('.unmapped.fastq.gz') ? "clean/${fn}".replaceAll(~'.unmapped.fastq.gz$', '.fastq.gz') :
+            fn.endsWith('.mapped.fastq.gz') ? "removed/${fn}".replaceAll(~'.mapped.fastq.gz$', '.fastq.gz') :
+            fn
+      }
+    )
   }
 
   input:
@@ -140,7 +149,7 @@ process filter_fastq_by_name {
 process bbdukStats {
   label 'smallTask'
 
-  publishDir "${params.output}/bbduk", mode: params.publish_dir_mode, pattern: "${name}_stats.txt"
+  publishDir "${params.output}/bbduk", mode: params.publish_dir_mode, pattern: "${name}_stats.txt", enabled: false
 
   input:
   tuple val(name), path (bbdukStats)
