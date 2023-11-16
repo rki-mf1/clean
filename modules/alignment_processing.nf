@@ -169,7 +169,15 @@ process fastq_from_bam {
 process idxstats_from_bam {
   label 'minimap2'
 
-  publishDir "${params.output}/qc", mode: 'copy', pattern: "${bam.baseName}.idxstats.tsv", overwrite: false, enabled: false
+  publishDir (
+    path: "${params.output}/intermediate",
+    mode: params.publish_dir_mode,
+    pattern: "*.sorted.idxstats.tsv",
+    overwrite: false,
+    saveAs: { fn ->
+          fn.startsWith("keep_") ? "map-to-keep/${fn.replaceAll(~'^keep_', '')}" : "map-to-remove/${fn}"
+    }
+  )
 
   input:
   tuple val(name), val(type), path(bam), path(bai)
@@ -190,7 +198,15 @@ process idxstats_from_bam {
 process flagstats_from_bam {
   label 'minimap2'
 
-  publishDir "${params.output}/qc", mode: params.publish_dir_mode, pattern: "${bam.baseName}.flagstats.txt", overwrite: false, enabled: false
+  publishDir (
+    path: "${params.output}/intermediate",
+    mode: params.publish_dir_mode,
+    pattern: "*.sorted.flagstats.txt",
+    overwrite: false,
+    saveAs: { fn ->
+          fn.startsWith("keep_") ? "map-to-keep/${fn.replaceAll(~'^keep_', '')}" : "map-to-remove/${fn}"
+    }
+  )
 
   input:
   tuple val(name), val(type), path(bam), path(bai)
