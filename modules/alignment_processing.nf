@@ -111,7 +111,32 @@ process filter_true_dcs_alignments {
 
 process fastq_from_bam {
   label 'minimap2'
-  publishDir "${params.output}/${params.tool}/${name}", mode: 'copy', pattern: "*.gz", enabled: false
+
+  publishDir (
+    path: "${params.output}/intermediate",
+    mode: params.publish_dir_mode,
+    pattern: "*.gz",
+    overwrite: false,
+    saveAs: { fn ->
+          fn.startsWith("keep_") ? "map-to-keep/${fn.replaceAll(~'^keep_', '')}" : "map-to-remove/${fn}"
+    }
+  )
+
+  if ( !params.keep ) {
+    publishDir (
+      path: params.output,
+      overwrite: false,
+      mode: params.publish_dir_mode,
+      pattern: "*.gz",
+      saveAs: { fn ->
+            fn.endsWith('.unmapped.fastq.gz') ? "clean/${fn}".replaceAll(~'.unmapped.fastq.gz$', '.fastq.gz') :
+            fn.endsWith('.mapped.fastq.gz') ? "removed/${fn}".replaceAll(~'.mapped.fastq.gz$', '.fastq.gz') :
+            fn.endsWith('.unmapped.fastq.gz') ? "clean/${fn}".replaceAll(~'.unmapped.fastq.gz$', '.fastq.gz') :
+            fn.endsWith('.mapped.fastq.gz') ? "removed/${fn}".replaceAll(~'.mapped.fastq.gz$', '.fastq.gz') :
+            fn
+      }
+    )
+  }
 
   input:
   tuple val(name), val(type), path(bam)
