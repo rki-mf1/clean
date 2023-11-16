@@ -149,7 +149,7 @@ process filter_fastq_by_name {
 process bbdukStats {
   label 'smallTask'
 
-  publishDir "${params.output}/bbduk", mode: params.publish_dir_mode, pattern: "${name}_stats.txt", enabled: false
+  publishDir "${params.output}/qc", mode: params.publish_dir_mode, pattern: "${name}_stats.txt"
 
   input:
   tuple val(name), path (bbdukStats)
