@@ -153,17 +153,25 @@ process filter_fastq_by_name {
 //   """
 // }
 
-process bbdukStats {
+process bbduk_stats {
   label 'smallTask'
 
-  publishDir "${params.output}/qc", mode: params.publish_dir_mode, pattern: "${name}_stats.txt"
+  publishDir (
+    path: "${params.output}/intermediate",
+    mode: params.publish_dir_mode,
+    pattern: "*.stats.tsv",
+    overwrite: false,
+    saveAs: { fn ->
+          fn.startsWith("keep_") ? "map-to-keep/${fn.replaceAll(~'^keep_', '')}" : "map-to-remove/${fn}"
+    }
+  )
 
   input:
   tuple val(name), path (bbdukStats)
 
   output:
-  tuple val(name), path ("${name}_stats.txt")
-  path("${name}_bbduk_stats.tsv"), emit: tsv
+  tuple val(name), path ("${name}.stats.txt")
+  path("${name}.bbduk_stats.tsv"), emit: tsv
 
   script:
   """
@@ -173,21 +181,21 @@ process bbdukStats {
 
   FA=\$(awk -F '\\t' '/^[^#]/ {print "\\t\\t"\$2" ("\$3") aligned to "\$1}' ${bbdukStats})
 
-  touch ${name}_stats.txt
-  cat <<EOF >> ${name}_stats.txt
+  touch ${name}.stats.txt
+  cat <<EOF >> ${name}.stats.txt
   \$TOTAL reads in total; of these:
   \t\$MNUM (\$MPER) reads were properly mapped; of these:
   \$FA
   EOF
 
-  touch ${name}_bbduk_stats.tsv
-  cat <<EOF >> ${name}_bbduk_stats.tsv
+  touch ${name}.bbduk_stats.tsv
+  cat <<EOF >> ${name}.bbduk_stats.tsv
   Sample Name\tClean reads\tMapped reads
   ${name}\t\$((\$TOTAL-\$MNUM))\t\$MNUM
   EOF
   """
   stub:
   """
-  touch ${name}_stats.txt ${name}_bbduk_stats.tsv
+  touch ${name}.stats.txt ${name}.bbduk_stats.tsv
   """
 }
