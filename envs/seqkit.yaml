@@ -1,0 +1,6 @@
+name: seqkit
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - seqkit==2.6.1
