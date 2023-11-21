@@ -194,7 +194,7 @@ workflow {
   prepare_contamination(nanoControlFastaChannel, illuminaControlFastaChannel, rRNAChannel, hostNameChannel, ownFastaChannel)
   contamination = prepare_contamination.out
 
-  clean(input_ch, contamination, nanoControlBedChannel)
+  clean(input_ch, contamination, nanoControlBedChannel, 'map-to-remove')
 
   if (params.keep){
     prepare_keep(keepFastaChannel)

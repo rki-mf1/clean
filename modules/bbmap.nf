@@ -2,17 +2,15 @@ process bbduk {
   label 'bbmap'
 
   publishDir (
-    path: "${params.output}/intermediate",
+    path: "${params.output}/intermediate/${map_target}",
     mode: params.publish_dir_mode,
-    pattern: "*.gz",
-    overwrite: false,
-    saveAs: { fn ->
-          fn.startsWith("keep_") ? "map-to-keep/${fn.replaceAll(~'^keep_', '').replaceAll(~'_merged', '')}" : "map-to-remove/${fn.replaceAll(~'_merged', '')}"
-    }
+    pattern: "*.{clean,contamination}.fastq.gz",
+    overwrite: false
   )
   
-  //if ( !params.keep ) {
-  if ( true ) {
+  // When using `--keep`, we need to do further processing before we have 
+  // the final clean and removed data sets.
+  if ( !params.keep ) {
     publishDir (
       path: params.output,
       overwrite: false,
@@ -29,11 +27,12 @@ process bbduk {
   input:
   tuple val(name), path(reads)
   path db
+  val(map_target)
 
   output:
   val name, emit: name
-  tuple val(name), val('clean'), path('*clean.fastq.gz'), emit: cleaned_reads
-  tuple val(name), val('contamination'), path('*contamination.fastq.gz'), emit: contaminated_reads
+  tuple val(name), val('unmapped'), path('*clean.fastq.gz'), emit: cleaned_reads
+  tuple val(name), val('mapped'), path('*contamination.fastq.gz'), emit: contaminated_reads
   tuple val(name), path("${name}.bbduk_stats.txt"), emit: stats
 
   script:

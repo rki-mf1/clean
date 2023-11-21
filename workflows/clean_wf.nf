@@ -8,11 +8,12 @@ workflow clean {
         input
         contamination
         dcs_ends_bed
+        map_target
 
     main:
         if ( params.bbduk ) {
             // map
-            bbduk(input, contamination)
+            bbduk(input, contamination, map_target)
             bbduk_stats(bbduk.out.stats)
             // define output
             bbduk_summary = bbduk_stats.out.tsv
