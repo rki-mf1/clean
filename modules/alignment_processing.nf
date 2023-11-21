@@ -35,7 +35,7 @@ process merge_bam {
 
   output:
   tuple val(name), val(type), path("${bam[0].baseName}_merged.bam")
-  
+
   script:
   """
   samtools merge -@ ${task.cpus} ${bam[0].baseName}_merged.bam ${bam} # first bam is output
@@ -63,15 +63,15 @@ process filter_soft_clipped_alignments {
   input:
   tuple val(name), path (bam)
   val (minClip)
-  
+
   output:
   tuple val(name), val('unmapped'), path ('*.soft-clipped.bam'), emit: bam_clipped
   tuple val(name), val('mapped'), path ('*.passed-clipped.bam'), emit: bam_ok_clipped
   tuple val(name), path ('*.bam.bai')
-  
+
   script:
   """
-  git clone https://github.com/MarieLataretu/samclipy.git --branch v0.0.2 || git clone git@github.com:MarieLataretu/samclipy.git --branch v0.0.2 
+  git clone https://github.com/MarieLataretu/samclipy.git --branch v0.0.2 || git clone git@github.com:MarieLataretu/samclipy.git --branch v0.0.2
   samtools view -h ${bam} | python samclipy/samclipy.py --invert --minClip ${minClip} | samtools sort > ${name}.soft-clipped.bam
   samtools view -h ${bam} | python samclipy/samclipy.py --minClip ${minClip} | samtools sort > ${name}.passed-clipped.bam
   samtools index ${name}.soft-clipped.bam
@@ -118,7 +118,7 @@ process filter_true_dcs_alignments {
   samtools index ${name}.no-dcs.bam
   samtools index ${name}.true-dcs.bam
   samtools index ${name}.false-dcs.bam
-  """ 
+  """
   stub:
   """
   touch ${name}.no-dcs.bam ${name}.true-dcs.bam ${name}.false-dcs.bam ${name}.no-dcs.bam.bai ${name}.true-dcs.bam.bai ${name}.false-dcs.bam.bai
@@ -147,12 +147,12 @@ process fastq_from_bam {
       mode: params.publish_dir_mode,
       pattern: "*.gz",
       saveAs: { fn ->
-            fn.endsWith('.unmapped.fastq.gz') ? "clean/${fn}".replaceAll(~'.unmapped.fastq.gz$', '.fastq.gz') :
-            fn.endsWith('.mapped.fastq.gz') ? "removed/${fn}".replaceAll(~'.mapped.fastq.gz$', '.fastq.gz') :
-            fn.endsWith('.unmapped_merged.fastq.gz') ? "clean/${fn}".replaceAll(~'.unmapped_merged.fastq.gz$', '.fastq.gz') :
-            fn.endsWith('.mapped_merged.fastq.gz') ? "removed/${fn}".replaceAll(~'.mapped_merged.fastq.gz$', '.fastq.gz') :
-            fn.endsWith('.unmapped_merged_merged.fastq.gz') ? "clean/${fn}".replaceAll(~'.unmapped_merged_merged.fastq.gz$', '.fastq.gz') :
-            fn.endsWith('.soft-clipped_merged.fastq.gz') ? "clean/${fn}".replaceAll(~'.soft-clipped_merged.fastq.gz$', '.fastq.gz') :
+            fn.matches('.*.unmapped.fast[aq].gz$') ? "clean/${fn}".replaceAll(~'.unmapped(.fast[aq].gz)$', '$1') :
+            fn.matches('.*.mapped.fast[aq].gz$') ? "removed/${fn}".replaceAll(~'.mapped(.fast[aq].gz)$', '$1') :
+            fn.matches('.*.unmapped_merged.fast[aq].gz$') ? "clean/${fn}".replaceAll(~'.unmapped_merged(.fast[aq].gz)$', '$1') :
+            fn.matches('.*.mapped_merged.fast[aq].gz$') ? "removed/${fn}".replaceAll(~'.mapped_merged(.fast[aq].gz)$', '$1') :
+            fn.matches('.*.unmapped_merged_merged.fast[aq].gz$') ? "clean/${fn}".replaceAll(~'.unmapped_merged_merged(.fast[aq].gz)$', '$1') :
+            fn.matches('.*.soft-clipped_merged.fast[aq].gz$') ? "clean/${fn}".replaceAll(~'.soft-clipped_merged(.fast[aq].gz)$', '$1') :
             fn
       }
     )
@@ -167,14 +167,12 @@ process fastq_from_bam {
   script:
   if ( params.lib_pairedness == 'paired' ) {
     """
-    samtools fastq -@ ${task.cpus} -1 ${bam.baseName}_1.fastq -2 ${bam.baseName}_2.fastq -s ${bam.baseName}_singleton.fastq ${bam}
-    gzip --no-name *.fastq
+    samtools fastq -@ ${task.cpus} -c 6 -1 ${bam.baseName}_1.fastq.gz -2 ${bam.baseName}_2.fastq.gz -s ${bam.baseName}_singleton.fastq.gz ${bam}
     """
   } else if ( params.lib_pairedness == 'single' ) {
     dtype = (params.input_type == 'fasta') ? 'a' : 'q'
     """
-    samtools fastq -@ ${task.cpus} -0 ${bam.baseName}.fast${dtype} ${bam}
-    gzip --no-name *.fast${dtype}
+    samtools fast${dtype} -@ ${task.cpus} -c 6 -0 ${bam.baseName}.fast${dtype}.gz ${bam}
     """
   } else {
     error "Invalid pairedness: ${params.lib_pairedness}"

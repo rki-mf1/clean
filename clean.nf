@@ -15,19 +15,19 @@ def parameter_diff = params.keySet() - valid_params
 if (parameter_diff.size() != 0){
     exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
 }
-if (params.input.contains('.clean.') ) { 
-  exit 1, "ERROR: Input files cannot contain `.clean.`\n" 
+if (params.input.contains('.clean.') ) {
+  exit 1, "ERROR: Input files cannot contain `.clean.`\n"
 }
 
-/************************** 
-* META & HELP MESSAGES 
+/**************************
+* META & HELP MESSAGES
 **************************/
 
-/* 
+/*
 Comment section: First part is a terminal print for additional user information,
 followed by some help statements (e.g. missing input) Second part is file
 channel input. This allows via --list to alter the input of --nano & --illumina
-to add csv instead. name,path or name,pathR1,pathR2 in case of illumina 
+to add csv instead. name,path or name,pathR1,pathR2 in case of illumina
 */
 
 // terminal prints
@@ -51,7 +51,7 @@ if ( workflow.profile.contains('singularity') ) {
     println "Singularity cache directory:"
     println "  $params.singularityCacheDir"
 }
-if ( workflow.profile.contains('conda') ) { 
+if ( workflow.profile.contains('conda') ) {
     println "Conda cache directory:"
     println "  $params.condaCacheDir"
 }
@@ -66,11 +66,11 @@ if (workflow.profile == 'standard' || workflow.profile.contains('local')) {
     println "\033[2mMemory to use: $params.memory, maximal memory to use: $params.max_memory\u001B[0m"
     println " "
 }
-if ( !workflow.revision ) { 
+if ( !workflow.revision ) {
     println "\033[0;33mWARNING: Not a stable execution. Please use -r for full reproducibility.\033[0m\n"
 }
 def folder = new File(params.output)
-if ( folder.exists() ) { 
+if ( folder.exists() ) {
     println "\033[0;33mWARNING: Output folder already exists. Results might be overwritten! You can adjust the output folder via [--output]\033[0m\n"
 }
 if ( workflow.profile.contains('singularity') ) {
@@ -85,15 +85,15 @@ Set input_types = ['nano', 'illumina', 'illumina_single_end', 'fasta']
 if ( params.profile ) { exit 1, "--profile is wrong, use -profile" }
 if ( params.input == '' || !params.input_type == '' ) { exit 1, "Missing required input parameters [--input] and [--input_type]" }
 
-if ( params.input_type ) { if ( ! (params.input_type in input_types ) ) { exit 1, "Choose one of the the input types with --input_type: " + input_types } } 
+if ( params.input_type ) { if ( ! (params.input_type in input_types ) ) { exit 1, "Choose one of the the input types with --input_type: " + input_types } }
 
 if ( params.control ) { for( String ctr : params.control.split(',') ) if ( ! (ctr in controls ) ) { exit 1, "Wrong control defined (" + ctr + "), use one of these: " + controls } }
 if ( params.input_type == 'nano' && params.control && 'dcs' in params.control.split(',') && 'eno' in params.control.split(',') ) { exit 1, "Please choose either eno (for ONT dRNA-Seq) or dcs (for ONT DNA-Seq)." }
 if ( params.host ) { for( String hst : params.host.split(',') ) if ( ! (hst in hosts ) ) { exit 1, "Wrong host defined (" + hst + "), use one of these: " + hosts } }
 if ( !params.host && !params.own && !params.control && !params.rm_rrna ) { exit 1, "Please provide a control (--control), a host tag (--host), a FASTA file (--own) or set --rm_rrna for rRNA removal for the clean up."}
 
-/************************** 
-* INPUT CHANNELS 
+/**************************
+* INPUT CHANNELS
 **************************/
 
 if ( params.input_type == 'illumina' ) {
@@ -174,7 +174,7 @@ multiqc_config = Channel.fromPath( workflow.projectDir + '/assets/multiqc_config
 tool = params.bbduk ? 'bbduk' : 'minimap2'
 lib_pairedness = params.input_type == 'illumina' ? 'paired' : 'single'
 
-/************************** 
+/**************************
 * MODULES
 **************************/
 
@@ -186,7 +186,7 @@ include { keep } from './workflows/keep_wf' addParams( tool: tool, lib_pairednes
 
 include { qc } from './workflows/qc_wf'
 
-/************************** 
+/**************************
 * WORKFLOW ENTRY POINT
 **************************/
 
@@ -202,9 +202,9 @@ workflow {
 
     mapped = clean.out.out_reads.filter{ it[1] == 'mapped' }
     unmapped = clean.out.out_reads.filter{ it[1] == 'unmapped' }
-    
+
     un_mapped_clean_fastq = mapped.join(unmapped)
-    
+
     keep(input_ch.map{ it -> ['keep_'+it[0], it[1]]}, keep_fasta.collect(), nanoControlBedChannel, un_mapped_clean_fastq)
 
   }
@@ -212,7 +212,7 @@ workflow {
   qc(input_ch.map{ it -> tuple(it[0], 'input', it[1]) }.mix(clean.out.out_reads), params.input_type, clean.out.bbduk_summary, clean.out.idxstats, clean.out.flagstats, multiqc_config)
 }
 
-/**************************  
+/**************************
 * --help
 **************************/
 def helpMSG() {
@@ -223,19 +223,19 @@ def helpMSG() {
     c_dim = "\033[2m";
     log.info """
     ____________________________________________________________________________________________
-    
+
     Workflow: Decontamination
 
-    Clean your Illumina, Nanopore or any FASTA-formated sequence date. The output are the clean 
+    Clean your Illumina, Nanopore or any FASTA-formated sequence date. The output are the clean
     and as contaminated identified sequences. Per default minimap2 is used for aligning your sequences
-    to a host but we recommend using the ${c_dim}--bbduk${c_reset} flag to switch to bbduk to clean short-read data.  
+    to a host but we recommend using the ${c_dim}--bbduk${c_reset} flag to switch to bbduk to clean short-read data.
 
-    Use the ${c_dim}--host${c_reset} and ${c_dim}--control${c_reset} flag to download a host database or specify your ${c_dim}--own${c_reset} FASTA. 
-    
+    Use the ${c_dim}--host${c_reset} and ${c_dim}--control${c_reset} flag to download a host database or specify your ${c_dim}--own${c_reset} FASTA.
+
     ${c_yellow}Usage example:${c_reset}
-    nextflow run clean.nf --input_type nano --input '*/*.fastq' --host eco --control dcs 
+    nextflow run clean.nf --input_type nano --input '*/*.fastq' --host eco --control dcs
     or
-    nextflow run clean.nf --input_type illumina --input '*/*.R{1,2}.fastq' --own some_host.fasta --bbduk 
+    nextflow run clean.nf --input_type illumina --input '*/*.R{1,2}.fastq' --own some_host.fasta --bbduk
     or
     nextflow run clean.nf --input_type illumina --input 'test/illumina*.R{1,2}.fastq.gz' --nano data/nanopore.fastq.gz --fasta data/assembly.fasta --host eco --control phix
 
@@ -244,8 +244,8 @@ def helpMSG() {
     ${c_green}--input_type illumina            --input${c_reset} '*.R{1,2}.fastq.gz'         -> file pairs
     ${c_green}--input_type illumina_single_end --input${c_reset} '*.fastq.gz'                -> one sample per file
     ${c_green}--input_type fasta               --input${c_reset} '*.fasta.gz'                -> one sample per file
-    ${c_dim} ...read above input from csv files:${c_reset} ${c_green}--list ${c_reset} 
-                         ${c_dim}required format: name,path for --input_type nano and --input_type fasta; name,pathR1,pathR2 for --illumina input_type; name,path for --input_type illumina_single_end${c_reset}   
+    ${c_dim} ...read above input from csv files:${c_reset} ${c_green}--list ${c_reset}
+                         ${c_dim}required format: name,path for --input_type nano and --input_type fasta; name,pathR1,pathR2 for --illumina input_type; name,path for --input_type illumina_single_end${c_reset}
 
     ${c_yellow}Decontamination options:${c_reset}
     ${c_green}--host${c_reset}         comma separated list of reference genomes for decontamination, downloaded based on this parameter [default: $params.host]
@@ -287,11 +287,11 @@ def helpMSG() {
     In particular for execution of the workflow on a HPC (LSF, SLURM) adjust the following parameters:
     --databases             defines the path where databases are stored [default: $params.databases]
     --condaCacheDir         defines the path where environments (conda) are cached [default: $params.condaCacheDir]
-    --singularityCacheDir   defines the path where images (singularity) are cached [default: $params.singularityCacheDir] 
+    --singularityCacheDir   defines the path where images (singularity) are cached [default: $params.singularityCacheDir]
 
     ${c_yellow}Miscellaneous:${c_reset}
     --cleanup_work_dir      deletes all files in the work directory after a successful completion of a run [default: $params.cleanup_work_dir]
-                            ${c_dim}warning: if ture, the option will prevent the use of the resume feature!${c_reset} 
+                            ${c_dim}warning: if ture, the option will prevent the use of the resume feature!${c_reset}
 
     ${c_yellow}Profile:${c_reset}
     You can merge different profiles for different setups, e.g.
