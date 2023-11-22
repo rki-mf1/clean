@@ -84,6 +84,9 @@ process get_read_names_fastx {
 
 process filter_fastq_by_name {
   label 'seqkit'  // We don't need minimap2 but the container has pigz
+
+  // Needed because we want to modify the input files and pass them on as
+  // output
   stageInMode 'copy'
 
   // When using --keep, this is where the final cleaned fastq file is
@@ -119,6 +122,8 @@ process filter_fastq_by_name {
   // modifying the input files:
   // 1. First move reads that mapped to keep from host mapped to unmapped
   // 2. Then remove those same reads from the host mapped set
+  // If these two steps are done in the opposite order the results will be
+  // wrong.
   script:
   if ( params.lib_pairedness == 'paired' ) {
     """
