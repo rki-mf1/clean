@@ -12,7 +12,7 @@ workflow keep {
 
     main:
         keep_map(input, keep_reference, dcs_ends_bed, 'map-to-keep')
-        
+
         if ( params.bbduk ) {
           keep_reads_fastx = keep_map.out.out_reads.filter{ it[1] == 'mapped' }
           get_read_names_fastx(keep_reads_fastx.map{it -> [it[0], it[2]]})
