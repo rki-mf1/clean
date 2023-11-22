@@ -83,7 +83,7 @@ process get_read_names_fastx {
 }
 
 process filter_fastq_by_name {
-  label 'minimap2'  // We don't need minimap2 but the container has pigz
+  label 'seqkit'  // We don't need minimap2 but the container has pigz
   stageInMode 'copy'
 
   // When using --keep, this is where the final cleaned fastq file is
@@ -122,15 +122,15 @@ process filter_fastq_by_name {
   script:
   if ( params.lib_pairedness == 'paired' ) {
     """
-    zcat ${reads_mapped[0]} | paste - - - - | grep -F -f ${keep_read_name_list} | tr "\t" "\n" | pigz -fc -p ${task.cpus} >> ${reads_unmapped[0]}
-    zcat ${reads_mapped[0]} | paste - - - - | grep -v -F -f ${keep_read_name_list} | tr "\t" "\n" | pigz -fc -p ${task.cpus} > ${reads_mapped[0]} && mv ${reads_mapped[0]}{.tmp,}
-    zcat ${reads_mapped[1]} | paste - - - - | grep -F -f ${keep_read_name_list} | tr "\t" "\n" | pigz -fc -p ${task.cpus} >> ${reads_unmapped[1]}
-    zcat ${reads_mapped[1]} | paste - - - - | grep -v -F -f ${keep_read_name_list} | tr "\t" "\n" | pigz -fc -p ${task.cpus} > ${reads_mapped[1]} && mv ${reads_mapped[1]}{.tmp,}
+    seqkit grep --pattern-file ${keep_read_name_list} ${reads_mapped[0]} | gzip >> ${reads_unmapped[0]}
+    seqkit grep --invert-match --pattern-file ${keep_read_name_list} ${reads_mapped[0]} | gzip > ${reads_mapped[0]}.tmp && mv ${reads_mapped[0]}{.tmp,}
+    seqkit grep --pattern-file ${keep_read_name_list} ${reads_mapped[1]} | gzip >> ${reads_unmapped[1]}
+    seqkit grep --invert-match --pattern-file ${keep_read_name_list} ${reads_mapped[1]} | gzip > ${reads_mapped[1]}.tmp && mv ${reads_mapped[1]}{.tmp,}
     """
   } else if ( params.lib_pairedness == 'single' ) {
     """
-    zcat ${reads_mapped} | paste - - - - | grep -F -f ${keep_read_name_list} | tr "\t" "\n" | pigz -fc -p ${task.cpus} >> ${reads_unmapped}
-    zcat ${reads_mapped} | paste - - - - | grep -v -F -f ${keep_read_name_list} | tr "\t" "\n" | pigz -fc -p ${task.cpus} > ${reads_mapped}.tmp && mv ${reads_mapped}{.tmp,}
+    seqkit grep --pattern-file ${keep_read_name_list} ${reads_mapped} | gzip >> ${reads_unmapped}
+    seqkit grep --invert-match --pattern-file ${keep_read_name_list} ${reads_mapped} | gzip > ${reads_mapped}.tmp && mv ${reads_mapped}{.tmp,}
     """
   } else {
     error "Invalid mode: ${params.lib_pairedness}"
