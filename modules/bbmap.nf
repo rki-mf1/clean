@@ -5,10 +5,11 @@ process bbduk {
     path: "${params.output}/intermediate/${map_target}",
     mode: params.publish_dir_mode,
     pattern: "*.{clean,contamination}.fastq.gz",
+    enabled: !params.no_intermediate,
     overwrite: false
   )
-  
-  // When using `--keep`, we need to do further processing before we have 
+
+  // When using `--keep`, we need to do further processing before we have
   // the final clean and removed data sets.
   if ( !params.keep ) {
     publishDir (
@@ -23,7 +24,7 @@ process bbduk {
       }
     )
   }
-  
+
   input:
   tuple val(name), path(reads)
   path db
