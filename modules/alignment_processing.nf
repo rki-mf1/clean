@@ -54,7 +54,6 @@ process filter_soft_clipped_alignments {
     path: "${params.output}/intermediate",
     mode: params.publish_dir_mode,
     pattern: "${name}*.bam{,.bai}",
-    overwrite: false,
     enabled: !params.no_intermediate,
     saveAs: { fn ->
           fn.startsWith("keep_") ? "map-to-keep/soft-clipped/${fn.replaceAll(~'^keep_', '')}" : "map-to-remove/soft-clipped/${fn}"
@@ -91,7 +90,6 @@ process filter_true_dcs_alignments {
     path: "${params.output}/intermediate",
     mode: params.publish_dir_mode,
     pattern: "${name}*.bam{,.bai}",
-    overwrite: false,
     enabled: !params.no_intermediate,
     saveAs: { fn ->
           fn.startsWith("keep_") ? "map-to-keep/strict-dcs/${fn.replaceAll(~'^keep_', '')}" : "map-to-remove/strict-dcs/${fn}"
@@ -134,7 +132,6 @@ process fastq_from_bam {
     path: "${params.output}/intermediate",
     mode: params.publish_dir_mode,
     pattern: "*.gz",
-    overwrite: false,
     enabled: !params.no_intermediate,
     saveAs: { fn ->
           fn.startsWith("keep_") ? "map-to-keep/${fn.replaceAll(~'^keep_', '').replaceAll(~'_merged', '')}" : "map-to-remove/${fn.replaceAll(~'_merged', '')}"
@@ -146,7 +143,6 @@ process fastq_from_bam {
   if ( !params.keep ) {
     publishDir (
       path: params.output,
-      overwrite: false,
       mode: params.publish_dir_mode,
       pattern: "*.gz",
       saveAs: { fn ->
@@ -194,7 +190,6 @@ process idxstats_from_bam {
     path: "${params.output}/intermediate",
     mode: params.publish_dir_mode,
     pattern: "*.sorted.idxstats.tsv",
-    overwrite: false,
     enabled: !params.no_intermediate,
     saveAs: { fn ->
           fn.startsWith("keep_") ? "map-to-keep/${fn.replaceAll(~'^keep_', '')}" : "map-to-remove/${fn}"
@@ -224,7 +219,6 @@ process flagstats_from_bam {
     path: "${params.output}/intermediate",
     mode: params.publish_dir_mode,
     pattern: "*.sorted.flagstats.txt",
-    overwrite: false,
     enabled: !params.no_intermediate,
     saveAs: { fn ->
           fn.startsWith("keep_") ? "map-to-keep/${fn.replaceAll(~'^keep_', '')}" : "map-to-remove/${fn}"
@@ -274,7 +268,6 @@ process index_bam {
     path: "${params.output}/intermediate",
     mode: params.publish_dir_mode,
     pattern: "*.sorted.bam{,.bai}",
-    overwrite: false,
     enabled: !params.no_intermediate,
     saveAs: { fn ->
           fn.startsWith("keep_") ? "map-to-keep/${fn.replaceAll(~'^keep_', '')}" : "map-to-remove/${fn}"

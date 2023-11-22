@@ -5,8 +5,7 @@ process bbduk {
     path: "${params.output}/intermediate/${map_target}",
     mode: params.publish_dir_mode,
     pattern: "*.{clean,contamination}.fastq.gz",
-    enabled: !params.no_intermediate,
-    overwrite: false
+    enabled: !params.no_intermediate
   )
 
   // When using `--keep`, we need to do further processing before we have
@@ -14,7 +13,6 @@ process bbduk {
   if ( !params.keep ) {
     publishDir (
       path: params.output,
-      overwrite: false,
       mode: params.publish_dir_mode,
       pattern: "*.gz",
       saveAs: { fn ->

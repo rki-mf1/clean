@@ -153,7 +153,6 @@ process bbduk_stats {
     path: "${params.output}/intermediate",
     mode: params.publish_dir_mode,
     pattern: "*.bbduk_stats.tsv",
-    overwrite: false,
     enabled: !params.no_intermediate,
     saveAs: { fn ->
           fn.startsWith("keep_") ? "map-to-keep/${fn.replaceAll(~'^keep_', '')}" : "map-to-remove/${fn}"
