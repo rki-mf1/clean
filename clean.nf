@@ -248,7 +248,7 @@ def helpMSG() {
                          ${c_dim}required format: name,path for --input_type nano and --input_type fasta; name,pathR1,pathR2 for --illumina input_type; name,path for --input_type illumina_single_end${c_reset}
 
     ${c_yellow}Decontamination options:${c_reset}
-    ${c_green}--host${c_reset}         comma separated list of reference genomes for decontamination, downloaded based on this parameter [default: $params.host]
+    ${c_green}--host${c_reset}         Comma separated list of reference genomes for decontamination, downloaded based on this parameter [default: $params.host]
                                         ${c_dim}Currently supported are:
                                         - hsa [Ensembl: Homo_sapiens.GRCh38.dna.primary_assembly]
                                         - mmu [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly]
@@ -256,44 +256,46 @@ def helpMSG() {
                                         - gga [NCBI: Gallus_gallus.GRCg6a.dna.toplevel]
                                         - cli [NCBI: GCF_000337935.1_Cliv_1.0_genomic]
                                         - eco [Ensembl: Escherichia_coli_k_12.ASM80076v1.dna.toplevel]${c_reset}
-    ${c_green}--control${c_reset}       comma separated list of common controls used in Illumina or Nanopore sequencing [default: $params.control]
+    ${c_green}--control${c_reset}       Comma separated list of common controls used in Illumina or Nanopore sequencing [default: $params.control]
                                         ${c_dim}Currently supported are:
                                         - phix [Illumina: enterobacteria_phage_phix174_sensu_lato_uid14015, NC_001422]
                                         - dcs [ONT DNA-Seq: a positive control (3.6 kb standard amplicon mapping the 3' end of the Lambda genome)]
                                         - eno [ONT RNA-Seq: a positive control (yeast ENO2 Enolase II of strain S288C, YHR174W)]${c_reset}
-    ${c_green}--own ${c_reset}          use your own FASTA sequences (comma separated list of files) for decontamination, e.g. host.fasta.gz,spike.fasta [default: $params.own]
-    ${c_green}--rm_rrna ${c_reset}      clean your data from rRNA [default: $params.rm_rrna]
-    ${c_green}--bbduk${c_reset}         add this flag to use bbduk instead of minimap2 for decontamination of short reads [default: $params.bbduk]
-    ${c_green}--bbduk_kmer${c_reset}    set kmer for bbduk [default: $params.bbduk_kmer]
-    ${c_green}--bbduk_qin${c_reset}     set quality ASCII encoding for bbduk [default: $params.bbduk_qin; options are: 64, 33, auto]
-    ${c_green}--reads_rna${c_reset}           add this flag for noisy direct RNA-Seq Nanopore data [default: $params.reads_rna]
+    ${c_green}--own ${c_reset}          Use your own FASTA sequences (comma separated list of files) for decontamination, e.g. host.fasta.gz,spike.fasta [default: $params.own]
+    ${c_green}--keep ${c_reset}         Use your own FASTA sequences (comma separated list of files) to explicitly keep mapped reads, e.g. target.fasta.gz,important.fasta [default: $params.keep]
+                                        Reads are assigned to a combined index for decontamination and keeping. The use of this parameter can prevent 
+                                        false positive hits and the accidental removal of reads due to (poor quality) mappings. 
+    ${c_green}--rm_rrna ${c_reset}      Clean your data from rRNA [default: $params.rm_rrna]
+    ${c_green}--bbduk${c_reset}         Add this flag to use bbduk instead of minimap2 for decontamination of short reads [default: $params.bbduk]
+    ${c_green}--bbduk_kmer${c_reset}    Set kmer for bbduk [default: $params.bbduk_kmer]
+    ${c_green}--bbduk_qin${c_reset}     Set quality ASCII encoding for bbduk [default: $params.bbduk_qin; options are: 64, 33, auto]
+    ${c_green}--reads_rna${c_reset}     Add this flag for noisy direct RNA-Seq Nanopore data [default: $params.reads_rna]
 
-    ${c_green}--min_clip${c_reset}      filter mapped reads by soft-clipped length (left + right). If >= 1 total
-                     number; if < 1 relative to read length
-    ${c_green}--dcs_strict${c_reset}    filter out alignments that cover artificial ends of the ONT DCS to discriminate between Lambda Phage and DCS
+    ${c_green}--min_clip${c_reset}      Filter mapped reads by soft-clipped length (left + right). If >= 1 total number; if < 1 relative to read length
+    ${c_green}--dcs_strict${c_reset}    Filter out alignments that cover artificial ends of the ONT DCS to discriminate between Lambda Phage and DCS
 
     ${c_yellow}Compute options:${c_reset}
-    --cores             max cores per process for local use [default $params.cores]
-    --max_cores         max cores used on the machine for local use [default $params.max_cores]
-    --memory            max memory for local use, enter in this format '8.GB' [default: $params.memory]
-    --output            name of the result folder [default: $params.output]
+    --cores             Max cores per process for local use [default $params.cores]
+    --max_cores         Max cores used on the machine for local use [default $params.max_cores]
+    --memory            Max memory for local use, enter in this format '8.GB' [default: $params.memory]
+    --output            Name of the result folder [default: $params.output]
 
     ${c_dim}Nextflow options:
-    -with-report rep.html    cpu / ram usage (may cause errors)
-    -with-dag chart.html     generates a flowchart for the process tree
-    -with-timeline time.html timeline (may cause errors)
+    -with-report rep.html    CPU / RAM usage (may cause errors)
+    -with-dag chart.html     Generates a flowchart for the process tree
+    -with-timeline time.html Timeline (may cause errors)
 
     ${c_yellow}Computing:${c_reset}
     In particular for execution of the workflow on a HPC (LSF, SLURM) adjust the following parameters:
-    --databases             defines the path where databases are stored [default: $params.databases]
-    --condaCacheDir         defines the path where environments (conda) are cached [default: $params.condaCacheDir]
-    --singularityCacheDir   defines the path where images (singularity) are cached [default: $params.singularityCacheDir]
+    --databases             Defines the path where databases are stored [default: $params.databases]
+    --condaCacheDir         Defines the path where environments (conda) are cached [default: $params.condaCacheDir]
+    --singularityCacheDir   Defines the path where images (singularity) are cached [default: $params.singularityCacheDir]
 
     ${c_yellow}Miscellaneous:${c_reset}
-    --cleanup_work_dir      deletes all files in the work directory after a successful completion of a run [default: $params.cleanup_work_dir]
+    --cleanup_work_dir      Deletes all files in the work directory after a successful completion of a run [default: $params.cleanup_work_dir]
                             ${c_dim}warning: if true, the option will prevent the use of the resume feature!${c_reset}
-    --no_intermediate       do not save intermediate .bam/fastq/etc files into the `results/intermediate/` directory [default: $params.cleanup_work_dir]
-                            saves a lot of disk space, especially if used with the `--cleanup_work_dir` argument.
+    --no_intermediate       Do not save intermediate .bam/fastq/etc files into the `results/intermediate/` directory [default: $params.cleanup_work_dir]
+                            Saves a lot of disk space, especially if used with the `--cleanup_work_dir` argument.
 
     ${c_yellow}Profile:${c_reset}
     You can merge different profiles for different setups, e.g.
@@ -313,9 +315,6 @@ def helpMSG() {
                              conda
                              mamba
 
-                             ebi (lsf,singularity; preconfigured for the EBI cluster)
-                             yoda (lsf,singularity; preconfigured for the EBI YODA cluster)
-                             ara (slurm,conda; preconfigured for the ARA cluster)
                              gcloud (use this as template for your own GCP setup)
                              ${c_reset}
     """.stripIndent()
