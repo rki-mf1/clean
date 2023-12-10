@@ -257,7 +257,7 @@ process sort_bam {
   """
   stub:
   """
-  touch ${bam.baseName}.bam
+  touch ${bam.baseName}.sorted.bam
   """
 }
 
