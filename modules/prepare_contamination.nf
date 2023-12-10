@@ -61,8 +61,8 @@ process check_own {
   """
   # -L for following a symbolic link
   if ! ( file -L $fasta | grep -q 'BGZF; gzip compatible\\|gzip compressed' ); then
-    sed -i -e '\$a\\' ${fasta}
-    bgzip -@ ${task.cpus} < ${fasta} > ${fasta}.gz
+    sed -e '\$a\\' ${fasta} > ${fasta}.tmp
+    bgzip -@ ${task.cpus} < ${fasta}.tmp > ${fasta}.gz
     # now $fasta'.gz'
   else
     mv ${fasta} ${fasta}.tmp

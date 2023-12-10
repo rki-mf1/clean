@@ -120,6 +120,7 @@ if ( params.input_type == 'illumina' ) {
 if ( params.control ) {
   if ( 'phix' in params.control.split(',') ) {
     illuminaControlFastaChannel = Channel.fromPath( workflow.projectDir + '/data/controls/phix.fa.gz' , checkIfExists: true )
+    nanoControlBedChannel = []
   } else { illuminaControlFastaChannel = Channel.empty() }
   if ( 'dcs' in params.control.split(',') ) {
     nanoControlFastaChannel = Channel.fromPath( workflow.projectDir + '/data/controls/dcs.fa.gz' , checkIfExists: true )
