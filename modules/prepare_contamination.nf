@@ -77,18 +77,33 @@ process check_own {
 
 process concat_contamination {
   label 'minimap2'
-  
+
+  publishDir (
+    path: "${params.output}/intermediate",
+    mode: params.publish_dir_mode,
+    pattern: "db.fa.gz",
+    enabled: !params.no_intermediate,
+    saveAs: { "host.fa.gz" }
+  )
+  publishDir (
+    path: "${params.output}/intermediate",
+    mode: params.publish_dir_mode,
+    pattern: "db.fa.fai",
+    enabled: !params.no_intermediate,
+    saveAs: { "host.fa.fai" }
+  )
+
   input:
   path fastas
 
   output:
   path 'db.fa.gz', emit: fa
   path 'db.fa.fai', emit: fai
-  
+
   script:
   len = fastas.collect().size()
   """
-  if [[ ${len} -gt 1 ]] 
+  if [[ ${len} -gt 1 ]]
   then
     for FASTA in ${fastas}
     do
