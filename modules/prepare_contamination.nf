@@ -49,7 +49,7 @@ process download_host {
 }
 
 process check_own {
-  label 'minimap2'
+  label 'seqkit'
 
   input:
   path fasta
@@ -59,15 +59,7 @@ process check_own {
 
   script:
   """
-  # -L for following a symbolic link
-  if ! ( file -L $fasta | grep -q 'BGZF; gzip compatible\\|gzip compressed' ); then
-    sed -e '\$a\\' ${fasta} > ${fasta}.tmp
-    bgzip -@ ${task.cpus} < ${fasta}.tmp > ${fasta}.gz
-    # now $fasta'.gz'
-  else
-    mv ${fasta} ${fasta}.tmp
-    zcat ${fasta}.tmp | sed -e '\$a\\' | bgzip -@ ${task.cpus} -c > ${fasta}.gz
-  fi
+  seqkit seq ${fasta} -o ${fasta}.gz
   """
   stub:
   """
@@ -76,7 +68,7 @@ process check_own {
 }
 
 process concat_contamination {
-  label 'minimap2'
+  label 'seqkit'
 
   publishDir (
     path: "${params.output}/intermediate",
@@ -101,21 +93,10 @@ process concat_contamination {
   path 'db.fa.fai', emit: fai
 
   script:
-  len = fastas.collect().size()
   """
-  if [[ ${len} -gt 1 ]]
-  then
-    for FASTA in ${fastas}
-    do
-        NAME="\${FASTA%%.*}"
-        zcat \$FASTA | awk -v n=\$NAME '/>/{sub(">","&"n"_")}1' | bgzip -@ ${task.cpus} -c >> db.fa.gz
-    done
-  else
-    mv ${fastas} db.fa.gz
-  fi
-
-  samtools faidx db.fa.gz
-  mv db.fa.gz.fai db.fa.fai
+  # Combine input files, rename duplicate sequences (by id) if found, and compress
+  seqkit seq ${fastas} | seqkit rename | bgzip -@ ${task.cpus} -c > db.fa.gz
+  samtools faidx db.fa.gz --gzi-idx db.fa.fai
   """
   stub:
   """

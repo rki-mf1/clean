@@ -4,3 +4,5 @@ channels:
   - conda-forge
 dependencies:
   - seqkit==2.6.1
+  - tabix==1.11
+  - samtools==1.18
