@@ -152,6 +152,8 @@ process fastq_from_bam {
             fn.matches('.*.mapped_merged.fast[aq].gz$') ? "removed/${fn}".replaceAll(~'.mapped_merged(.fast[aq].gz)$', '$1') :
             fn.matches('.*.unmapped_merged_merged.fast[aq].gz$') ? "clean/${fn}".replaceAll(~'.unmapped_merged_merged(.fast[aq].gz)$', '$1') :
             fn.matches('.*.soft-clipped_merged.fast[aq].gz$') ? "clean/${fn}".replaceAll(~'.soft-clipped_merged(.fast[aq].gz)$', '$1') :
+            fn.matches('.*.unmapped_(1|2|singleton).fast[aq].gz$') ? "clean/${fn}".replaceAll(~'.unmapped_(1|2|singleton)(.fast[aq].gz)$', '_$1$2') :
+            fn.matches('.*.mapped_(1|2|singleton).fast[aq].gz$') ? "removed/${fn}".replaceAll(~'.mapped_(1|2|singleton)(.fast[aq].gz)$', '_$1$2') :
             fn
       }
     )
