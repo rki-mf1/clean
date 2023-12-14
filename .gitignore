@@ -9,4 +9,5 @@ work/
 results/
 centrifuge-cloud/
 conda/
+singularity/
 .vscode/

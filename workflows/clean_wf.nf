@@ -1,26 +1,26 @@
 include { minimap2 } from '../modules/minimap2'
 include { bbduk } from '../modules/bbmap'
-include { writeLog ; bbdukStats } from '../modules/utils'
-include { split_bam; fastq_from_bam ; idxstats_from_bam ; flagstats_from_bam ; index_bam ; sort_bam ; filter_true_dcs_alignments ; merge_bam as merge_bam1 ; merge_bam as merge_bam2 ; merge_bam as merge_bam3 ; merge_bam as merge_bam4 ; filter_soft_clipped_alignments } from '../modules/alignment_processing'
+include { bbduk_stats } from '../modules/utils'
+include { split_bam; fastq_from_bam ; idxstats_from_bam ; flagstats_from_bam ; index_bam as index_bam; index_bam as index_bam2; sort_bam ; filter_true_dcs_alignments ; merge_bam as merge_bam1 ; merge_bam as merge_bam2 ; merge_bam as merge_bam3 ; merge_bam as merge_bam4 ; filter_soft_clipped_alignments } from '../modules/alignment_processing'
 
 workflow clean {
     take:
         input
         contamination
         dcs_ends_bed
+        map_target
 
     main:
         if ( params.bbduk ) {
             // map
-            bbduk(input, contamination)
-            // log & stats
-            writeLog(contamination, input.map{ it -> it[1] }.collect())
-            bbdukStats(bbduk.out.stats)
+            bbduk(input, contamination, map_target)
+            bbduk_stats(bbduk.out.stats)
             // define output
-            bbduk_summary = bbdukStats.out.tsv
+            bbduk_summary = bbduk_stats.out.tsv
             idxstats = Channel.empty()
             flagstats = Channel.empty()
             out_reads = bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads)
+            bams_bai = Channel.empty()
         } 
         else {
             minimap2(input, contamination) | sort_bam | index_bam | ( idxstats_from_bam & flagstats_from_bam )
@@ -40,9 +40,11 @@ workflow clean {
                 contamination_bam = merge_bam3(contamination_bam.mix(filter_soft_clipped_alignments.out.bam_ok_clipped).groupTuple(by: [0,1]))
                 cleaned_bam = merge_bam4(cleaned_bam.mix(filter_soft_clipped_alignments.out.bam_clipped).groupTuple(by: [0,1]))
             }
+            index_bam2(contamination_bam.mix(cleaned_bam))
+            bams_bai = index_bam2.out
+
             fastq_from_bam(contamination_bam.mix(cleaned_bam))
-            // log & stats
-            writeLog(contamination, input.map{ it -> it[1] }.collect())
+
             // define output
             bbduk_summary = Channel.empty()
             idxstats = idxstats_from_bam.out
@@ -55,4 +57,5 @@ workflow clean {
         idxstats
         flagstats
         out_reads
+        bams_bai
 }
