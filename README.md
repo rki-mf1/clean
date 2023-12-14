@@ -105,7 +105,7 @@ Included in this repository are:
 
 ## Workflow
 
-![chart](data/figures/workflow.png)
+![chart](figures/clean_workflow_latest.png)
 
 <sub><sub>The icons and diagram components that make up the schematic view were originally designed by James A. Fellow Yates & nf-core under a CCO license (public domain).</sub></sub>
 
