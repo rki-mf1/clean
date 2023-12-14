@@ -15,7 +15,7 @@ Technologies ([DNA CS (DCS)](https://assets.ctfassets.net/hkzaxo8a05x5/2IX56YmF5
 
 ## What this workflow does for you
 
-With this workflow you can screen and clean your Illumina, Nanopore or any FASTA-formated sequence date. The results are the clean sequences and the sequences identified as contaminated.
+With this workflow you can screen and clean your Illumina, Nanopore or any FASTA-formated sequence data. The results are the clean sequences and the sequences identified as contaminated.
 Per default [minimap2](https://github.com/lh3/minimap2) is used for aligning your sequences to reference sequences but I recommend using `bbduk`, part of [BBTools](https://github.com/BioInfoTools/BBMap), to clean short-read data (_--bbduk_).
 
 You can simply specify provided hosts and controls for the cleanup or use your own FASTA files. The reads are then mapped against the specified host, control and user defined FASTA files. All reads that map are considered as contamination. In case of Illumina paired-end reads, both mates need to be aligned.
@@ -35,7 +35,7 @@ We saw many soft-clipped reads after the mapping, that probably aren't contamina
 
 ### Dependencies management
 
-- [Conda](https://docs.conda.io/en/latest/miniconda.html) 
+- [Conda](https://docs.conda.io/en/latest/miniconda.html)
 
 and/or
 
@@ -57,7 +57,7 @@ Get help:
 nextflow run hoelzer/clean --help
 ```
 
-Clean Nanopore data by filtering against a combined reference of the _E. coli_ genome and the Nanopore DNA CS spike-in.  
+Clean Nanopore data by filtering against a combined reference of the _E. coli_ genome and the Nanopore DNA CS spike-in.
 
 ```bash
 # uses Docker per default
@@ -77,7 +77,7 @@ nextflow run hoelzer/clean --input_type illumina --input '/home/martin/.nextflow
 --own ~/.nextflow/assets/hoelzer/clean/test/ref.fasta.gz --bbduk
 ```
 
-Clean some Illumina, Nanopore, and assembly files against the mouse and phiX genomes.  
+Clean some Illumina, Nanopore, and assembly files against the mouse and phiX genomes.
 
 ## Supported species and control sequences
 
@@ -108,14 +108,57 @@ Included in this repository are:
 
 <sub><sub>The icons and diagram components that make up the schematic view were originally designed by James A. Fellow Yates & nf-core under a CCO license (public domain).</sub></sub>
 
+## Results
+
+Running the pipeline will create a directory called `results/` in the current directory with some or all of the following directories and files (plus additional failes for indices, ...):
+
+```text
+results/
+├── clean/
+│   └── <sample_name>.fastq.gz
+├── removed/
+│   └── <sample_name>.fastq.gz
+├── intermediate/
+│   ├── map-to-remove/
+│   │   ├── <sample_name>.mapped.fastq.gz
+│   │   ├── <sample_name>.unmapped.fastq.gz
+│   │   ├── <sample_name>.mapped.bam
+│   │   ├── <sample_name>.unmapped.bam
+│   │   ├── strict-dcs/
+│   │   │   ├── <sample_name>.no-dcs.bam
+│   │   │   ├── <sample_name>.true-dcs.bam
+│   │   │   └── <sample_name>.false-dcs.bam
+│   │   └── soft-clipped/
+│   │       ├── <sample_name>.soft-clipped.bam
+│   │       └── <sample_name>.passed-clipped.bam
+│   └── map-to-keep/
+│       ├── <sample_name>.mapped.fastq.gz
+│       ├── <sample_name>.unmapped.fastq.gz
+│       ├── <sample_name>.mapped.bam
+│       ├── <sample_name>.unmapped.bam
+│       ├── strict-dcs/
+│       │   ├── <sample_name>.no-dcs.bam
+│       │   ├── <sample_name>.true-dcs.bam
+│       │   └── <sample_name>.false-dcs.bam
+│       └── soft-clipped/
+│           ├── <sample_name>.soft-clipped.bam
+│           └── <sample_name>.passed-clipped.bam
+├── logs/*.html
+└── qc/multiqc_report.html
+```
+
+The most important files you are likely interested in are `results/clean/<sample_name>.fastq.gz`, which are the "cleaned" reads. These are the input reads that *do not* map to the host, control, own fasta or rRNA files (or the subset of these that you provided), plus those reads that map to the "keep" sequence if you used the `--keep` option. Any files that were removed from your input fasta file are placed in `results/removed/<sample_name>.fastq.gz`.
+
+For debugging purposes we also provide various intermediate results in the `intermediate/` folder.
+
 ## Citations
 
 If you use `CLEAN` in your work, please consider citing our preprint:
- 
+
 > Targeted decontamination of sequencing data with CLEAN
 >
 > Marie Lataretu, Sebastian Krautwurst, Adrian Viehweger, Christian Brandt, Martin Hölzer
 >
-> bioRxiv 2023.08.05.552089; doi: https://doi.org/10.1101/2023.08.05.552089 
+> bioRxiv 2023.08.05.552089; doi: https://doi.org/10.1101/2023.08.05.552089
 
 Additionally, an extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file.

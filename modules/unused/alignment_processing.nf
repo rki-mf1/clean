@@ -30,37 +30,3 @@ process filter_un_mapped_alignments {
   """
 }
 
-process make_mapped_bam {
-  label 'minimap2'
-
-  publishDir "${params.output}/${name}/${params.tool}", mode: params.publish_dir_mode, pattern: "*.mapped.bam*"
-
-  input:
-    tuple val(name), path(sam), path(reads)
-
-  output:
-    tuple val(name), path ('*.mapped.bam'), emit: contamination_bam
-    tuple val(name), path ('*.mapped.bam.bai'), emit: contamination_bai
-    tuple val(name), path ('idxstats.tsv'), emit: idxstats
-
-  script:
-  if ( params.mode == 'paired' ) {
-    """
-    samtools view -@ ${task.cpus} -b -f 2 -F 2048 ${name}.sam | samtools sort -o ${name}.mapped.bam --threads ${task.cpus}
-    samtools index ${name}.mapped.bam
-    samtools idxstats ${name}.mapped.bam > idxstats.tsv
-    """
-  } else if ( params.mode == 'single' ) {
-    """
-    samtools view -@ ${task.cpus} -b -F 2052 ${name}.sam | samtools sort -o ${name}.mapped.bam --threads ${task.cpus}
-    samtools index ${name}.mapped.bam
-    samtools idxstats  ${name}.mapped.bam > idxstats.tsv
-    """
-  } else {
-    error "Invalid mode: ${params.mode}"
-  }
-  stub:
-  """
-  touch ${name}.mapped.bam ${name}.mapped.bam.bai idxstats.tsv
-  """
-}

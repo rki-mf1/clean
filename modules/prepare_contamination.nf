@@ -2,7 +2,7 @@ process download_host {
   label 'minimap2'
 
   if (params.cloudProcess) {
-    publishDir "${params.databases}/hosts", mode: params.publish_dir_mode, pattern: "*.fa.gz" 
+    publishDir "${params.databases}/hosts", mode: params.publish_dir_mode, pattern: "*.fa.gz"
   }
   else {
     storeDir "${params.databases}/hosts"
@@ -49,7 +49,7 @@ process download_host {
 }
 
 process check_own {
-  label 'minimap2'
+  label 'seqkit'
 
   input:
   path fasta
@@ -59,15 +59,7 @@ process check_own {
 
   script:
   """
-  # -L for following a symbolic link
-  if ! ( file -L $fasta | grep -q 'BGZF; gzip compatible\\|gzip compressed' ); then
-    sed -i -e '\$a\\' ${fasta}
-    bgzip -@ ${task.cpus} < ${fasta} > ${fasta}.gz
-    # now $fasta'.gz'
-  else
-    mv ${fasta} ${fasta}.tmp
-    zcat ${fasta}.tmp | sed -e '\$a\\' | bgzip -@ ${task.cpus} -c > ${fasta}.gz
-  fi
+  seqkit seq ${fasta} -o ${fasta}.gz
   """
   stub:
   """
@@ -76,10 +68,22 @@ process check_own {
 }
 
 process concat_contamination {
-  label 'minimap2'
-  
-  publishDir "${params.output}/", mode: params.publish_dir_mode, pattern: "db.fa.gz"
-  publishDir "${params.output}/", mode: params.publish_dir_mode, pattern: "db.fa.fai"
+  label 'seqkit'
+
+  publishDir (
+    path: "${params.output}/intermediate",
+    mode: params.publish_dir_mode,
+    pattern: "db.fa.gz",
+    enabled: !params.no_intermediate,
+    saveAs: { "host.fa.gz" }
+  )
+  publishDir (
+    path: "${params.output}/intermediate",
+    mode: params.publish_dir_mode,
+    pattern: "db.fa.fai",
+    enabled: !params.no_intermediate,
+    saveAs: { "host.fa.fai" }
+  )
 
   input:
   path fastas
@@ -87,23 +91,12 @@ process concat_contamination {
   output:
   path 'db.fa.gz', emit: fa
   path 'db.fa.fai', emit: fai
-  
-  script:
-  len = fastas.collect().size()
-  """
-  if [[ ${len} -gt 1 ]] 
-  then
-    for FASTA in ${fastas}
-    do
-        NAME="\${FASTA%%.*}"
-        zcat \$FASTA | awk -v n=\$NAME '/>/{sub(">","&"n"_")}1' | bgzip -@ ${task.cpus} -c >> db.fa.gz
-    done
-  else
-    mv ${fastas} db.fa.gz
-  fi
 
-  samtools faidx db.fa.gz
-  mv db.fa.gz.fai db.fa.fai
+  script:
+  """
+  # Combine input files, rename duplicate sequences (by id) if found, and compress
+  seqkit seq ${fastas} | seqkit rename | bgzip -@ ${task.cpus} -c > db.fa.gz
+  samtools faidx db.fa.gz --gzi-idx db.fa.fai
   """
   stub:
   """

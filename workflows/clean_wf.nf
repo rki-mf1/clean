@@ -1,6 +1,6 @@
 include { minimap2 } from '../modules/minimap2'
 include { bbduk } from '../modules/bbmap'
-include { bbdukStats } from '../modules/utils'
+include { bbduk_stats } from '../modules/utils'
 include { split_bam; fastq_from_bam ; idxstats_from_bam ; flagstats_from_bam ; index_bam as index_bam; index_bam as index_bam2; sort_bam ; filter_true_dcs_alignments ; merge_bam as merge_bam1 ; merge_bam as merge_bam2 ; merge_bam as merge_bam3 ; merge_bam as merge_bam4 ; filter_soft_clipped_alignments } from '../modules/alignment_processing'
 
 workflow clean {
@@ -8,14 +8,15 @@ workflow clean {
         input
         contamination
         dcs_ends_bed
+        map_target
 
     main:
         if ( params.bbduk ) {
             // map
-            bbduk(input, contamination)
-            bbdukStats(bbduk.out.stats)
+            bbduk(input, contamination, map_target)
+            bbduk_stats(bbduk.out.stats)
             // define output
-            bbduk_summary = bbdukStats.out.tsv
+            bbduk_summary = bbduk_stats.out.tsv
             idxstats = Channel.empty()
             flagstats = Channel.empty()
             out_reads = bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads)
