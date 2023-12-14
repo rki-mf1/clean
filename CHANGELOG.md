@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.0.0-beta.1] - 2023-10-11
+
+### Changed
+
+- changed minimap2 container so that `ncurses` is included
+
 ## [v1.0.0-beta] - 2023-09-30
 
 ### Changed
