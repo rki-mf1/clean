@@ -1,0 +1,24 @@
+nextflow_pipeline {
+
+    name "FASTA input"
+    script "../../clean.nf"
+
+    test("Stub") {
+        options "-stub-run"
+
+        when {
+            params {
+                input_type     = "fasta"
+                input      = "$projectDir/assets/EMPTY_FILE"
+                own = "$projectDir/assets/EMPTY_FILE"
+            }
+        }
+
+        then {
+            assertAll(
+                { assert workflow.success }
+            )
+        }
+    }
+
+}

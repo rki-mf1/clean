@@ -1,0 +1,80 @@
+nextflow_pipeline {
+
+    name "Illumina input"
+    script "../../clean.nf"
+
+    test("Stub paired-end") {
+        options "-stub-run"
+
+        when {
+            params {
+                input_type     = "illumina"
+                input      = "$projectDir/assets/EMPTY_FILE_{R1,R2}.fastq"
+                own = "$projectDir/assets/EMPTY_FILE"
+            }
+        }
+
+        then {
+            assertAll(
+                { assert workflow.success }
+            )
+        }
+    }
+
+    test("Stub single-end") {
+        options "-stub-run"
+
+        when {
+            params {
+                input_type     = "illumina_single_end"
+                input      = "$projectDir/assets/EMPTY_FILE"
+                own = "$projectDir/assets/EMPTY_FILE"
+            }
+        }
+
+        then {
+            assertAll(
+                { assert workflow.success }
+            )
+        }
+    }
+
+    test("Stub paired-end bbduk") {
+        options "-stub-run"
+
+        when {
+            params {
+                input_type     = "illumina"
+                input      = "$projectDir/assets/EMPTY_FILE_{R1,R2}.fastq"
+                own = "$projectDir/assets/EMPTY_FILE"
+                bbduk = true
+            }
+        }
+
+        then {
+            assertAll(
+                { assert workflow.success }
+            )
+        }
+    }
+
+    test("Stub single-end bbduk") {
+        options "-stub-run"
+
+        when {
+            params {
+                input_type     = "illumina_single_end"
+                input      = "$projectDir/assets/EMPTY_FILE"
+                own = "$projectDir/assets/EMPTY_FILE"
+                bbduk = true
+            }
+        }
+
+        then {
+            assertAll(
+                { assert workflow.success }
+            )
+        }
+    }
+
+}
