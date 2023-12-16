@@ -1,4 +1,13 @@
 name: dry run CI
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    # Sequence of patterns matched against refs/heads
+    branches:    
+      - main
+
 
 env:
   NXF_ANSI_LOG: false
