@@ -158,6 +158,10 @@ The most important files you are likely interested in are `results/clean/<sample
 
 For debugging purposes we also provide various intermediate results in the `intermediate/` folder.
 
+## Acknowledgements
+
+Thanks to Matt Huska (@matthuska) for extensive testing of CLEAN, bug fixing, and reorganizing the output.
+
 ## Citations
 
 If you use `CLEAN` in your work, please consider citing our preprint:
