@@ -25,7 +25,7 @@ jobs:
           - fasta
           - illumina
           - nanopore
-        profile: ["docker"] # TODO "singularity", "conda"]
+        profile: ["docker", "conda"] # TODO "singularity"]
     steps:
       - name: Check out pipeline code
         uses: actions/checkout@v3
