@@ -234,11 +234,11 @@ def helpMSG() {
     Use the ${c_dim}--host${c_reset} and ${c_dim}--control${c_reset} flag to download a host database or specify your ${c_dim}--own${c_reset} FASTA.
 
     ${c_yellow}Usage example:${c_reset}
-    nextflow run clean.nf --input_type nano --input '*/*.fastq' --host eco --control dcs
+    nextflow run rki-mf1/clean --input_type nano --input '*/*.fastq' --host eco --control dcs
     or
-    nextflow run clean.nf --input_type illumina --input '*/*.R{1,2}.fastq' --own some_host.fasta --bbduk
+    nextflow run rki-mf1/clean --input_type illumina --input '*/*.R{1,2}.fastq' --own some_host.fasta --bbduk
     or
-    nextflow run clean.nf --input_type illumina --input 'test/illumina*.R{1,2}.fastq.gz' --nano data/nanopore.fastq.gz --fasta data/assembly.fasta --host eco --control phix
+    nextflow run rki-mf1/clean --input_type illumina --input 'test/illumina*.R{1,2}.fastq.gz' --nano data/nanopore.fastq.gz --fasta data/assembly.fasta --host eco --control phix
 
     ${c_yellow}Input:${c_reset}
     ${c_green}--input_type nano                --input${c_reset} '*.fasta' or '*.fastq.gz'   -> one sample per file

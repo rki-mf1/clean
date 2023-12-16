@@ -48,24 +48,24 @@ In default `docker` is used; to switch to `conda` use `-profile conda`.
 Get or update the workflow:
 
 ```bash
-nextflow pull hoelzer/clean
+nextflow pull rki-mf1/clean
 ```
 
 Get help:
 
 ```bash
-nextflow run hoelzer/clean --help
+nextflow run rki-mf1/clean --help
 ```
 
 Clean Nanopore data by filtering against a combined reference of the _E. coli_ genome and the Nanopore DNA CS spike-in.
 
 ```bash
 # uses Docker per default
-nextflow run hoelzer/clean --input_type nano --input ~/.nextflow/assets/hoelzer/clean/test/nanopore.fastq.gz \
+nextflow run rki-mf1/clean --input_type nano --input ~/.nextflow/assets/rki-mf1/clean/test/nanopore.fastq.gz \
 --host eco --control dcs
 
 # use conda instead of Docker
-nextflow run hoelzer/clean --input_type nano --input ~/.nextflow/assets/hoelzer/clean/test/nanopore.fastq.gz \
+nextflow run rki-mf1/clean --input_type nano --input ~/.nextflow/assets/rki-mf1/clean/test/nanopore.fastq.gz \
 --host eco --control dcs -profile conda
 ```
 
@@ -73,8 +73,8 @@ Clean Illumina paired-end data against your own reference FASTA using bbduk inst
 
 ```bash
 # enter your home dir!
-nextflow run hoelzer/clean --input_type illumina --input '/home/martin/.nextflow/assets/hoelzer/clean/test/illumina*.R{1,2}.fastq.gz' \
---own ~/.nextflow/assets/hoelzer/clean/test/ref.fasta.gz --bbduk
+nextflow run rki-mf1/clean --input_type illumina --input '/home/martin/.nextflow/assets/rki-mf1/clean/test/illumina*.R{1,2}.fastq.gz' \
+--own ~/.nextflow/assets/rki-mf1/clean/test/ref.fasta.gz --bbduk
 ```
 
 Clean some Illumina, Nanopore, and assembly files against the mouse and phiX genomes.
@@ -98,7 +98,7 @@ Included in this repository are:
 |flag | recommended usage | control/spike | source |
 |-----|-|---------|-------|
 | dcs | ONT DNA-Seq reads |3.6 kb standard amplicon mapping the 3' end of the Lambda genome| https://assets.ctfassets.net/hkzaxo8a05x5/2IX56YmF5ug0kAQYoAg2Uk/159523e326b1b791e3b842c4791420a6/DNA_CS.txt |
-| eno | ONT RNA-Seq reads |yeast ENO2 Enolase II of strain S288C, YHR174W| https://raw.githubusercontent.com/hoelzer/clean/master/controls/S288C_YHR174W_ENO2_coding.fsa |
+| eno | ONT RNA-Seq reads |yeast ENO2 Enolase II of strain S288C, YHR174W| https://raw.githubusercontent.com/rki-mf1/clean/master/controls/S288C_YHR174W_ENO2_coding.fsa |
 | phix| Illumina reads |enterobacteria_phage_phix174_sensu_lato_uid14015, NC_001422| ftp://ftp.ncbi.nlm.nih.gov/genomes/Viruses/enterobacteria_phage_phix174_sensu_lato_uid14015/NC_001422.fna |
 
 ... for reasons. More can be easily added! Just write me, add an issue or make a pull request.
