@@ -123,8 +123,10 @@ results/
 │   ├── map-to-remove/
 │   │   ├── <sample_name>.mapped.fastq.gz
 │   │   ├── <sample_name>.unmapped.fastq.gz
-│   │   ├── <sample_name>.mapped.bam
-│   │   ├── <sample_name>.unmapped.bam
+│   │   ├── <sample_name>.sorted.bam
+│   │   ├── <sample_name>.sorted.bam.bai
+│   │   ├── <sample_name>.sorted.flagstat.txt
+│   │   ├── <sample_name>.sorted.idxstats.tsv
 │   │   ├── strict-dcs/
 │   │   │   ├── <sample_name>.no-dcs.bam
 │   │   │   ├── <sample_name>.true-dcs.bam
@@ -132,18 +134,22 @@ results/
 │   │   └── soft-clipped/
 │   │       ├── <sample_name>.soft-clipped.bam
 │   │       └── <sample_name>.passed-clipped.bam
-│   └── map-to-keep/
-│       ├── <sample_name>.mapped.fastq.gz
-│       ├── <sample_name>.unmapped.fastq.gz
-│       ├── <sample_name>.mapped.bam
-│       ├── <sample_name>.unmapped.bam
-│       ├── strict-dcs/
-│       │   ├── <sample_name>.no-dcs.bam
-│       │   ├── <sample_name>.true-dcs.bam
-│       │   └── <sample_name>.false-dcs.bam
-│       └── soft-clipped/
-│           ├── <sample_name>.soft-clipped.bam
-│           └── <sample_name>.passed-clipped.bam
+│   ├── map-to-keep/
+│   │   ├── <sample_name>.mapped.fastq.gz
+│   │   ├── <sample_name>.unmapped.fastq.gz
+│   │   ├── <sample_name>.sorted.bam
+│   │   ├── <sample_name>.sorted.bam.bai
+│   │   ├── <sample_name>.sorted.flagstat.txt
+│   │   ├── <sample_name>.sorted.idxstats.tsv
+│   │   ├── strict-dcs/
+│   │   │   ├── <sample_name>.no-dcs.bam
+│   │   │   ├── <sample_name>.true-dcs.bam
+│   │   │   └── <sample_name>.false-dcs.bam
+│   │   └── soft-clipped/
+│   │       ├── <sample_name>.soft-clipped.bam
+│   │       └── <sample_name>.passed-clipped.bam
+|   ├── host.fa.fai
+|   └── host.fa.gz
 ├── logs/*.html
 └── qc/multiqc_report.html
 ```
@@ -151,6 +157,10 @@ results/
 The most important files you are likely interested in are `results/clean/<sample_name>.fastq.gz`, which are the "cleaned" reads. These are the input reads that *do not* map to the host, control, own fasta or rRNA files (or the subset of these that you provided), plus those reads that map to the "keep" sequence if you used the `--keep` option. Any files that were removed from your input fasta file are placed in `results/removed/<sample_name>.fastq.gz`.
 
 For debugging purposes we also provide various intermediate results in the `intermediate/` folder.
+
+## Acknowledgements
+
+Thanks to Matt Huska (@matthuska) for extensive testing of `CLEAN`, bug fixing, and reorganizing the output.
 
 ## Citations
 
