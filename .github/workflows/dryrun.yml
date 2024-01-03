@@ -14,7 +14,7 @@ env:
 
 jobs:
   test:
-    name: Dry run ${{ matrix.inputtype }}-${{ matrix.profile }} pipeline test
+    name: Dry run ${{ matrix.inputtype }}-${{ matrix.profile }}-nf_${{ matrix.NXF_VER }} pipeline test
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -26,6 +26,8 @@ jobs:
           - illumina
           - nanopore
         profile: ["docker", "conda"] # TODO "singularity"]
+        python-version:
+          - "3.9"
     steps:
       - name: Check out pipeline code
         uses: actions/checkout@v3
