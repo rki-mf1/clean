@@ -108,6 +108,8 @@ process filter_fastq_by_name {
             fn.matches('.*.fast[aq].contamination.fast[aq].gz$') ? "removed/${fn}".replaceAll(~'.fast[aq].contamination(.fast[aq].gz)$', '$1') :
             fn.matches('.*.unmapped_(1|2|singleton).fast[aq].gz$') ? "clean/${fn}".replaceAll(~'.unmapped_(1|2|singleton)(.fast[aq].gz)$', '_$1$2') :
             fn.matches('.*.mapped_(1|2|singleton).fast[aq].gz$') ? "removed/${fn}".replaceAll(~'.mapped_(1|2|singleton)(.fast[aq].gz)$', '_$1$2') :
+            fn.matches('.*.unmapped_merged_(1|2|singleton).fast[aq].gz$') ? "clean/${fn}".replaceAll(~'.unmapped_(1|2|singleton)(.fast[aq].gz)$', '_$1$2') :
+            fn.matches('.*.mapped_merged_(1|2|singleton).fast[aq].gz$') ? "removed/${fn}".replaceAll(~'.mapped_(1|2|singleton)(.fast[aq].gz)$', '_$1$2') :
             fn
       }
     )
