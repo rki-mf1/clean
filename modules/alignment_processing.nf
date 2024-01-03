@@ -121,7 +121,7 @@ process filter_true_dcs_alignments {
   """
   stub:
   """
-  touch ${name}.no-dcs.bam ${name}.true-dcs.bam ${name}.false-dcs.bam ${name}.no-dcs.bam.bai ${name}.true-dcs.bam.bai ${name}.false-dcs.bam.bai
+  touch ${name}.no-dcs.bam ${name}.true-dcs.bam ${name}.false-dcs.bam ${name}.no-dcs.bam.bai ${name}.true-dcs.bam.bai ${name}.false-dcs.bam.bai dcs.bam dcs.bam.bai
   """
 }
 
@@ -154,6 +154,8 @@ process fastq_from_bam {
             fn.matches('.*.soft-clipped_merged.fast[aq].gz$') ? "clean/${fn}".replaceAll(~'.soft-clipped_merged(.fast[aq].gz)$', '$1') :
             fn.matches('.*.unmapped_(1|2|singleton).fast[aq].gz$') ? "clean/${fn}".replaceAll(~'.unmapped_(1|2|singleton)(.fast[aq].gz)$', '_$1$2') :
             fn.matches('.*.mapped_(1|2|singleton).fast[aq].gz$') ? "removed/${fn}".replaceAll(~'.mapped_(1|2|singleton)(.fast[aq].gz)$', '_$1$2') :
+            fn.matches('.*.unmapped_merged_(1|2|singleton).fast[aq].gz$') ? "clean/${fn}".replaceAll(~'.unmapped_(1|2|singleton)(.fast[aq].gz)$', '_$1$2') :
+            fn.matches('.*.mapped_merged_(1|2|singleton).fast[aq].gz$') ? "removed/${fn}".replaceAll(~'.mapped_(1|2|singleton)(.fast[aq].gz)$', '_$1$2') :
             fn
       }
     )
