@@ -96,7 +96,7 @@ process concat_contamination {
   """
   # Combine input files, rename duplicate sequences (by id) if found, and compress
   seqkit seq ${fastas} | seqkit rename | bgzip -@ ${task.cpus} -c > db.fa.gz
-  samtools faidx db.fa.gz --gzi-idx db.fa.fai
+  samtools faidx db.fa.gz --fai-idx db.fa.fai
   """
   stub:
   """
