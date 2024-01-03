@@ -1,5 +1,19 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- reorganized of results directory and file names
+
+### Added
+
+- dry run CI tests
+
+### Fixed
+
+- fixed some issues on Mac OS
+
 ## [v1.0.0-beta.1] - 2023-10-11
 
 ### Changed
