@@ -5,7 +5,7 @@ on:
       - dev
   pull_request:
     # Sequence of patterns matched against refs/heads
-    branches:    
+    branches:
       - main
 
 
@@ -55,9 +55,10 @@ jobs:
 
       - name: Set up miniconda
         if: matrix.profile == 'conda'
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
+          conda-solver: libmamba
           channels: conda-forge,bioconda,defaults
           python-version: ${{ matrix.python-version }}
 
