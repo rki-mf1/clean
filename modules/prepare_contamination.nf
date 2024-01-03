@@ -40,7 +40,7 @@ process download_host {
       ;;
   esac
 
-  zcat host-temp.fa.gz | bgzip -@ ${task.cpus} -c > ${host}.fa.gz
+  zcat < host-temp.fa.gz | bgzip -@ ${task.cpus} -c > ${host}.fa.gz
   """
   stub:
   """

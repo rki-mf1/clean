@@ -11,8 +11,8 @@ process get_number_of_records {
   if ( params.lib_pairedness == 'paired' ) {
     """
     if [[ ${reads[0]} =~ \\.gz\$ ]]; then
-      TOTALRECORDS_1=\$(zcat ${reads[0]} | echo \$((`wc -l`/4)))
-      TOTALRECORDS_2=\$(zcat ${reads[1]} | echo \$((`wc -l`/4)))
+      TOTALRECORDS_1=\$(zcat < ${reads[0]} | echo \$((`wc -l`/4)))
+      TOTALRECORDS_2=\$(zcat < ${reads[1]} | echo \$((`wc -l`/4)))
     else
       TOTALRECORDS_1=\$(cat ${reads[0]} | echo \$((`wc -l`/4)))
       TOTALRECORDS_2=\$(cat ${reads[1]} | echo \$((`wc -l`/4)))
@@ -22,7 +22,7 @@ process get_number_of_records {
   } else if ( params.lib_pairedness == 'single' && params.input_type != 'fasta' ) {
     """
     if [[ ${reads} =~ \\.gz\$ ]]; then
-      TOTALRECORDS=\$(zcat ${reads} | echo \$((`wc -l`/4)))
+      TOTALRECORDS=\$(zcat < ${reads} | echo \$((`wc -l`/4)))
     else
       TOTALRECORDS=\$(cat ${reads} | echo \$((`wc -l`/4)))
     fi
