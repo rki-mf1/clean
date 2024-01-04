@@ -9,4 +9,6 @@ work/
 results/
 centrifuge-cloud/
 conda/
+singularity/
 .vscode/
+.nf-test/

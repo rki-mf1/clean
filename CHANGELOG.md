@@ -1,5 +1,21 @@
 # Changelog
 
+## [v1.0.0] - 2024-01-04
+
+### Changed
+
+- reorganized of results directory and file names
+
+### Added
+
+- dry run CI tests
+- options to reduce disk usage
+  - `--cleanup_work_dir` and `--no_intermediate`
+
+### Fixed
+
+- fixed some issues on Mac OS
+
 ## [v1.0.0-beta.1] - 2023-10-11
 
 ### Changed

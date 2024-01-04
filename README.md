@@ -15,7 +15,7 @@ Technologies ([DNA CS (DCS)](https://assets.ctfassets.net/hkzaxo8a05x5/2IX56YmF5
 
 ## What this workflow does for you
 
-With this workflow you can screen and clean your Illumina, Nanopore or any FASTA-formated sequence date. The results are the clean sequences and the sequences identified as contaminated.
+With this workflow you can screen and clean your Illumina, Nanopore or any FASTA-formated sequence data. The results are the clean sequences and the sequences identified as contaminated.
 Per default [minimap2](https://github.com/lh3/minimap2) is used for aligning your sequences to reference sequences but I recommend using `bbduk`, part of [BBTools](https://github.com/BioInfoTools/BBMap), to clean short-read data (_--bbduk_).
 
 You can simply specify provided hosts and controls for the cleanup or use your own FASTA files. The reads are then mapped against the specified host, control and user defined FASTA files. All reads that map are considered as contamination. In case of Illumina paired-end reads, both mates need to be aligned.
@@ -35,7 +35,7 @@ We saw many soft-clipped reads after the mapping, that probably aren't contamina
 
 ### Dependencies management
 
-- [Conda](https://docs.conda.io/en/latest/miniconda.html) 
+- [Conda](https://docs.conda.io/en/latest/miniconda.html)
 
 and/or
 
@@ -48,24 +48,24 @@ In default `docker` is used; to switch to `conda` use `-profile conda`.
 Get or update the workflow:
 
 ```bash
-nextflow pull hoelzer/clean
+nextflow pull rki-mf1/clean
 ```
 
 Get help:
 
 ```bash
-nextflow run hoelzer/clean --help
+nextflow run rki-mf1/clean --help
 ```
 
-Clean Nanopore data by filtering against a combined reference of the _E. coli_ genome and the Nanopore DNA CS spike-in.  
+Clean Nanopore data by filtering against a combined reference of the _E. coli_ genome and the Nanopore DNA CS spike-in.
 
 ```bash
 # uses Docker per default
-nextflow run hoelzer/clean --input_type nano --input ~/.nextflow/assets/hoelzer/clean/test/nanopore.fastq.gz \
+nextflow run rki-mf1/clean --input_type nano --input ~/.nextflow/assets/rki-mf1/clean/test/nanopore.fastq.gz \
 --host eco --control dcs
 
 # use conda instead of Docker
-nextflow run hoelzer/clean --input_type nano --input ~/.nextflow/assets/hoelzer/clean/test/nanopore.fastq.gz \
+nextflow run rki-mf1/clean --input_type nano --input ~/.nextflow/assets/rki-mf1/clean/test/nanopore.fastq.gz \
 --host eco --control dcs -profile conda
 ```
 
@@ -73,11 +73,11 @@ Clean Illumina paired-end data against your own reference FASTA using bbduk inst
 
 ```bash
 # enter your home dir!
-nextflow run hoelzer/clean --input_type illumina --input '/home/martin/.nextflow/assets/hoelzer/clean/test/illumina*.R{1,2}.fastq.gz' \
---own ~/.nextflow/assets/hoelzer/clean/test/ref.fasta.gz --bbduk
+nextflow run rki-mf1/clean --input_type illumina --input '/home/martin/.nextflow/assets/rki-mf1/clean/test/illumina*.R{1,2}.fastq.gz' \
+--own ~/.nextflow/assets/rki-mf1/clean/test/ref.fasta.gz --bbduk
 ```
 
-Clean some Illumina, Nanopore, and assembly files against the mouse and phiX genomes.  
+Clean some Illumina, Nanopore, and assembly files against the mouse and phiX genomes.
 
 ## Supported species and control sequences
 
@@ -98,7 +98,7 @@ Included in this repository are:
 |flag | recommended usage | control/spike | source |
 |-----|-|---------|-------|
 | dcs | ONT DNA-Seq reads |3.6 kb standard amplicon mapping the 3' end of the Lambda genome| https://assets.ctfassets.net/hkzaxo8a05x5/2IX56YmF5ug0kAQYoAg2Uk/159523e326b1b791e3b842c4791420a6/DNA_CS.txt |
-| eno | ONT RNA-Seq reads |yeast ENO2 Enolase II of strain S288C, YHR174W| https://raw.githubusercontent.com/hoelzer/clean/master/controls/S288C_YHR174W_ENO2_coding.fsa |
+| eno | ONT RNA-Seq reads |yeast ENO2 Enolase II of strain S288C, YHR174W| https://raw.githubusercontent.com/rki-mf1/clean/master/controls/S288C_YHR174W_ENO2_coding.fsa |
 | phix| Illumina reads |enterobacteria_phage_phix174_sensu_lato_uid14015, NC_001422| ftp://ftp.ncbi.nlm.nih.gov/genomes/Viruses/enterobacteria_phage_phix174_sensu_lato_uid14015/NC_001422.fna |
 
 ... for reasons. More can be easily added! Just write me, add an issue or make a pull request.
@@ -107,14 +107,69 @@ Included in this repository are:
 
 ![chart](figures/clean_workflow_latest.png)
 
+<sub><sub>The icons and diagram components that make up the schematic view were originally designed by James A. Fellow Yates & nf-core under a CCO license (public domain).</sub></sub>
+
+## Results
+
+Running the pipeline will create a directory called `results/` in the current directory with some or all of the following directories and files (plus additional failes for indices, ...):
+
+```text
+results/
+├── clean/
+│   └── <sample_name>.fastq.gz
+├── removed/
+│   └── <sample_name>.fastq.gz
+├── intermediate/
+│   ├── map-to-remove/
+│   │   ├── <sample_name>.mapped.fastq.gz
+│   │   ├── <sample_name>.unmapped.fastq.gz
+│   │   ├── <sample_name>.sorted.bam
+│   │   ├── <sample_name>.sorted.bam.bai
+│   │   ├── <sample_name>.sorted.flagstat.txt
+│   │   ├── <sample_name>.sorted.idxstats.tsv
+│   │   ├── strict-dcs/
+│   │   │   ├── <sample_name>.no-dcs.bam
+│   │   │   ├── <sample_name>.true-dcs.bam
+│   │   │   └── <sample_name>.false-dcs.bam
+│   │   └── soft-clipped/
+│   │       ├── <sample_name>.soft-clipped.bam
+│   │       └── <sample_name>.passed-clipped.bam
+│   ├── map-to-keep/
+│   │   ├── <sample_name>.mapped.fastq.gz
+│   │   ├── <sample_name>.unmapped.fastq.gz
+│   │   ├── <sample_name>.sorted.bam
+│   │   ├── <sample_name>.sorted.bam.bai
+│   │   ├── <sample_name>.sorted.flagstat.txt
+│   │   ├── <sample_name>.sorted.idxstats.tsv
+│   │   ├── strict-dcs/
+│   │   │   ├── <sample_name>.no-dcs.bam
+│   │   │   ├── <sample_name>.true-dcs.bam
+│   │   │   └── <sample_name>.false-dcs.bam
+│   │   └── soft-clipped/
+│   │       ├── <sample_name>.soft-clipped.bam
+│   │       └── <sample_name>.passed-clipped.bam
+|   ├── host.fa.fai
+|   └── host.fa.gz
+├── logs/*.html
+└── qc/multiqc_report.html
+```
+
+The most important files you are likely interested in are `results/clean/<sample_name>.fastq.gz`, which are the "cleaned" reads. These are the input reads that *do not* map to the host, control, own fasta or rRNA files (or the subset of these that you provided), plus those reads that map to the "keep" sequence if you used the `--keep` option. Any files that were removed from your input fasta file are placed in `results/removed/<sample_name>.fastq.gz`.
+
+For debugging purposes we also provide various intermediate results in the `intermediate/` folder.
+
+## Acknowledgements
+
+Thanks to Matt Huska (@matthuska) for extensive testing of `CLEAN`, bug fixing, and reorganizing the output.
+
 ## Citations
 
 If you use `CLEAN` in your work, please consider citing our preprint:
- 
+
 > Targeted decontamination of sequencing data with CLEAN
 >
 > Marie Lataretu, Sebastian Krautwurst, Adrian Viehweger, Christian Brandt, Martin Hölzer
 >
-> bioRxiv 2023.08.05.552089; doi: https://doi.org/10.1101/2023.08.05.552089 
+> bioRxiv 2023.08.05.552089; doi: https://doi.org/10.1101/2023.08.05.552089
 
 Additionally, an extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file.
