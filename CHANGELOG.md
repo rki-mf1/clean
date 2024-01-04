@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [v1.0.0] - 2024-01-04
 
 ### Changed
 
@@ -9,6 +9,8 @@
 ### Added
 
 - dry run CI tests
+- options to reduce disk usage
+  - `--cleanup_work_dir` and `--no_intermediate`
 
 ### Fixed
 
