@@ -10,7 +10,7 @@ Author: hoelzer.martin@gmail.com
 
 // Parameters sanity checking
 
-Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'input', 'input_type', 'list', 'host', 'own', 'control', 'keep', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'min_clip', 'dcs_strict', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'cleanup_work_dir','condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process', 'publish_dir_mode', 'no_intermediate'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
+Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'input', 'input_type', 'list', 'host', 'own', 'control', 'keep', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'min_clip', 'dcs_strict', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'cleanup_work_dir','condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process', 'publish_dir_mode', 'no_intermediate', 'skip_qc'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
 def parameter_diff = params.keySet() - valid_params
 if (parameter_diff.size() != 0){
     exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
@@ -210,7 +210,9 @@ workflow {
 
   }
 
-  qc(input_ch.map{ it -> tuple(it[0], 'input', it[1]) }.mix(clean.out.out_reads), params.input_type, clean.out.bbduk_summary, clean.out.idxstats, clean.out.flagstats, multiqc_config)
+  if (!params.skip_qc) {
+    qc(input_ch.map{ it -> tuple(it[0], 'input', it[1]) }.mix(clean.out.out_reads), params.input_type, clean.out.bbduk_summary, clean.out.idxstats, clean.out.flagstats, multiqc_config)
+  }
 }
 
 /**************************
@@ -265,8 +267,8 @@ def helpMSG() {
                                         - eno [ONT RNA-Seq: a positive control (yeast ENO2 Enolase II of strain S288C, YHR174W)]${c_reset}
     ${c_green}--own ${c_reset}          Use your own FASTA sequences (comma separated list of files) for decontamination, e.g. host.fasta.gz,spike.fasta [default: $params.own]
     ${c_green}--keep ${c_reset}         Use your own FASTA sequences (comma separated list of files) to explicitly keep mapped reads, e.g. target.fasta.gz,important.fasta [default: $params.keep]
-                                        Reads are assigned to a combined index for decontamination and keeping. The use of this parameter can prevent 
-                                        false positive hits and the accidental removal of reads due to (poor quality) mappings. 
+                                        Reads are assigned to a combined index for decontamination and keeping. The use of this parameter can prevent
+                                        false positive hits and the accidental removal of reads due to (poor quality) mappings.
     ${c_green}--rm_rrna ${c_reset}      Clean your data from rRNA [default: $params.rm_rrna]
     ${c_green}--bbduk${c_reset}         Add this flag to use bbduk instead of minimap2 for decontamination of short reads [default: $params.bbduk]
     ${c_green}--bbduk_kmer${c_reset}    Set kmer for bbduk [default: $params.bbduk_kmer]
@@ -275,6 +277,7 @@ def helpMSG() {
 
     ${c_green}--min_clip${c_reset}      Filter mapped reads by soft-clipped length (left + right). If >= 1 total number; if < 1 relative to read length
     ${c_green}--dcs_strict${c_reset}    Filter out alignments that cover artificial ends of the ONT DCS to discriminate between Lambda Phage and DCS
+    ${c_green}--skip_qc${c_reset}       Skip quality control steps (fastqc, nanoplot, multiqc, etc.) [default: $params.skip_qc]
 
     ${c_yellow}Compute options:${c_reset}
     --cores             Max cores per process for local use [default $params.cores]
