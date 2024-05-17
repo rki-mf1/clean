@@ -35,6 +35,10 @@ process download_host {
     eco)
       wget ftp://ftp.ensemblgenomes.org/pub/release-45/bacteria//fasta/bacteria_90_collection/escherichia_coli_k_12/dna/Escherichia_coli_k_12.ASM80076v1.dna.toplevel.fa.gz -O host-temp.fa.gz
       ;;
+    sc2)
+      wget "https://www.ebi.ac.uk/ena/browser/api/fasta/MN908947.3?download=true" -O host-temp.fa
+      gzip host-temp.fa
+      ;;
     *)
       echo "Unknown host ($host)."
       ;;
