@@ -1,5 +1,17 @@
 # Changelog
 
+## [v1.0.2] - 2024-05-17
+
+### Added
+
+- added `--skip_qc` option to skip QC steps
+
+## [v1.0.1] - 2024-03-15
+
+### Added
+
+- SARS-CoV-2 added to the auto-download option
+
 ## [v1.0.0] - 2024-01-04
 
 ### Changed
