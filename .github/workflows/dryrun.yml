@@ -9,7 +9,7 @@ on:
       - dev
 
 concurrency:
-  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }} ({{ matrix.profile }})'
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }} (${{ matrix.profile }})'
   cancel-in-progress: false
 
 env:
@@ -33,7 +33,7 @@ jobs:
           - "3.9"
     steps:
       - name: Print GitHub action concurrency group name (for debugging)
-        run: echo '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }} ({{ matrix.profile }})'
+        run: echo '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }} (${{ matrix.profile }})'
 
       - name: Check out pipeline code
         uses: actions/checkout@v3
