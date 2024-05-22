@@ -8,10 +8,6 @@ on:
       - main
       - dev
 
-concurrency:
-  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }} (${{ matrix.profile }})'
-  cancel-in-progress: true
-
 env:
   NXF_ANSI_LOG: false
 
@@ -31,6 +27,9 @@ jobs:
         profile: ["docker", "conda"] # TODO "singularity"]
         python-version:
           - "3.9"
+    concurrency:
+      group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }} (${{ matrix.profile }})'
+      cancel-in-progress: true
     steps:
       - name: Print GitHub action concurrency group name (for debugging)
         run: echo '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }} (${{ matrix.profile }})'
