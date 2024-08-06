@@ -86,7 +86,7 @@ Currently supported are:
 |flag | species | source|
 |-----|---------|-------|
 |hsa  | _Homo sapiens_       | [Ensembl: Homo_sapiens.GRCh38.dna.primary_assembly] |
-|t2t  | _Homo sapiens_       | [[T2T Consortium](https://sites.google.com/ucsc.edu/t2tworkinggroup/): T2T-CHM13v2.0 (file: chm13v2.0.fa.gz), datasets released along the v2.0 and the T2T-Y chromosome, see [paper](https://doi.org/10.1101/2022.12.01.518724)] |
+|t2t  | _Homo sapiens_       | [[T2T Consortium](https://sites.google.com/ucsc.edu/t2tworkinggroup/): T2T-CHM13v2.0 (T2T-CHM13+Y, file name: chm13v2.0.fa.gz), datasets released along the v2.0 (T2T-CHM13) and the T2T-Y chromosome, see [paper](https://www.nature.com/articles/s41586-023-06457-y)] |
 |mmu  | _Mus musculus_       | [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly] |
 |csa  | _Chlorocebus sabeus_ | [NCBI: GCF_000409795.2_Chlorocebus_sabeus_1.1_genomic] |
 |gga  | _Gallus gallus_      | [NCBI: Gallus_gallus.GRCg6a.dna.toplevel] |
