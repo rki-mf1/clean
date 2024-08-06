@@ -79,7 +79,7 @@ if ( workflow.profile.contains('singularity') ) {
 }
 
 Set controls = ['phix', 'dcs', 'eno']
-Set hosts = ['hsa', 'mmu', 'cli', 'csa', 'gga', 'eco', 'sc2']
+Set hosts = ['hsa', 'mmu', 'cli', 'csa', 'gga', 'eco', 'sc2', 't2t']
 Set input_types = ['nano', 'illumina', 'illumina_single_end', 'fasta']
 
 if ( params.profile ) { exit 1, "--profile is wrong, use -profile" }
@@ -254,6 +254,7 @@ def helpMSG() {
     ${c_green}--host${c_reset}         Comma separated list of reference genomes for decontamination, downloaded based on this parameter [default: $params.host]
                                         ${c_dim}Currently supported are:
                                         - hsa [Ensembl: Homo_sapiens.GRCh38.dna.primary_assembly]
+                                        - t2t ["Telomere-to-Telomere" (T2T) Consortium: T2T-CHM13v2.0, datasets released along the v2.0 and the T2T-Y chromosome]
                                         - mmu [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly]
                                         - csa [NCBI: GCF_000409795.2_Chlorocebus_sabeus_1.1_genomic]
                                         - gga [NCBI: Gallus_gallus.GRCg6a.dna.toplevel]

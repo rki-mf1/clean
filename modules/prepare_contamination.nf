@@ -39,6 +39,9 @@ process download_host {
       wget "https://www.ebi.ac.uk/ena/browser/api/fasta/MN908947.3?download=true" -O host-temp.fa
       gzip host-temp.fa
       ;;
+    t2t)
+      wget https://s3-us-west-2.amazonaws.com/human-pangenomics/T2T/CHM13/assemblies/analysis_set/chm13v2.0.fa.gz -O host-temp.fa.gz
+      ;;
     *)
       echo "Unknown host ($host)."
       ;;

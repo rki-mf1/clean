@@ -86,6 +86,7 @@ Currently supported are:
 |flag | species | source|
 |-----|---------|-------|
 |hsa  | _Homo sapiens_       | [Ensembl: Homo_sapiens.GRCh38.dna.primary_assembly] |
+|t2t  | _Homo sapiens_       | [[T2T Consortium](https://sites.google.com/ucsc.edu/t2tworkinggroup/): T2T-CHM13v2.0 (file: chm13v2.0.fa.gz), datasets released along the v2.0 and the T2T-Y chromosome, see [paper](https://doi.org/10.1101/2022.12.01.518724)] |
 |mmu  | _Mus musculus_       | [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly] |
 |csa  | _Chlorocebus sabeus_ | [NCBI: GCF_000409795.2_Chlorocebus_sabeus_1.1_genomic] |
 |gga  | _Gallus gallus_      | [NCBI: Gallus_gallus.GRCg6a.dna.toplevel] |
@@ -101,7 +102,7 @@ Included in this repository are:
 | eno | ONT RNA-Seq reads |yeast ENO2 Enolase II of strain S288C, YHR174W| https://raw.githubusercontent.com/rki-mf1/clean/master/controls/S288C_YHR174W_ENO2_coding.fsa |
 | phix| Illumina reads |enterobacteria_phage_phix174_sensu_lato_uid14015, NC_001422| ftp://ftp.ncbi.nlm.nih.gov/genomes/Viruses/enterobacteria_phage_phix174_sensu_lato_uid14015/NC_001422.fna |
 
-... for reasons. More can be easily added! Just write me, add an issue or make a pull request.
+... for reasons. More can be easily added! Just write us, add an issue or make a pull request.
 
 ## Workflow
 
