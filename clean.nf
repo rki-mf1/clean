@@ -254,7 +254,7 @@ def helpMSG() {
     ${c_green}--host${c_reset}         Comma separated list of reference genomes for decontamination, downloaded based on this parameter [default: $params.host]
                                         ${c_dim}Currently supported are:
                                         - hsa [Ensembl: Homo_sapiens.GRCh38.dna.primary_assembly]
-                                        - t2t ["Telomere-to-Telomere" (T2T) Consortium: T2T-CHM13v2.0 (T2T-CHM13+Y) human genome with additional 200 Mbp, closed gaps, and more complete Y]
+                                        - t2t [T2T Consortium: human genome w/ additional 200 Mbp, closed gaps, and more complete Y (T2T-CHM13+Yv2.0)]
                                         - mmu [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly]
                                         - csa [NCBI: GCF_000409795.2_Chlorocebus_sabeus_1.1_genomic]
                                         - gga [NCBI: Gallus_gallus.GRCg6a.dna.toplevel]
