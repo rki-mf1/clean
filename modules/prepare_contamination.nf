@@ -40,7 +40,7 @@ process download_host {
       gzip host-temp.fa
       ;;
     t2t)
-      wget https://s3-us-west-2.amazonaws.com/human-pangenomics/T2T/CHM13/assemblies/analysis_set/chm13v2.0.fa.gz -O host-temp.fa.gz
+       wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/009/914/755/GCA_009914755.4_T2T-CHM13v2.0/GCA_009914755.4_T2T-CHM13v2.0_genomic.fna.gz -O host-temp.fa.gz
       ;;
     *)
       echo "Unknown host ($host)."

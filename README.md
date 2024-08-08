@@ -85,12 +85,12 @@ Currently supported are:
 
 |flag | species | source|
 |-----|---------|-------|
-|hsa  | _Homo sapiens_       | [Ensembl: Homo_sapiens.GRCh38.dna.primary_assembly] |
-|t2t  | _Homo sapiens_       | [[T2T Consortium](https://sites.google.com/ucsc.edu/t2tworkinggroup/): T2T-CHM13v2.0 (T2T-CHM13+Y, file name: chm13v2.0.fa.gz), datasets released along the v2.0 (T2T-CHM13) and the T2T-Y chromosome, see [paper](https://www.nature.com/articles/s41586-023-06457-y)] |
-|mmu  | _Mus musculus_       | [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly] |
-|csa  | _Chlorocebus sabeus_ | [NCBI: GCF_000409795.2_Chlorocebus_sabeus_1.1_genomic] |
-|gga  | _Gallus gallus_      | [NCBI: Gallus_gallus.GRCg6a.dna.toplevel] |
-|cli  | _Columba livia_      | [NCBI: GCF_000337935.1_Cliv_1.0_genomic] |
+|hsa  | _Homo sapiens_       | [Ensembl: Homo_sapiens.GRCh38.dna.primary_assembly, incl. mtDNA] |
+|t2t  | _Homo sapiens_       | [[T2T Consortium](https://sites.google.com/ucsc.edu/t2tworkinggroup/): T2T-CHM13v2.0 (T2T-CHM13+Y, file name: GCA_009914755.4_T2T-CHM13v2.0_genomic), datasets released along the v2.0 (T2T-CHM13) and the T2T-Y chromosome, see [paper](https://www.nature.com/articles/s41586-023-06457-y), incl. mtDNA] |
+|mmu  | _Mus musculus_       | [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly, incl. mtDNA] |
+|csa  | _Chlorocebus sabeus_ | [NCBI: GCF_000409795.2_Chlorocebus_sabeus_1.1_genomic, incl. mtDNA] |
+|gga  | _Gallus gallus_      | [NCBI: Gallus_gallus.GRCg6a.dna.toplevel, incl. mtDNA] |
+|cli  | _Columba livia_      | [NCBI: GCF_000337935.1_Cliv_1.0_genomic, incl. mtDNA] |
 |eco  | _Escherichia coli_   | [Ensembl: Escherichia_coli_k_12.ASM80076v1.dna.toplevel] |
 |sc2  | _SARS-CoV-2_         | [ENA Sequence: MN908947.3 (Wuhan-Hu-1 complete genome) [web](https://www.ebi.ac.uk/ena/browser/view/MN908947.3) [fasta](https://www.ebi.ac.uk/ena/browser/api/fasta/MN908947.3?download=true)] |
 

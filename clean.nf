@@ -253,12 +253,12 @@ def helpMSG() {
     ${c_yellow}Decontamination options:${c_reset}
     ${c_green}--host${c_reset}         Comma separated list of reference genomes for decontamination, downloaded based on this parameter [default: $params.host]
                                         ${c_dim}Currently supported are:
-                                        - hsa [Ensembl: Homo_sapiens.GRCh38.dna.primary_assembly]
-                                        - t2t [T2T Consortium: human genome w/ additional 200 Mbp, closed gaps, and more complete Y (T2T-CHM13+Yv2.0)]
-                                        - mmu [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly]
-                                        - csa [NCBI: GCF_000409795.2_Chlorocebus_sabeus_1.1_genomic]
-                                        - gga [NCBI: Gallus_gallus.GRCg6a.dna.toplevel]
-                                        - cli [NCBI: GCF_000337935.1_Cliv_1.0_genomic]
+                                        - hsa [Ensembl: Homo_sapiens.GRCh38.dna.primary_assembly, incl. mtDNA]
+                                        - t2t [T2T Consortium: human genome w/ additional 200 Mbp, closed gaps, and more complete Y (T2T-CHM13+Yv2.0), incl. mtDNA]
+                                        - mmu [Ensembl: Mus_musculus.GRCm38.dna.primary_assembly, incl. mtDNA]
+                                        - csa [NCBI: GCF_000409795.2_Chlorocebus_sabeus_1.1_genomic, incl. mtDNA]
+                                        - gga [NCBI: Gallus_gallus.GRCg6a.dna.toplevel, incl. mtDNA]
+                                        - cli [NCBI: GCF_000337935.1_Cliv_1.0_genomic, incl. mtDNA]
                                         - eco [Ensembl: Escherichia_coli_k_12.ASM80076v1.dna.toplevel]
                                         - sc2 [ENA: MN908947.3 (Wuhan-Hu-1 complete genome)]${c_reset}
     ${c_green}--control${c_reset}       Comma separated list of common controls used in Illumina or Nanopore sequencing [default: $params.control]
