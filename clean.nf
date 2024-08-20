@@ -271,6 +271,7 @@ def helpMSG() {
                                         Reads are assigned to a combined index for decontamination and keeping. The use of this parameter can prevent
                                         false positive hits and the accidental removal of reads due to (poor quality) mappings.
     ${c_green}--rm_rrna ${c_reset}      Clean your data from rRNA [default: $params.rm_rrna]
+    ${c_green}--bwa${c_reset}           Add this flag to use BAW MEM instead of minimap2 for decontamination of short reads [default: $params.bwa]
     ${c_green}--bbduk${c_reset}         Add this flag to use bbduk instead of minimap2 for decontamination of short reads [default: $params.bbduk]
     ${c_green}--bbduk_kmer${c_reset}    Set kmer for bbduk [default: $params.bbduk_kmer]
     ${c_green}--bbduk_qin${c_reset}     Set quality ASCII encoding for bbduk [default: $params.bbduk_qin; options are: 64, 33, auto]
