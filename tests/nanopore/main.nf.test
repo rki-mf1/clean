@@ -4,6 +4,7 @@ nextflow_pipeline {
     script "../../clean.nf"
 
     test("Stub") {
+        tag "minimap2"
         options "-stub-run"
 
         when {

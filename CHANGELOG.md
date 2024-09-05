@@ -1,5 +1,11 @@
 # Changelog
 
+## unreleased
+
+### Added
+
+- `bwa mem` as short-read mapper alternative, parameter: `--bwa`
+
 ## [v1.0.2] - 2024-05-17
 
 ### Added
