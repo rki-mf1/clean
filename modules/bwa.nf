@@ -20,11 +20,7 @@ process bwa_index {
   """
   mkdir bwa
   
-  touch bwa/db.amb
-  touch bwa/db.ann
-  touch bwa/db.bwt
-  touch bwa/db.pac
-  touch bwa/db.sa
+  touch bwa/db.{amb,ann,bwt,pac,sa}
   """
 }
 

@@ -9,8 +9,8 @@ nextflow_pipeline {
 
         when {
             params {
-                input_type     = "illumina"
-                input      = "$projectDir/assets/EMPTY_FILE_{R1,R2}.fastq"
+                input_type = "illumina"
+                input = "$projectDir/assets/EMPTY_FILE_{R1,R2}.fastq"
                 own = "$projectDir/assets/EMPTY_FILE"
             }
         }
@@ -28,8 +28,8 @@ nextflow_pipeline {
 
         when {
             params {
-                input_type     = "illumina_single_end"
-                input      = "$projectDir/assets/EMPTY_FILE"
+                input_type = "illumina_single_end"
+                input = "$projectDir/assets/EMPTY_FILE"
                 own = "$projectDir/assets/EMPTY_FILE"
             }
         }
@@ -47,8 +47,8 @@ nextflow_pipeline {
 
         when {
             params {
-                input_type     = "illumina"
-                input      = "$projectDir/assets/EMPTY_FILE_{R1,R2}.fastq"
+                input_type = "illumina"
+                input = "$projectDir/assets/EMPTY_FILE_{R1,R2}.fastq"
                 own = "$projectDir/assets/EMPTY_FILE"
                 bwa = true
             }
@@ -67,8 +67,8 @@ nextflow_pipeline {
 
         when {
             params {
-                input_type     = "illumina_single_end"
-                input      = "$projectDir/assets/EMPTY_FILE"
+                input_type = "illumina_single_end"
+                input = "$projectDir/assets/EMPTY_FILE"
                 own = "$projectDir/assets/EMPTY_FILE"
                 bwa = true
             }
@@ -87,8 +87,8 @@ nextflow_pipeline {
 
         when {
             params {
-                input_type     = "illumina"
-                input      = "$projectDir/assets/EMPTY_FILE_{R1,R2}.fastq"
+                input_type = "illumina"
+                input = "$projectDir/assets/EMPTY_FILE_{R1,R2}.fastq"
                 own = "$projectDir/assets/EMPTY_FILE"
                 bbduk = true
             }
@@ -107,8 +107,8 @@ nextflow_pipeline {
 
         when {
             params {
-                input_type     = "illumina_single_end"
-                input      = "$projectDir/assets/EMPTY_FILE"
+                input_type = "illumina_single_end"
+                input = "$projectDir/assets/EMPTY_FILE"
                 own = "$projectDir/assets/EMPTY_FILE"
                 bbduk = true
             }
