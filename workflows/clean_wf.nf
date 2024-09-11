@@ -24,7 +24,7 @@ workflow clean {
         } 
         else {
             minimap2(input, contamination) | sort_bam | index_bam | ( idxstats_from_bam & flagstats_from_bam )
-
+            
             split_bam(minimap2.out.bam)
             contamination_bam = split_bam.out.mapped
             cleaned_bam = split_bam.out.unmapped
@@ -50,6 +50,7 @@ workflow clean {
             idxstats = idxstats_from_bam.out
             flagstats = flagstats_from_bam.out
             out_reads = fastq_from_bam.out
+	    sort_bam_ch = sort_bam.out
         }
 
     emit:
@@ -58,4 +59,5 @@ workflow clean {
         flagstats
         out_reads
         bams_bai
+	sort_bam_ch
 }
