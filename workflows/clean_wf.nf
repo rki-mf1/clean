@@ -21,6 +21,7 @@ workflow clean {
             flagstats = Channel.empty()
             out_reads = bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads)
             bams_bai = Channel.empty()
+            sort_bam_ch = Channel.empty()
         } 
         else {
             minimap2(input, contamination) | sort_bam | index_bam | ( idxstats_from_bam & flagstats_from_bam )
@@ -50,7 +51,7 @@ workflow clean {
             idxstats = idxstats_from_bam.out
             flagstats = flagstats_from_bam.out
             out_reads = fastq_from_bam.out
-	    sort_bam_ch = sort_bam.out
+	        sort_bam_ch = sort_bam.out
         }
 
     emit:
@@ -59,5 +60,5 @@ workflow clean {
         flagstats
         out_reads
         bams_bai
-	sort_bam_ch
+	    sort_bam_ch
 }
