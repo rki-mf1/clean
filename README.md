@@ -15,17 +15,15 @@ Technologies ([DNA CS (DCS)](https://assets.ctfassets.net/hkzaxo8a05x5/2IX56YmF5
 
 ## What this workflow does for you
 
-With this workflow you can screen and clean your Illumina, Nanopore or any FASTA-formated sequence data. The results are the clean sequences and the sequences identified as contaminated.
-Per default [minimap2](https://github.com/lh3/minimap2) is used for aligning your sequences to reference sequences but I recommend using `bbduk`, part of [BBTools](https://github.com/BioInfoTools/BBMap), to clean short-read data (_--bbduk_).
+With this workflow you can screen and clean your Illumina, Nanopore or any FASTA-formated sequence data. The results are the clean sequences and the sequences identified as contaminated. Per default [minimap2](https://github.com/lh3/minimap2) is used for aligning your sequences to reference sequences (with the `map-ont` settings for Nanopore data and `sr` settings for short-read data activated automatically). However, for short-read data, you may want to switch to [BWA](https://github.com/lh3/bwa) (`--bwa`). As another alternative, we provide `bbduk`, part of [BBTools](https://github.com/BioInfoTools/BBMap), as a kmer-based approach (`--bbduk`). However, no mapping file will be produced with `bbduk` and thus some subsequent statistics are not calculated. 
 
-You can simply specify provided hosts and controls for the cleanup or use your own FASTA files. The reads are then mapped against the specified host, control and user defined FASTA files. All reads that map are considered as contamination. In case of Illumina paired-end reads, both mates need to be aligned.
+You can simply specify provided hosts and controls for the cleanup or use your own FASTA files. The reads are then mapped (or kmer-based compared in case of `bbduk`) against the specified host, control, and user defined FASTA files. All reads that match are considered as contamination. In case of Illumina paired-end reads, both mates need to be aligned (singleton files will be produced otherwise).
 
-If Nanopore (`--input_type nano`) and Illumina (`--input_type illumina`) reads and control(s) (`--control`) are set, the control is selectively concatenated with the host and own FASTA: `dcs` for Nanopore DNA-Seq, `eno` for Nanopore RNA-Seq and `phix` from Illumina data.
-Else, specified host, control and user defined FASTA files are concatenated.
+The read input is defined via `--input_type nano` for Nanopore and `--input_type illumina` or `--input_type illumina_single_end` for Illumina reads. Additional control(s) for decontamination can be defined via `--control`. If controls are defined, they are selectively concatenated with the host and potential own FASTA files for decontamination. We provide auto-download for the following controls: `dcs` for Nanopore DNA-Seq, `eno` for Nanopore RNA-Seq, and `phix` from Illumina data. In general, specified host, control, and user defined FASTA files are concatenated for decontamination.
 
 ### Filter soft-clipped contamination reads
 
-We saw many soft-clipped reads after the mapping, that probably aren't contamination. With `--min_clip` the user can set a threshold for the number of soft-clipped positions (sum of both ends). If `--min_clip` is greater 1, the total number is considered, else the fraction of soft-clipped positions to the read length. The output consists of all mapped, soft-clipped and mapped reads passing the filer.
+We saw many soft-clipped reads after the mapping, that probably aren't contamination. With `--min_clip` the user can set a threshold for the number of soft-clipped positions (sum of both ends). If `--min_clip` is greater 1, the total number is considered, else the fraction of soft-clipped positions to the read length. The output consists of all mapped, soft-clipped, and mapped reads passing the filer.
 
 ## Requirements
 
@@ -35,13 +33,20 @@ We saw many soft-clipped reads after the mapping, that probably aren't contamina
 
 ### Dependencies management
 
+For dependency handling you have to use one of the following technologies:
+
 - [Conda](https://docs.conda.io/en/latest/miniconda.html)
-
-and/or
-
+- [Mamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html)
 - [Docker](https://docs.docker.com/get-docker/)
+- [Singularity](https://docs.sylabs.io/guides/3.0/user-guide/installation.html)
 
-In default `docker` is used; to switch to `conda` use `-profile conda`.
+As default `docker` is used; to switch to another technology for dependency handling, e.g., `mamba`, use `-profile mamba`.
+
+### Run engine
+
+Per default we assume you are running the tool on a laptop or work station (`local`). You can change the pipeline behaviour for example when running on a HPC with the SLURM workload manager via `-profile slurm`.
+
+Dependencies and run engines can be combined, e.g., to run with Singularity on LSF use `-profile singularity,lsf`.
 
 ## Execution examples
 
@@ -57,27 +62,34 @@ Get help:
 nextflow run rki-mf1/clean --help
 ```
 
+We always recommend running a release version. **Check for latest releases!** In these examples we use release `-r v1.1.0`:
+
+```bash
+# check available release versions and branches
+nextflow info rki-mf1/clean
+# select a release and run it to show the help
+nextflow run rki-mf1/clean -r v1.1.0 --help
+```
+
 Clean Nanopore data by filtering against a combined reference of the _E. coli_ genome and the Nanopore DNA CS spike-in.
 
 ```bash
 # uses Docker per default
-nextflow run rki-mf1/clean --input_type nano --input ~/.nextflow/assets/rki-mf1/clean/test/nanopore.fastq.gz \
+nextflow run rki-mf1/clean -r v1.1.0 --input_type nano --input ~/.nextflow/assets/rki-mf1/clean/test/nanopore.fastq.gz \
 --host eco --control dcs
 
-# use conda instead of Docker
-nextflow run rki-mf1/clean --input_type nano --input ~/.nextflow/assets/rki-mf1/clean/test/nanopore.fastq.gz \
---host eco --control dcs -profile conda
+# use mamba instead of Docker
+nextflow run rki-mf1/clean -r v1.1.0 --input_type nano --input ~/.nextflow/assets/rki-mf1/clean/test/nanopore.fastq.gz \
+--host eco --control dcs -profile mamba
 ```
 
-Clean Illumina paired-end data against your own reference FASTA using bbduk instead of minimap2.
+Clean Illumina paired-end data against your own reference FASTA using `bbduk` instead of `minimap2`.
 
 ```bash
-# enter your home dir!
-nextflow run rki-mf1/clean --input_type illumina --input '/home/martin/.nextflow/assets/rki-mf1/clean/test/illumina*.R{1,2}.fastq.gz' \
+# we have to define the $HOME specifically here, not sure why
+nextflow run rki-mf1/clean -r v1.1.0 --input_type illumina --input $HOME/'.nextflow/assets/rki-mf1/clean/test/illumina*.R{1,2}.fastq.gz' \
 --own ~/.nextflow/assets/rki-mf1/clean/test/ref.fasta.gz --bbduk
 ```
-
-Clean some Illumina, Nanopore, and assembly files against the mouse and phiX genomes.
 
 ## Supported species and control sequences
 
@@ -94,7 +106,7 @@ Currently supported are:
 |eco  | _Escherichia coli_   | [Ensembl: Escherichia_coli_k_12.ASM80076v1.dna.toplevel] |
 |sc2  | _SARS-CoV-2_         | [ENA Sequence: MN908947.3 (Wuhan-Hu-1 complete genome) [web](https://www.ebi.ac.uk/ena/browser/view/MN908947.3) [fasta](https://www.ebi.ac.uk/ena/browser/api/fasta/MN908947.3?download=true)] |
 
-Included in this repository are:
+Controls included in this repository are:
 
 |flag | recommended usage | control/spike | source |
 |-----|-|---------|-------|
@@ -102,7 +114,7 @@ Included in this repository are:
 | eno | ONT RNA-Seq reads |yeast ENO2 Enolase II of strain S288C, YHR174W| https://raw.githubusercontent.com/rki-mf1/clean/master/controls/S288C_YHR174W_ENO2_coding.fsa |
 | phix| Illumina reads |enterobacteria_phage_phix174_sensu_lato_uid14015, NC_001422| ftp://ftp.ncbi.nlm.nih.gov/genomes/Viruses/enterobacteria_phage_phix174_sensu_lato_uid14015/NC_001422.fna |
 
-... for reasons. More can be easily added! Just write us, add an issue or make a pull request.
+... for reasons. More can be easily added! Just write us, add an issue, or make a pull request.
 
 ## Workflow
 
@@ -112,7 +124,7 @@ Included in this repository are:
 
 ## Results
 
-Running the pipeline will create a directory called `results/` in the current directory with some or all of the following directories and files (plus additional failes for indices, ...):
+Running the pipeline will create a directory called `results/` (can be changed via `--output`) in the current directory with some or all of the following directories and files (plus additional files for indices, ...):
 
 ```text
 results/
@@ -157,20 +169,19 @@ results/
 
 The most important files you are likely interested in are `results/clean/<sample_name>.fastq.gz`, which are the "cleaned" reads. These are the input reads that *do not* map to the host, control, own fasta or rRNA files (or the subset of these that you provided), plus those reads that map to the "keep" sequence if you used the `--keep` option. Any files that were removed from your input fasta file are placed in `results/removed/<sample_name>.fastq.gz`.
 
-For debugging purposes we also provide various intermediate results in the `intermediate/` folder.
+For debugging purposes we also provide various intermediate results in the `intermediate/` folder. For mapping-based approaches (`minimap2`, `bwa`), you will also find a brief summary of mapped/unmapped reads and their proportions. 
 
 ## Acknowledgements
 
-Thanks to Matt Huska (@matthuska) for extensive testing of `CLEAN`, bug fixing, and reorganizing the output.
+- Thanks to Matt Huska (@matthuska) for extensive testing of `CLEAN`, bug fixing, and reorganizing the output. 
+- Thanks to XXX for valuable feedback and a pull request adding a simple summary table for mapping-based approaches.
 
 ## Citations
 
 If you use `CLEAN` in your work, please consider citing our preprint:
 
 > Targeted decontamination of sequencing data with CLEAN
->
 > Marie Lataretu, Sebastian Krautwurst, Adrian Viehweger, Christian Brandt, Martin Hölzer
->
 > bioRxiv 2023.08.05.552089; doi: https://doi.org/10.1101/2023.08.05.552089
 
-Additionally, an extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file.
+Additionally, an extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file. **Please consider also citing these tools because w/o them there would be no CLEAN!**
