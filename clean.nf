@@ -10,7 +10,7 @@ Author: hoelzer.martin@gmail.com
 
 // Parameters sanity checking
 
-Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'input', 'input_type', 'list', 'host', 'own', 'control', 'keep', 'rm_rrna', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'min_clip', 'dcs_strict', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'cleanup_work_dir','condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process', 'publish_dir_mode', 'no_intermediate', 'skip_qc'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
+Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'input', 'input_type', 'list', 'host', 'own', 'control', 'keep', 'rm_rrna', 'bwa', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'min_clip', 'dcs_strict', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'cleanup_work_dir','condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process', 'publish_dir_mode', 'no_intermediate', 'skip_qc'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
 def parameter_diff = params.keySet() - valid_params
 if (parameter_diff.size() != 0){
     exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
@@ -275,6 +275,7 @@ def helpMSG() {
                                         Reads are assigned to a combined index for decontamination and keeping. The use of this parameter can prevent
                                         false positive hits and the accidental removal of reads due to (poor quality) mappings.
     ${c_green}--rm_rrna ${c_reset}      Clean your data from rRNA [default: $params.rm_rrna]
+    ${c_green}--bwa${c_reset}           Add this flag to use BAW MEM instead of minimap2 for decontamination of short reads [default: $params.bwa]
     ${c_green}--bbduk${c_reset}         Add this flag to use bbduk instead of minimap2 for decontamination of short reads [default: $params.bbduk]
     ${c_green}--bbduk_kmer${c_reset}    Set kmer for bbduk [default: $params.bbduk_kmer]
     ${c_green}--bbduk_qin${c_reset}     Set quality ASCII encoding for bbduk [default: $params.bbduk_qin; options are: 64, 33, auto]
