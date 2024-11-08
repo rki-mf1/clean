@@ -1,6 +1,6 @@
 # Clean your data!
 
-A decontamination workflow for short reads, long reads and assemblies.
+A reference-based decontamination workflow for short reads, long reads, and assemblies.
 
 ![](https://img.shields.io/badge/nextflow-21.04.0-brightgreen)
 ![](https://img.shields.io/badge/uses-docker-blue.svg)
