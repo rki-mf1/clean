@@ -22,8 +22,9 @@ workflow clean {
             flagstats = Channel.empty()
             out_reads = bbduk.out.cleaned_reads.concat(bbduk.out.contaminated_reads)
             bams_bai = Channel.empty()
-        } else {
-
+            sort_bam_ch = Channel.empty()
+        }
+        else {
             if ( params.bwa ) {
                 bwa_index(contamination)
                 bwa(input, bwa_index.out, contamination) | sort_bam | index_bam | ( idxstats_from_bam & flagstats_from_bam )
@@ -32,7 +33,6 @@ workflow clean {
                 minimap2(input, contamination) | sort_bam | index_bam | ( idxstats_from_bam & flagstats_from_bam )
                 split_bam(minimap2.out.bam)
             }
-
             contamination_bam = split_bam.out.mapped
             cleaned_bam = split_bam.out.unmapped
             if ( params.control && 'dcs' in params.control.split(',') && params.dcs_strict ) {
@@ -57,6 +57,7 @@ workflow clean {
             idxstats = idxstats_from_bam.out
             flagstats = flagstats_from_bam.out
             out_reads = fastq_from_bam.out
+	          sort_bam_ch = sort_bam.out
         }
 
     emit:
@@ -65,4 +66,5 @@ workflow clean {
         flagstats
         out_reads
         bams_bai
+	      sort_bam_ch
 }
