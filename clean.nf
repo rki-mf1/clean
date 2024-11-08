@@ -181,7 +181,6 @@ lib_pairedness = params.input_type == 'illumina' ? 'paired' : 'single'
 
 include { prepare_contamination } from './workflows/prepare_contamination_wf' addParams( tool: tool )
 include { check_own as prepare_keep } from './modules/prepare_contamination'
-
 include { clean } from './workflows/clean_wf' addParams( tool: tool, lib_pairedness: lib_pairedness )
 include { keep } from './workflows/keep_wf' addParams( tool: tool, lib_pairedness: lib_pairedness )
 include { summarize } from './workflows/summarize_wf'
@@ -196,13 +195,10 @@ workflow {
   contamination = prepare_contamination.out
 
   clean(input_ch, contamination, nanoControlBedChannel, 'map-to-remove')
-  
-  bam_sort = clean.out.sort_bam_ch
-  
+    
   if (!params.bbduk) {
-   
-      summarize(bam_sort)
-
+    bam_sort = clean.out.sort_bam_ch
+    summarize(bam_sort)
   }
  
   if (params.keep){
