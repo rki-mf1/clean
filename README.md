@@ -174,7 +174,7 @@ For debugging purposes we also provide various intermediate results in the `inte
 ## Acknowledgements
 
 - Thanks to Matt Huska (@matthuska) for extensive testing of `CLEAN`, bug fixing, and reorganizing the output. 
-- Thanks to XXX for valuable feedback and a pull request adding a simple summary table for mapping-based approaches.
+- Thanks to Ayorinde Afolayan (@ayoraind) for valuable feedback and a pull request adding a simple summary table for mapping-based approaches.
 
 ## Citations
 
