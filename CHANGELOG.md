@@ -2,9 +2,20 @@
 
 ## unreleased
 
+## [v1.1.0] - 2024-11-08
+
 ### Added
 
 - `bwa mem` as short-read mapper alternative, parameter: `--bwa`
+
+## [v1.0.3] - 2024-08-08
+
+### Added
+
+- Set default branch to `main` instead of the Nextflow default `master`
+- Remove `conda clean` from GitHub action to avoid random crashes
+- Bump github action versions for node 16 -> 20 change
+- Add T2T homo sapiens genome as additional auto-download option
 
 ## [v1.0.2] - 2024-05-17
 
