@@ -18,6 +18,7 @@ jobs:
     name: Dry run ${{ matrix.inputtype }}-${{ matrix.profile }}-nf_${{ matrix.NXF_VER }} pipeline test
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         NXF_VER:
           - "23.04.1"
