@@ -1,6 +1,6 @@
 name: quast
 channels:
   - bioconda
+  - nodefaults
 dependencies:
   - quast=5.0.2
-  
