@@ -1,7 +1,8 @@
 name: samclipy
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
+  - nodefaults
 dependencies:
   - samtools=1.11
   - python=3.9.5

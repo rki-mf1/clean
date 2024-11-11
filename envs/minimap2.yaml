@@ -1,7 +1,8 @@
 name: minimap2
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
+  - nodefaults
 dependencies:
   - minimap2=2.26
   - samtools=1.17

@@ -1,5 +1,7 @@
 name: pysam
 channels:
+  - conda-forge
   - bioconda
+  - nodefaults
 dependencies:
   - pysam=0.19.1
