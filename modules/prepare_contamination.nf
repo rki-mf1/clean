@@ -62,15 +62,15 @@ process check_own {
   path fasta
 
   output:
-  path '*.gz', includeInputs: true
+  path 'checked.fa.gz'
 
   script:
   """
-  seqkit seq ${fasta} -o ${fasta}.gz
+  seqkit seq ${fasta} -o checked.fa.gz
   """
   stub:
   """
-  touch ${fasta}.gz
+  touch checked.fa.gz
   """
 }
 
