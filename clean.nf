@@ -26,7 +26,7 @@ if (params.input.contains('.clean.') ) {
 /*
 Comment section: First part is a terminal print for additional user information,
 followed by some help statements (e.g. missing input) Second part is file
-channel input. This allows via --list to alter the input of --nano & --illumina
+channel input. This allows via --list to alter the input of --input
 to add csv instead. name,path or name,pathR1,pathR2 in case of illumina
 */
 
@@ -80,7 +80,7 @@ if ( workflow.profile.contains('singularity') ) {
 
 Set controls = ['phix', 'dcs', 'eno']
 Set hosts = ['hsa', 'mmu', 'cli', 'csa', 'gga', 'eco', 'sc2', 't2t']
-Set input_types = ['nano', 'illumina', 'illumina_single_end', 'fasta']
+Set input_types = ['nano', 'illumina', 'illumina_single_end', 'fasta', 'pacbio']
 
 if ( params.profile ) { exit 1, "--profile is wrong, use -profile" }
 if ( params.input == '' || !params.input_type == '' ) { exit 1, "Missing required input parameters [--input] and [--input_type]" }
@@ -233,9 +233,10 @@ def helpMSG() {
 
     Workflow: Decontamination
 
-    Clean your Illumina, Nanopore or any FASTA-formated sequence date. The output are the clean
+    Clean your Illumina, Nanopore, PacBio or any FASTA-formated sequence date. The output are the clean
     and as contaminated identified sequences. Per default minimap2 is used for aligning your sequences
-    to a host but we recommend using the ${c_dim}--bbduk${c_reset} flag to switch to bbduk to clean short-read data.
+    to a host but we recommend using BWA for mapping short reads ${c_dim}--bwa${c_reset} or the ${c_dim}--bbduk${c_reset} flag 
+    to switch to bbduk to clean short-read data.
 
     Use the ${c_dim}--host${c_reset} and ${c_dim}--control${c_reset} flag to download a host database or specify your ${c_dim}--own${c_reset} FASTA.
 
@@ -248,11 +249,12 @@ def helpMSG() {
 
     ${c_yellow}Input:${c_reset}
     ${c_green}--input_type nano                --input${c_reset} '*.fasta' or '*.fastq.gz'   -> one sample per file
+    ${c_green}--input_type pacbio              --input${c_reset} '*.fasta' or '*.fastq.gz'   -> one sample per file (for PacBio CLR reads)
     ${c_green}--input_type illumina            --input${c_reset} '*.R{1,2}.fastq.gz'         -> file pairs
     ${c_green}--input_type illumina_single_end --input${c_reset} '*.fastq.gz'                -> one sample per file
     ${c_green}--input_type fasta               --input${c_reset} '*.fasta.gz'                -> one sample per file
     ${c_dim} ...read above input from csv files:${c_reset} ${c_green}--list ${c_reset}
-                         ${c_dim}required format: name,path for --input_type nano and --input_type fasta; name,pathR1,pathR2 for --illumina input_type; name,path for --input_type illumina_single_end${c_reset}
+                         ${c_dim}required format: name,path for --input_type nano, --input_type pacbio, and --input_type fasta; name,pathR1,pathR2 for --illumina input_type; name,path for --input_type illumina_single_end${c_reset}
 
     ${c_yellow}Decontamination options:${c_reset}
     ${c_green}--host${c_reset}         Comma separated list of reference genomes for decontamination, downloaded based on this parameter [default: $params.host]
