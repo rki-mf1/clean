@@ -80,7 +80,7 @@ if ( workflow.profile.contains('singularity') ) {
 
 Set controls = ['phix', 'dcs', 'eno']
 Set hosts = ['hsa', 'mmu', 'cli', 'csa', 'gga', 'eco', 'sc2', 't2t']
-Set input_types = ['nano', 'illumina', 'illumina_single_end', 'fasta']
+Set input_types = ['nano', 'illumina', 'illumina_single_end', 'fasta', 'pacbio']
 
 if ( params.profile ) { exit 1, "--profile is wrong, use -profile" }
 if ( params.input == '' || !params.input_type == '' ) { exit 1, "Missing required input parameters [--input] and [--input_type]" }
@@ -248,11 +248,12 @@ def helpMSG() {
 
     ${c_yellow}Input:${c_reset}
     ${c_green}--input_type nano                --input${c_reset} '*.fasta' or '*.fastq.gz'   -> one sample per file
+    ${c_green}--input_type pacbio              --input${c_reset} '*.fasta' or '*.fastq.gz'   -> one sample per file (for PacBio CLR reads)
     ${c_green}--input_type illumina            --input${c_reset} '*.R{1,2}.fastq.gz'         -> file pairs
     ${c_green}--input_type illumina_single_end --input${c_reset} '*.fastq.gz'                -> one sample per file
     ${c_green}--input_type fasta               --input${c_reset} '*.fasta.gz'                -> one sample per file
     ${c_dim} ...read above input from csv files:${c_reset} ${c_green}--list ${c_reset}
-                         ${c_dim}required format: name,path for --input_type nano and --input_type fasta; name,pathR1,pathR2 for --illumina input_type; name,path for --input_type illumina_single_end${c_reset}
+                         ${c_dim}required format: name,path for --input_type nano, --input_type pacbio, and --input_type fasta; name,pathR1,pathR2 for --illumina input_type; name,path for --input_type illumina_single_end${c_reset}
 
     ${c_yellow}Decontamination options:${c_reset}
     ${c_green}--host${c_reset}         Comma separated list of reference genomes for decontamination, downloaded based on this parameter [default: $params.host]
