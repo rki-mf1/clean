@@ -1,7 +1,8 @@
 name: seqkit
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
+  - nodefaults
 dependencies:
   - seqkit==2.6.1
   - tabix==1.11
