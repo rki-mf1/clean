@@ -26,7 +26,7 @@ if (params.input.contains('.clean.') ) {
 /*
 Comment section: First part is a terminal print for additional user information,
 followed by some help statements (e.g. missing input) Second part is file
-channel input. This allows via --list to alter the input of --nano & --illumina
+channel input. This allows via --list to alter the input of --input
 to add csv instead. name,path or name,pathR1,pathR2 in case of illumina
 */
 
