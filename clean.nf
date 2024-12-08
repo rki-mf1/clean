@@ -233,9 +233,10 @@ def helpMSG() {
 
     Workflow: Decontamination
 
-    Clean your Illumina, Nanopore or any FASTA-formated sequence date. The output are the clean
+    Clean your Illumina, Nanopore, PacBio or any FASTA-formated sequence date. The output are the clean
     and as contaminated identified sequences. Per default minimap2 is used for aligning your sequences
-    to a host but we recommend using the ${c_dim}--bbduk${c_reset} flag to switch to bbduk to clean short-read data.
+    to a host but we recommend using BWA for mapping short reads ${c_dim}--bwa${c_reset} or the ${c_dim}--bbduk${c_reset} flag 
+    to switch to bbduk to clean short-read data.
 
     Use the ${c_dim}--host${c_reset} and ${c_dim}--control${c_reset} flag to download a host database or specify your ${c_dim}--own${c_reset} FASTA.
 
