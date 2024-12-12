@@ -15,6 +15,11 @@ process minimap2 {
     """
     minimap2 ${params} -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} ${db} ${input} | samtools view -bhS -@ ${task.cpus} > ${name}.bam
     """
+  } else if ( params.input_type == 'pacbio' ) {
+    params = params.reads_rna ? "-ax splice -k14" : "-ax map-pb"
+    """
+    minimap2 ${params} -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} ${db} ${input} | samtools view -bhS -@ ${task.cpus} > ${name}.bam
+    """
   } else if ( params.input_type.contains('illumina') ) {
     """
     minimap2 -ax sr -N 5 --split-prefix tmp --secondary=no -t ${task.cpus} ${db} ${input} | samtools view -bhS -@ ${task.cpus} > ${name}.bam

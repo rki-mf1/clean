@@ -12,7 +12,7 @@ workflow qc {
     if ( input_type == 'fasta' ){
       quast(input)
       report = quast.out.report_tsv
-    } else if ( input_type == 'nano' ) {
+    } else if ( input_type == 'nano' || input_type == 'pacbio' ) {
       nanoplot(input)
       format_nanoplot_report(nanoplot.out.html)
       report = format_nanoplot_report.out
