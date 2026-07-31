@@ -4,5 +4,7 @@ channels:
   - bioconda
   - nodefaults
 dependencies:
-  - samtools=1.11
-  - python=3.9.5
+  - samtools=1.24
+  - htslib=1.24
+  - python=3.14
+  - git
