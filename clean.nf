@@ -235,7 +235,7 @@ def helpMSG() {
 
     Clean your Illumina, Nanopore, PacBio or any FASTA-formated sequence date. The output are the clean
     and as contaminated identified sequences. Per default minimap2 is used for aligning your sequences
-    to a host but we recommend using BWA for mapping short reads ${c_dim}--bwa${c_reset} or the ${c_dim}--bbduk${c_reset} flag 
+    to a host but we recommend using BWA-MEM2 for mapping short reads ${c_dim}--bwa${c_reset} or the ${c_dim}--bbduk${c_reset} flag
     to switch to bbduk to clean short-read data.
 
     Use the ${c_dim}--host${c_reset} and ${c_dim}--control${c_reset} flag to download a host database or specify your ${c_dim}--own${c_reset} FASTA.
@@ -277,7 +277,7 @@ def helpMSG() {
                                         Reads are assigned to a combined index for decontamination and keeping. The use of this parameter can prevent
                                         false positive hits and the accidental removal of reads due to (poor quality) mappings.
     ${c_green}--rm_rrna ${c_reset}      Clean your data from rRNA [default: $params.rm_rrna]
-    ${c_green}--bwa${c_reset}           Add this flag to use BAW MEM instead of minimap2 for decontamination of short reads [default: $params.bwa]
+    ${c_green}--bwa${c_reset}           Add this flag to use BWA-MEM2 instead of minimap2 for decontamination of short reads [default: $params.bwa]
     ${c_green}--bbduk${c_reset}         Add this flag to use bbduk instead of minimap2 for decontamination of short reads [default: $params.bbduk]
     ${c_green}--bbduk_kmer${c_reset}    Set kmer for bbduk [default: $params.bbduk_kmer]
     ${c_green}--bbduk_qin${c_reset}     Set quality ASCII encoding for bbduk [default: $params.bbduk_qin; options are: 64, 33, auto]

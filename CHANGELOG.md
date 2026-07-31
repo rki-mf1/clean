@@ -2,6 +2,16 @@
 
 ## unreleased
 
+### Changed
+
+- replaced `bwa mem` with [`bwa-mem2`](https://github.com/bwa-mem2/bwa-mem2) as short-read mapper alternative; the `--bwa` parameter is unchanged
+  - faster index building, which mainly helps for large indices combining several eukaryotic genomes
+  - note that a `bwa-mem2` index is about 4x larger than a `bwa` index and is held in memory during mapping, so the memory requirements went up
+
+### Fixed
+
+- the short-read mapper alternative now also gets an environment with the `conda`/`mamba` profiles and CPUs/memory with the `local`/`standard` profiles
+
 ## [v1.1.0] - 2024-11-08
 
 ### Added
