@@ -12,3 +12,4 @@ conda/
 singularity/
 .vscode/
 .nf-test/
+.nf-test-conda/
