@@ -96,6 +96,10 @@ process filter_fastq_by_name {
     path: params.output,
     mode: params.publish_dir_mode,
     pattern: "*.gz",
+    // `as boolean` is needed: params.keep is a file path, and publishDir runs
+    // the value through Boolean.parseBoolean(), which turns any other string
+    // into false. Elsewhere we use `!params.keep`, where `!` already gives a
+    // boolean, so the coercion is only needed here.
     enabled: params.keep as boolean,
     saveAs: { fn ->
             fn.matches('.*.unmapped.fast[aq].gz$') ? "clean/${fn}".replaceAll(~'.unmapped(.fast[aq].gz)$', '$1') :
