@@ -14,6 +14,8 @@
 
 - the short-read mapper alternative now also gets an environment with the `conda`/`mamba` profiles and CPUs/memory with the `local`/`standard` profiles
 - `samclipy` gets its own container (the `samtools` one, it has `python` and `git`) instead of implicitly using the one of the `smallTask` label, and `git` was added to its conda environment
+- syntax that the strict parser of Nextflow >=25.10 rejects: the variable declaration in `nextflow.config`, typed `for` loops, `if` blocks around `publishDir`/`storeDir` directives, `env(VAR)` outputs and `addParams()` on `include` statements
+  - the CI matrix is pinned to Nextflow 25.10.0 instead of `latest`, because the top-level statements in `clean.nf` still need to move into the entry workflow before the pipeline runs on Nextflow >=26.04
 
 ## [v1.1.0] - 2024-11-08
 

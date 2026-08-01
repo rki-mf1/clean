@@ -22,7 +22,10 @@ jobs:
       matrix:
         NXF_VER:
           - "23.04.1"
-          - "latest"
+          # pinned instead of "latest": the strict syntax of Nextflow >=26.04
+          # rejects the top-level statements in clean.nf, they need to move
+          # into the entry workflow before we can test against "latest" again
+          - "25.10.0"
         inputtype:
           - fasta
           - illumina

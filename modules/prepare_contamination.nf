@@ -1,12 +1,14 @@
 process download_host {
   label 'minimap2'
 
-  if (params.cloudProcess) {
-    publishDir "${params.databases}/hosts", mode: params.publish_dir_mode, pattern: "*.fa.gz"
-  }
-  else {
-    storeDir "${params.databases}/hosts"
-  }
+  // in the cloud we cannot store the downloaded genomes, so we publish them
+  publishDir (
+    path: "${params.databases}/hosts",
+    mode: params.publish_dir_mode,
+    pattern: "*.fa.gz",
+    enabled: params.cloudProcess
+  )
+  storeDir ( params.cloudProcess ? null : "${params.databases}/hosts" )
 
   input:
   val host

@@ -10,18 +10,17 @@ process bbduk {
 
   // When using `--keep`, we need to do further processing before we have
   // the final clean and removed data sets.
-  if ( !params.keep ) {
-    publishDir (
-      path: params.output,
-      mode: params.publish_dir_mode,
-      pattern: "*.gz",
-      saveAs: { fn ->
-            fn.endsWith('.clean.fastq.gz') ? "clean/${fn}".replaceAll(~'.fastq.clean.fastq.gz$', '.fastq.gz') :
-            fn.endsWith('.contamination.fastq.gz') ? "removed/${fn}".replaceAll(~'.fastq.contamination.fastq.gz$', '.fastq.gz') :
-            fn
-      }
-    )
-  }
+  publishDir (
+    path: params.output,
+    mode: params.publish_dir_mode,
+    pattern: "*.gz",
+    enabled: !params.keep,
+    saveAs: { fn ->
+          fn.endsWith('.clean.fastq.gz') ? "clean/${fn}".replaceAll(~'.fastq.clean.fastq.gz$', '.fastq.gz') :
+          fn.endsWith('.contamination.fastq.gz') ? "removed/${fn}".replaceAll(~'.fastq.contamination.fastq.gz$', '.fastq.gz') :
+          fn
+    }
+  )
 
   input:
   tuple val(name), path(reads)
