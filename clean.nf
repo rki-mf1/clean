@@ -116,6 +116,16 @@ if ( params.input_type == 'illumina' ) {
   }
 }
 
+// Without this an empty input channel leaves every process without a task and
+// the run reports success without having cleaned anything. checkIfExists does
+// not catch it: the glob can match files and still not pair them up.
+input_ch = input_ch.ifEmpty {
+  def hint = ( params.input_type == 'illumina' && !params.list )
+    ? " Paired-end reads are collected with fromFilePairs, so the glob needs the read pair group, e.g. '*_R{1,2}.fastq.gz'. For single reads use --input_type illumina_single_end."
+    : ''
+  error "No input reads found for --input '${params.input}'.${hint}"
+}
+
 // load control fasta sequence
 if ( params.control ) {
   if ( 'phix' in params.control.split(',') ) {
