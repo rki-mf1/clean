@@ -64,15 +64,17 @@ process check_own {
   path fasta
 
   output:
-  path 'checked.fa.gz'
+  path "${fasta.baseName}.checked.fa.gz"
 
   script:
+  // the output is named after the input: with more than one --own/--keep FASTA
+  // a fixed name would collide when the checked files are staged together
   """
-  seqkit seq ${fasta} -o checked.fa.gz
+  seqkit seq ${fasta} -o ${fasta.baseName}.checked.fa.gz
   """
   stub:
   """
-  touch checked.fa.gz
+  touch ${fasta.baseName}.checked.fa.gz
   """
 }
 
