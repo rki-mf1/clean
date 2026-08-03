@@ -22,7 +22,7 @@ workflow prepare_contamination {
           .mix(illuminaControlFastaChannel)
           .mix(prepare_own_host.out)
           .mix(rRNAChannel).collect()
-    concat_contamination(contamination_collection)
+    concat_contamination(contamination_collection, 'host')
 
   emit:
     concat_contamination.out.fa

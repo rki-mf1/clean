@@ -84,18 +84,19 @@ process concat_contamination {
     mode: params.publish_dir_mode,
     pattern: "db.fa.gz",
     enabled: !params.no_intermediate,
-    saveAs: { "host.fa.gz" }
+    saveAs: { "${name}.fa.gz" }
   )
   publishDir (
     path: "${params.output}/intermediate",
     mode: params.publish_dir_mode,
     pattern: "db.fa.fai",
     enabled: !params.no_intermediate,
-    saveAs: { "host.fa.fai" }
+    saveAs: { "${name}.fa.fai" }
   )
 
   input:
   path fastas
+  val name
 
   output:
   path 'db.fa.gz', emit: fa
