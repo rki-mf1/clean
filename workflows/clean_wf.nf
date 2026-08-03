@@ -1,4 +1,4 @@
-include { minimap2 } from '../modules/minimap2'
+include { minimap2_index; minimap2 } from '../modules/minimap2'
 include { bwamem2_index; bwamem2 } from '../modules/bwamem2'
 include { bbduk } from '../modules/bbmap'
 include { bbduk_stats } from '../modules/utils'
@@ -30,7 +30,8 @@ workflow clean {
                 bwamem2(input, bwamem2_index.out, contamination) | sort_bam | index_bam | ( idxstats_from_bam & flagstats_from_bam )
                 split_bam(bwamem2.out.bam)
             } else {
-                minimap2(input, contamination) | sort_bam | index_bam | ( idxstats_from_bam & flagstats_from_bam )
+                minimap2_index(contamination)
+                minimap2(input, minimap2_index.out) | sort_bam | index_bam | ( idxstats_from_bam & flagstats_from_bam )
                 split_bam(minimap2.out.bam)
             }
             contamination_bam = split_bam.out.mapped
