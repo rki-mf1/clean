@@ -187,7 +187,7 @@ process fastq_from_bam {
 }
 
 process idxstats_from_bam {
-  label 'minimap2'
+  label 'samtools'
 
   publishDir (
     path: "${params.output}/intermediate",
@@ -216,7 +216,7 @@ process idxstats_from_bam {
 }
 
 process flagstats_from_bam {
-  label 'minimap2'
+  label 'samtools'
 
   publishDir (
     path: "${params.output}/intermediate",
@@ -265,7 +265,7 @@ process sort_bam {
 }
 
 process index_bam {
-  label 'minimap2'
+  label 'samtools'
 
   publishDir (
     path: "${params.output}/intermediate",
