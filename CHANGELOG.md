@@ -9,6 +9,7 @@
   - note that a `bwa-mem2` index is about 4x larger than a `bwa` index and is held in memory during mapping, so the memory requirements went up
 
 - all containers and conda environments now ship the same `samtools`/`htslib` version (1.24); this also updates `minimap2` 2.26 -> 2.31, `bedtools` 2.30.0 -> 2.31.1, `seqkit` 2.6.1 -> 2.13.0 and `pigz` 2.3.4 -> 2.8
+  - the conda environments pin their packages with `==` instead of `=`, which is a fuzzy match allowing any patch release of the given version; the containers are pinned to an exact tag, so the two profiles would otherwise drift apart
 
 ### Fixed
 

@@ -4,6 +4,6 @@ channels:
   - bioconda
   - nodefaults
 dependencies:
-  - bwa-mem2=2.3
-  - samtools=1.24
-  - htslib=1.24
+  - bwa-mem2==2.3
+  - samtools==1.24
+  - htslib==1.24

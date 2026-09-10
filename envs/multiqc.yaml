@@ -5,4 +5,4 @@ channels:
   - nodefaults
 dependencies:
   - python<3.12.0
-  - multiqc=1.12
+  - multiqc==1.12

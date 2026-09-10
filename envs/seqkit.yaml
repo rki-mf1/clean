@@ -4,6 +4,6 @@ channels:
   - bioconda
   - nodefaults
 dependencies:
-  - seqkit=2.13.0
-  - samtools=1.24
-  - htslib=1.24
+  - seqkit==2.13.0
+  - samtools==1.24
+  - htslib==1.24
