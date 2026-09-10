@@ -1,3 +1,5 @@
+include { lib_pairedness } from './functions'
+
 process get_number_of_records {
   label 'smallTask'
 
@@ -8,7 +10,7 @@ process get_number_of_records {
   tuple val(name), env('TOTALRECORDS'), emit: TOTALRECORDS
 
   script:
-  if ( params.lib_pairedness == 'paired' ) {
+  if ( lib_pairedness() == 'paired' ) {
     """
     if [[ ${reads[0]} =~ \\.gz\$ ]]; then
       TOTALRECORDS_1=\$(zcat < ${reads[0]} | echo \$((`wc -l`/4)))
@@ -19,7 +21,7 @@ process get_number_of_records {
     fi
     TOTALRECORDS=\$(( TOTALRECORDS_1+TOTALRECORDS_2 ))
     """
-  } else if ( params.lib_pairedness == 'single' && params.input_type != 'fasta' ) {
+  } else if ( lib_pairedness() == 'single' && params.input_type != 'fasta' ) {
     """
     if [[ ${reads} =~ \\.gz\$ ]]; then
       TOTALRECORDS=\$(zcat < ${reads} | echo \$((`wc -l`/4)))
@@ -36,7 +38,7 @@ process get_number_of_records {
     fi
     """
   } else {
-    error "Invalid pairedness: ${params.lib_pairedness} or input_type: ${params.input_type}"
+    error "Invalid pairedness: ${lib_pairedness()} or input_type: ${params.input_type}"
   }
   stub:
   """
@@ -132,20 +134,20 @@ process filter_fastq_by_name {
   // If these two steps are done in the opposite order the results will be
   // wrong.
   script:
-  if ( params.lib_pairedness == 'paired' ) {
+  if ( lib_pairedness() == 'paired' ) {
     """
     seqkit grep --pattern-file ${keep_read_name_list} ${reads_mapped[0]} | gzip >> ${reads_unmapped[0]}
     seqkit grep --invert-match --pattern-file ${keep_read_name_list} ${reads_mapped[0]} | gzip > ${reads_mapped[0]}.tmp && mv ${reads_mapped[0]}{.tmp,}
     seqkit grep --pattern-file ${keep_read_name_list} ${reads_mapped[1]} | gzip >> ${reads_unmapped[1]}
     seqkit grep --invert-match --pattern-file ${keep_read_name_list} ${reads_mapped[1]} | gzip > ${reads_mapped[1]}.tmp && mv ${reads_mapped[1]}{.tmp,}
     """
-  } else if ( params.lib_pairedness == 'single' ) {
+  } else if ( lib_pairedness() == 'single' ) {
     """
     seqkit grep --pattern-file ${keep_read_name_list} ${reads_mapped} | gzip >> ${reads_unmapped}
     seqkit grep --invert-match --pattern-file ${keep_read_name_list} ${reads_mapped} | gzip > ${reads_mapped}.tmp && mv ${reads_mapped}{.tmp,}
     """
   } else {
-    error "Invalid mode: ${params.lib_pairedness}"
+    error "Invalid mode: ${lib_pairedness()}"
   }
   stub:
   """
