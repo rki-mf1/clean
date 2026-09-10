@@ -15,7 +15,7 @@ Technologies ([DNA CS (DCS)](https://assets.ctfassets.net/hkzaxo8a05x5/2IX56YmF5
 
 ## What this workflow does for you
 
-With this workflow you can screen and clean your Illumina, Nanopore, PacBio CLR or any FASTA-formated sequence data. The results are the clean sequences and the sequences identified as contaminated. Per default [minimap2](https://github.com/lh3/minimap2) is used for aligning your sequences to reference sequences (with the `map-ont` settings for Nanopore data, `map-bp` for PacBio CLR data, and `sr` settings for short-read data activated automatically). However, for short-read data, you may want to switch to [BWA](https://github.com/lh3/bwa) (`--bwa`). As another alternative, we provide `bbduk`, part of [BBTools](https://github.com/BioInfoTools/BBMap), as a kmer-based approach (`--bbduk`). However, no mapping file will be produced with `bbduk` and thus some subsequent statistics are not calculated. 
+With this workflow you can screen and clean your Illumina, Nanopore, PacBio CLR or any FASTA-formated sequence data. The results are the clean sequences and the sequences identified as contaminated. Per default [minimap2](https://github.com/lh3/minimap2) is used for aligning your sequences to reference sequences (with the `map-ont` settings for Nanopore data, `map-bp` for PacBio CLR data, and `sr` settings for short-read data activated automatically). However, for short-read data, you may want to switch to [BWA-MEM2](https://github.com/bwa-mem2/bwa-mem2) (`--bwa`). As another alternative, we provide `bbduk`, part of [BBTools](https://github.com/BioInfoTools/BBMap), as a kmer-based approach (`--bbduk`). However, no mapping file will be produced with `bbduk` and thus some subsequent statistics are not calculated. 
 
 You can simply specify provided hosts and controls for the cleanup or use your own FASTA files. The reads are then mapped (or kmer-based compared in case of `bbduk`) against the specified host, control, and user defined FASTA files. All reads that match are considered as contamination. In case of Illumina paired-end reads, both mates need to be aligned (singleton files will be produced otherwise).
 
@@ -162,14 +162,19 @@ results/
 │   │       ├── <sample_name>.soft-clipped.bam
 │   │       └── <sample_name>.passed-clipped.bam
 |   ├── host.fa.fai
-|   └── host.fa.gz
+|   ├── host.fa.gz
+|   ├── keep.fa.fai
+|   └── keep.fa.gz
 ├── logs/*.html
 └── qc/multiqc_report.html
 ```
 
 The most important files you are likely interested in are `results/clean/<sample_name>.fastq.gz`, which are the "cleaned" reads. These are the input reads that *do not* map to the host, control, own fasta or rRNA files (or the subset of these that you provided), plus those reads that map to the "keep" sequence if you used the `--keep` option. Any files that were removed from your input fasta file are placed in `results/removed/<sample_name>.fastq.gz`.
 
-For debugging purposes we also provide various intermediate results in the `intermediate/` folder. For mapping-based approaches (`minimap2`, `bwa`), you will also find a brief summary of mapped/unmapped reads and their proportions. 
+For debugging purposes we also provide various intermediate results in the `intermediate/` folder. For mapping-based approaches (`minimap2`, `bwa-mem2`), you will also find a brief summary of mapped/unmapped reads and their proportions. 
+
+> [!NOTE]
+> **Disk usage of the merged references.** Before mapping, the references are merged into a single FASTA: everything from `--host`, `--control`, `--own` and `--rm_rrna` becomes `intermediate/host.fa.gz`, and everything from `--keep` becomes `intermediate/keep.fa.gz`. Each is a *new* file about as large as all of its inputs together, and the mapper index built on top of it is larger again — for multi-genome references this reaches tens of gigabytes. Plan for that in the work directory, and in the output directory unless you pass `--no_intermediate`, which only suppresses publishing; the files are still written to the work directory.
 
 ## Acknowledgements
 

@@ -1,188 +1,19 @@
 #!/usr/bin/env nextflow
 
-nextflow.enable.dsl=2
-
 /*
 Nextflow -- Decontamination Pipeline
 Author: marie.lataretu@uni-jena.de
 Author: hoelzer.martin@gmail.com
 */
 
-// Parameters sanity checking
-
-Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'input', 'input_type', 'list', 'host', 'own', 'control', 'keep', 'rm_rrna', 'bwa', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'min_clip', 'dcs_strict', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'cleanup_work_dir','condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process', 'publish_dir_mode', 'no_intermediate', 'skip_qc'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
-def parameter_diff = params.keySet() - valid_params
-if (parameter_diff.size() != 0){
-    exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
-}
-if (params.input.contains('.clean.') ) {
-  exit 1, "ERROR: Input files cannot contain `.clean.`\n"
-}
-
-/**************************
-* META & HELP MESSAGES
-**************************/
-
-/*
-Comment section: First part is a terminal print for additional user information,
-followed by some help statements (e.g. missing input) Second part is file
-channel input. This allows via --list to alter the input of --input
-to add csv instead. name,path or name,pathR1,pathR2 in case of illumina
-*/
-
-// terminal prints
-if (params.help) { exit 0, helpMSG() }
-
-println " "
-println "\u001B[32mProfile: $workflow.profile\033[0m"
-println " "
-println "\033[2mCurrent User: $workflow.userName"
-println "Nextflow-version: $nextflow.version"
-println "Starting time: $nextflow.timestamp"
-println "Output directory name:"
-println "  $params.output"
-println "Workdir location:"
-println "  $workflow.workDir"
-println "Launchdir location:"
-println "  $workflow.launchDir"
-println "Database location:"
-println "  $params.databases"
-if ( workflow.profile.contains('singularity') ) {
-    println "Singularity cache directory:"
-    println "  $params.singularityCacheDir"
-}
-if ( workflow.profile.contains('conda') ) {
-    println "Conda cache directory:"
-    println "  $params.condaCacheDir"
-}
-println "Configuration files:"
-println "  $workflow.configFiles"
-println "Cmd line:"
-println "  $workflow.commandLine\u001B[0m"
-if (workflow.repository != null){ println "\033[2mGit info: $workflow.repository - $workflow.revision [$workflow.commitId]\u001B[0m" }
-println " "
-if (workflow.profile == 'standard' || workflow.profile.contains('local')) {
-    println "\033[2mCPUs to use: $params.cores, maximal CPUs to use: $params.max_cores\u001B[0m"
-    println "\033[2mMemory to use: $params.memory, maximal memory to use: $params.max_memory\u001B[0m"
-    println " "
-}
-if ( !workflow.revision ) {
-    println "\033[0;33mWARNING: Not a stable execution. Please use -r for full reproducibility.\033[0m\n"
-}
-def folder = new File(params.output)
-if ( folder.exists() ) {
-    println "\033[0;33mWARNING: Output folder already exists. Results might be overwritten! You can adjust the output folder via [--output]\033[0m\n"
-}
-if ( workflow.profile.contains('singularity') ) {
-    println "\033[0;33mWARNING: Singularity image building sometimes fails!"
-    println "Multiple resumes (-resume) and --max_cores 1 --cores 1 for local execution might help.\033[0m\n"
-}
-
-Set controls = ['phix', 'dcs', 'eno']
-Set hosts = ['hsa', 'mmu', 'cli', 'csa', 'gga', 'eco', 'sc2', 't2t']
-Set input_types = ['nano', 'illumina', 'illumina_single_end', 'fasta', 'pacbio']
-
-if ( params.profile ) { exit 1, "--profile is wrong, use -profile" }
-if ( params.input == '' || !params.input_type == '' ) { exit 1, "Missing required input parameters [--input] and [--input_type]" }
-
-if ( params.input_type ) { if ( ! (params.input_type in input_types ) ) { exit 1, "Choose one of the the input types with --input_type: " + input_types } }
-
-if ( params.control ) { for( String ctr : params.control.split(',') ) if ( ! (ctr in controls ) ) { exit 1, "Wrong control defined (" + ctr + "), use one of these: " + controls } }
-if ( params.input_type == 'nano' && params.control && 'dcs' in params.control.split(',') && 'eno' in params.control.split(',') ) { exit 1, "Please choose either eno (for ONT dRNA-Seq) or dcs (for ONT DNA-Seq)." }
-if ( params.host ) { for( String hst : params.host.split(',') ) if ( ! (hst in hosts ) ) { exit 1, "Wrong host defined (" + hst + "), use one of these: " + hosts } }
-if ( !params.host && !params.own && !params.control && !params.rm_rrna ) { exit 1, "Please provide a control (--control), a host tag (--host), a FASTA file (--own) or set --rm_rrna for rRNA removal for the clean up."}
-
-/**************************
-* INPUT CHANNELS
-**************************/
-
-if ( params.input_type == 'illumina' ) {
-  if ( params.list ) { input_ch = Channel
-    .fromPath( params.input, checkIfExists: true )
-    .splitCsv()
-    .map { row -> [row[0], [file("${row[1]}", checkIfExists: true), file("${row[2]}", checkIfExists: true)]] }
-  } else { input_ch = Channel
-      .fromFilePairs( params.input , checkIfExists: true )
-  }
-} else {
-  if ( params.list ) {
-    input_ch = Channel
-     .fromPath( params.input, checkIfExists: true )
-     .splitCsv()
-     .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
-  } else { input_ch = Channel
-    .fromPath( params.input, checkIfExists: true)
-    .map { file -> tuple(file.simpleName, file) }
-  }
-}
-
-// load control fasta sequence
-if ( params.control ) {
-  if ( 'phix' in params.control.split(',') ) {
-    illuminaControlFastaChannel = Channel.fromPath( workflow.projectDir + '/data/controls/phix.fa.gz' , checkIfExists: true )
-    nanoControlBedChannel = []
-  } else { illuminaControlFastaChannel = Channel.empty() }
-  if ( 'dcs' in params.control.split(',') ) {
-    nanoControlFastaChannel = Channel.fromPath( workflow.projectDir + '/data/controls/dcs.fa.gz' , checkIfExists: true )
-    nanoControlBedChannel = Channel.fromPath( workflow.projectDir + '/data/controls/dcs_artificial_ends.bed' , checkIfExists: true )
-  } else if ( 'eno' in params.control.split(',') ) {
-    nanoControlFastaChannel = Channel.fromPath( workflow.projectDir + '/data/controls/eno.fa.gz' , checkIfExists: true )
-    nanoControlBedChannel = []
-  } else { nanoControlFastaChannel = Channel.empty() }
-} else {
-  nanoControlFastaChannel = Channel.empty()
-  illuminaControlFastaChannel = Channel.empty()
-  nanoControlBedChannel = []
-}
-
-// load rRNA DB
-if ( params.rm_rrna ){
-  rRNAChannel = Channel.fromPath( workflow.projectDir + '/data/rRNA/*.fasta.gz', checkIfExists: true )
-} else{
-  rRNAChannel = Channel.empty()
-}
-
-if ( params.host ) {
-  hostNameChannel = Channel.from( params.host ).splitCsv().flatten()
-} else {
-  hostNameChannel = Channel.empty()
-}
-
-// user defined fasta sequence
-if ( params.own && params.list ) {
-  ownFastaChannel = Channel
-    .fromPath( params.own, checkIfExists: true)
-    .splitCsv().flatten().map{ it -> file( it, checkIfExists: true ) }
-} else if ( params.own ) {
-  ownFastaChannel = Channel
-    .fromPath( params.own, checkIfExists: true)
-} else {
-  ownFastaChannel = Channel.empty()
-}
-
-// user defined fasta sequence to keep
-if ( params.keep && params.list ) {
-  keepFastaChannel = Channel
-    .fromPath( params.keep, checkIfExists: true)
-    .splitCsv().flatten().map{ it -> file( it, checkIfExists: true ) }
-} else if ( params.keep ) {
-  keepFastaChannel = Channel
-    .fromPath( params.keep, checkIfExists: true)
-}
-
-multiqc_config = Channel.fromPath( workflow.projectDir + '/assets/multiqc_config.yml', checkIfExists: true )
-
-tool = params.bbduk ? 'bbduk' : 'minimap2'
-lib_pairedness = params.input_type == 'illumina' ? 'paired' : 'single'
-
 /**************************
 * MODULES
 **************************/
 
-include { prepare_contamination } from './workflows/prepare_contamination_wf' addParams( tool: tool )
+include { prepare_contamination } from './workflows/prepare_contamination_wf'
 include { check_own as prepare_keep } from './modules/prepare_contamination'
-include { clean } from './workflows/clean_wf' addParams( tool: tool, lib_pairedness: lib_pairedness )
-include { keep } from './workflows/keep_wf' addParams( tool: tool, lib_pairedness: lib_pairedness )
+include { clean } from './workflows/clean_wf'
+include { keep } from './workflows/keep_wf'
 include { summarize } from './workflows/summarize_wf'
 include { qc } from './workflows/qc_wf'
 
@@ -191,22 +22,62 @@ include { qc } from './workflows/qc_wf'
 **************************/
 
 workflow {
+  // The order matters: unknown parameters are rejected before anything else,
+  // --help works without the otherwise required input parameters, and the run
+  // information is printed before the input is validated.
+  check_for_unknown_parameters()
+
+  if ( params.help ) {
+    log.info helpMSG()
+    return
+  }
+
+  print_run_info()
+  validate_parameters()
+
+  input_ch = input_channel()
+  controls = params.control ? params.control.split(',') as List : []
+
+  // controls are selectively concatenated with the host and own FASTA files
+  illuminaControlFastaChannel = 'phix' in controls ? control_fasta('phix') : Channel.empty()
+  nanoControlFastaChannel = 'dcs' in controls ? control_fasta('dcs')
+    : 'eno' in controls ? control_fasta('eno')
+    : Channel.empty()
+  // artificial ends of the ONT DCS, only needed with --dcs_strict
+  nanoControlBedChannel = 'dcs' in controls
+    ? Channel.fromPath( workflow.projectDir + '/data/controls/dcs_artificial_ends.bed', checkIfExists: true )
+    : []
+
+  rRNAChannel = params.rm_rrna
+    ? Channel.fromPath( workflow.projectDir + '/data/rRNA/*.fasta.gz', checkIfExists: true )
+    : Channel.empty()
+
+  hostNameChannel = params.host
+    ? Channel.from( params.host ).splitCsv().flatten()
+    : Channel.empty()
+
+  // user defined fasta sequences to remove and to keep
+  ownFastaChannel = fasta_channel( params.own )
+  keepFastaChannel = fasta_channel( params.keep )
+
+  multiqc_config = Channel.fromPath( workflow.projectDir + '/assets/multiqc_config.yml', checkIfExists: true )
+
   prepare_contamination(nanoControlFastaChannel, illuminaControlFastaChannel, rRNAChannel, hostNameChannel, ownFastaChannel)
   contamination = prepare_contamination.out
 
   clean(input_ch, contamination, nanoControlBedChannel, 'map-to-remove')
-    
+
   if (!params.bbduk) {
     bam_sort = clean.out.sort_bam_ch
     summarize(bam_sort)
   }
- 
+
   if (params.keep){
     prepare_keep(keepFastaChannel)
     keep_fasta = prepare_keep.out
 
-    mapped = clean.out.out_reads.filter{ it[1] == 'mapped' }
-    unmapped = clean.out.out_reads.filter{ it[1] == 'unmapped' }
+    mapped = clean.out.out_reads.filter{ it -> it[1] == 'mapped' }
+    unmapped = clean.out.out_reads.filter{ it -> it[1] == 'unmapped' }
 
     un_mapped_clean_fastq = mapped.join(unmapped)
 
@@ -220,22 +91,165 @@ workflow {
 }
 
 /**************************
+* INPUT CHANNELS
+**************************/
+
+/*
+This allows via --list to alter the input of --input to add csv instead.
+name,path or name,pathR1,pathR2 in case of illumina
+*/
+def input_channel() {
+  // Without this an empty input channel leaves every process without a task and
+  // the run reports success without having cleaned anything. checkIfExists does
+  // not catch it: the glob can match files and still not pair them up.
+  return read_input_files().ifEmpty {
+    def hint = ( params.input_type == 'illumina' && !params.list )
+      ? " Paired-end reads are collected with fromFilePairs, so the glob needs the read pair group, e.g. '*_R{1,2}.fastq.gz'. For single reads use --input_type illumina_single_end."
+      : ''
+    error "No input reads found for --input '${params.input}'.${hint}"
+  }
+}
+
+def read_input_files() {
+  if ( params.input_type == 'illumina' ) {
+    if ( params.list ) {
+      return Channel
+        .fromPath( params.input, checkIfExists: true )
+        .splitCsv()
+        .map { row -> [row[0], [file("${row[1]}", checkIfExists: true), file("${row[2]}", checkIfExists: true)]] }
+    }
+    return Channel
+      .fromFilePairs( params.input , checkIfExists: true )
+  }
+  if ( params.list ) {
+    return Channel
+      .fromPath( params.input, checkIfExists: true )
+      .splitCsv()
+      .map { row -> [row[0], file("${row[1]}", checkIfExists: true)] }
+  }
+  return Channel
+    .fromPath( params.input, checkIfExists: true)
+    .map { file -> tuple(file.simpleName, file) }
+}
+
+// user defined fasta sequences, for --own and --keep
+def fasta_channel( fasta ) {
+  if ( fasta && params.list ) {
+    return Channel
+      .fromPath( fasta, checkIfExists: true)
+      .splitCsv().flatten().map{ it -> file( it, checkIfExists: true ) }
+  }
+  if ( fasta ) {
+    return Channel
+      .fromPath( fasta, checkIfExists: true)
+  }
+  return Channel.empty()
+}
+
+// control sequences shipped with the pipeline
+def control_fasta( name ) {
+  Channel.fromPath( workflow.projectDir + "/data/controls/${name}.fa.gz" , checkIfExists: true )
+}
+
+/**************************
+* PARAMETER SANITY CHECKING
+**************************/
+
+def check_for_unknown_parameters() {
+  Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'input', 'input_type', 'list', 'host', 'own', 'control', 'keep', 'rm_rrna', 'bwa', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'min_clip', 'dcs_strict', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'cleanup_work_dir','condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process', 'publish_dir_mode', 'no_intermediate', 'skip_qc', 'trace_timestamp'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
+  def parameter_diff = params.keySet() - valid_params
+  if (parameter_diff.size() != 0){
+    error "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
+  }
+  if (params.input.contains('.clean.') ) {
+    error "ERROR: Input files cannot contain `.clean.`\n"
+  }
+}
+
+def validate_parameters() {
+  Set controls = ['phix', 'dcs', 'eno']
+  Set hosts = ['hsa', 'mmu', 'cli', 'csa', 'gga', 'eco', 'sc2', 't2t']
+  Set input_types = ['nano', 'illumina', 'illumina_single_end', 'fasta', 'pacbio']
+
+  if ( params.profile ) { error "--profile is wrong, use -profile" }
+  if ( params.input == '' || !params.input_type == '' ) { error "Missing required input parameters [--input] and [--input_type]" }
+
+  if ( params.input_type ) { if ( ! (params.input_type in input_types ) ) { error "Choose one of the the input types with --input_type: " + input_types } }
+
+  if ( params.control ) { params.control.split(',').each { ctr -> if ( ! (ctr in controls ) ) { error "Wrong control defined (" + ctr + "), use one of these: " + controls } } }
+  if ( params.input_type == 'nano' && params.control && 'dcs' in params.control.split(',') && 'eno' in params.control.split(',') ) { error "Please choose either eno (for ONT dRNA-Seq) or dcs (for ONT DNA-Seq)." }
+  if ( params.host ) { params.host.split(',').each { hst -> if ( ! (hst in hosts ) ) { error "Wrong host defined (" + hst + "), use one of these: " + hosts } } }
+  if ( !params.host && !params.own && !params.control && !params.rm_rrna ) { error "Please provide a control (--control), a host tag (--host), a FASTA file (--own) or set --rm_rrna for rRNA removal for the clean up."}
+}
+
+/**************************
+* META
+**************************/
+
+def print_run_info() {
+  println " "
+  println "\u001B[32mProfile: $workflow.profile\033[0m"
+  println " "
+  println "\033[2mCurrent User: $workflow.userName"
+  println "Nextflow-version: $nextflow.version"
+  println "Starting time: $nextflow.timestamp"
+  println "Output directory name:"
+  println "  $params.output"
+  println "Workdir location:"
+  println "  $workflow.workDir"
+  println "Launchdir location:"
+  println "  $workflow.launchDir"
+  println "Database location:"
+  println "  $params.databases"
+  if ( workflow.profile.contains('singularity') ) {
+      println "Singularity cache directory:"
+      println "  $params.singularityCacheDir"
+  }
+  if ( workflow.profile.contains('conda') ) {
+      println "Conda cache directory:"
+      println "  $params.condaCacheDir"
+  }
+  println "Configuration files:"
+  println "  $workflow.configFiles"
+  println "Cmd line:"
+  println "  $workflow.commandLine\u001B[0m"
+  if (workflow.repository != null){ println "\033[2mGit info: $workflow.repository - $workflow.revision [$workflow.commitId]\u001B[0m" }
+  println " "
+  if (workflow.profile == 'standard' || workflow.profile.contains('local')) {
+      println "\033[2mCPUs to use: $params.cores, maximal CPUs to use: $params.max_cores\u001B[0m"
+      println "\033[2mMemory to use: $params.memory, maximal memory to use: $params.max_memory\u001B[0m"
+      println " "
+  }
+  if ( !workflow.revision ) {
+      println "\033[0;33mWARNING: Not a stable execution. Please use -r for full reproducibility.\033[0m\n"
+  }
+  def folder = new File(params.output)
+  if ( folder.exists() ) {
+      println "\033[0;33mWARNING: Output folder already exists. Results might be overwritten! You can adjust the output folder via [--output]\033[0m\n"
+  }
+  if ( workflow.profile.contains('singularity') ) {
+      println "\033[0;33mWARNING: Singularity image building sometimes fails!"
+      println "Multiple resumes (-resume) and --max_cores 1 --cores 1 for local execution might help.\033[0m\n"
+  }
+}
+
+/**************************
 * --help
 **************************/
 def helpMSG() {
-    c_green = "\033[0;32m";
-    c_reset = "\033[0m";
-    c_yellow = "\033[0;33m";
-    c_blue = "\033[0;34m";
-    c_dim = "\033[2m";
-    log.info """
+    def c_green = "\033[0;32m";
+    def c_reset = "\033[0m";
+    def c_yellow = "\033[0;33m";
+    def c_blue = "\033[0;34m";
+    def c_dim = "\033[2m";
+    return """
     ____________________________________________________________________________________________
 
     Workflow: Decontamination
 
     Clean your Illumina, Nanopore, PacBio or any FASTA-formated sequence date. The output are the clean
     and as contaminated identified sequences. Per default minimap2 is used for aligning your sequences
-    to a host but we recommend using BWA for mapping short reads ${c_dim}--bwa${c_reset} or the ${c_dim}--bbduk${c_reset} flag 
+    to a host but we recommend using BWA-MEM2 for mapping short reads ${c_dim}--bwa${c_reset} or the ${c_dim}--bbduk${c_reset} flag
     to switch to bbduk to clean short-read data.
 
     Use the ${c_dim}--host${c_reset} and ${c_dim}--control${c_reset} flag to download a host database or specify your ${c_dim}--own${c_reset} FASTA.
@@ -277,7 +291,7 @@ def helpMSG() {
                                         Reads are assigned to a combined index for decontamination and keeping. The use of this parameter can prevent
                                         false positive hits and the accidental removal of reads due to (poor quality) mappings.
     ${c_green}--rm_rrna ${c_reset}      Clean your data from rRNA [default: $params.rm_rrna]
-    ${c_green}--bwa${c_reset}           Add this flag to use BAW MEM instead of minimap2 for decontamination of short reads [default: $params.bwa]
+    ${c_green}--bwa${c_reset}           Add this flag to use BWA-MEM2 instead of minimap2 for decontamination of short reads [default: $params.bwa]
     ${c_green}--bbduk${c_reset}         Add this flag to use bbduk instead of minimap2 for decontamination of short reads [default: $params.bbduk]
     ${c_green}--bbduk_kmer${c_reset}    Set kmer for bbduk [default: $params.bbduk_kmer]
     ${c_green}--bbduk_qin${c_reset}     Set quality ASCII encoding for bbduk [default: $params.bbduk_qin; options are: 64, 33, auto]

@@ -1,5 +1,5 @@
-include { minimap2 } from '../modules/minimap2'
-include { bwa_index; bwa } from '../modules/bwa'
+include { minimap2_index; minimap2 } from '../modules/minimap2'
+include { bwamem2_index; bwamem2 } from '../modules/bwamem2'
 include { bbduk } from '../modules/bbmap'
 include { bbduk_stats } from '../modules/utils'
 include { split_bam; fastq_from_bam ; idxstats_from_bam ; flagstats_from_bam ; index_bam as index_bam; index_bam as index_bam2; sort_bam ; filter_true_dcs_alignments ; merge_bam as merge_bam1 ; merge_bam as merge_bam2 ; merge_bam as merge_bam3 ; merge_bam as merge_bam4 ; filter_soft_clipped_alignments } from '../modules/alignment_processing'
@@ -26,11 +26,12 @@ workflow clean {
         }
         else {
             if ( params.bwa ) {
-                bwa_index(contamination)
-                bwa(input, bwa_index.out, contamination) | sort_bam | index_bam | ( idxstats_from_bam & flagstats_from_bam )
-                split_bam(bwa.out.bam)
+                bwamem2_index(contamination)
+                bwamem2(input, bwamem2_index.out, contamination) | sort_bam | index_bam | ( idxstats_from_bam & flagstats_from_bam )
+                split_bam(bwamem2.out.bam)
             } else {
-                minimap2(input, contamination) | sort_bam | index_bam | ( idxstats_from_bam & flagstats_from_bam )
+                minimap2_index(contamination)
+                minimap2(input, minimap2_index.out) | sort_bam | index_bam | ( idxstats_from_bam & flagstats_from_bam )
                 split_bam(minimap2.out.bam)
             }
             contamination_bam = split_bam.out.mapped

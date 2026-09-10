@@ -41,8 +41,8 @@ nextflow_pipeline {
         }
     }
 
-        test("Stub paired-end bwa") {
-        tag "bwa"
+        test("Stub paired-end bwa-mem2") {
+        tag "bwamem2"
         options "-stub-run"
 
         when {
@@ -61,8 +61,8 @@ nextflow_pipeline {
         }
     }
 
-    test("Stub single-end bwa") {
-        tag "bwa"
+    test("Stub single-end bwa-mem2") {
+        tag "bwamem2"
         options "-stub-run"
 
         when {

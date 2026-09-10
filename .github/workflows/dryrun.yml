@@ -46,10 +46,17 @@ jobs:
         with:
           version: "${{ matrix.NXF_VER }}"
 
+      # The install script resolved the latest release through the
+      # unauthenticated GitHub API, which is rate limited on shared runners and
+      # failed the job with `curl: (22) The requested URL returned error: 403`.
+      # This action takes a pinned version, so it needs no API call, and it
+      # caches the download in the tool cache.
       - name: Install nf-test
-        run: |
-          wget -qO- https://code.askimed.com/install/nf-test | bash
-          sudo mv nf-test /usr/local/bin/
+        uses: nf-core/setup-nf-test@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          version: "0.9.5"
 
       - name: Set up Singularity
         if: matrix.profile == 'singularity'

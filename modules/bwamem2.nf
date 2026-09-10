@@ -1,33 +1,33 @@
-process bwa_index {
-  label 'bwa'
-  
+process bwamem2_index {
+  label 'bwamem2_index'
+
   input:
     path(fasta)
-  
+
   output:
-    path(bwa) , emit: index
-  
+    path('bwamem2') , emit: index
+
   script:
   """
-  mkdir bwa
-  bwa \\
+  mkdir bwamem2
+  bwa-mem2 \\
     index \\
-    -p bwa/db \\
+    -p bwamem2/db \\
     $fasta
   """
-  
+
   stub:
   """
-  mkdir bwa
-  
-  touch bwa/db.{amb,ann,bwt,pac,sa}
+  mkdir bwamem2
+
+  touch bwamem2/db.{0123,amb,ann,bwt.2bit.64,pac}
   """
 }
 
-process bwa {
-  label 'bwa'
+process bwamem2 {
+  label 'bwamem2'
 
-  input: 
+  input:
   tuple val(name), path(input)
   path(db_index)
   path(db)
@@ -39,7 +39,7 @@ process bwa {
   script:
   """
   INDEX=`find -L ./ -name "*.amb" | sed 's/\\.amb\$//'`
-  bwa mem \\
+  bwa-mem2 mem \\
     -t $task.cpus \\
     \$INDEX \\
     $input \\
