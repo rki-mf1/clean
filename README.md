@@ -162,7 +162,9 @@ results/
 │   │       ├── <sample_name>.soft-clipped.bam
 │   │       └── <sample_name>.passed-clipped.bam
 |   ├── host.fa.fai
-|   └── host.fa.gz
+|   ├── host.fa.gz
+|   ├── keep.fa.fai
+|   └── keep.fa.gz
 ├── logs/*.html
 └── qc/multiqc_report.html
 ```
@@ -170,6 +172,9 @@ results/
 The most important files you are likely interested in are `results/clean/<sample_name>.fastq.gz`, which are the "cleaned" reads. These are the input reads that *do not* map to the host, control, own fasta or rRNA files (or the subset of these that you provided), plus those reads that map to the "keep" sequence if you used the `--keep` option. Any files that were removed from your input fasta file are placed in `results/removed/<sample_name>.fastq.gz`.
 
 For debugging purposes we also provide various intermediate results in the `intermediate/` folder. For mapping-based approaches (`minimap2`, `bwa-mem2`), you will also find a brief summary of mapped/unmapped reads and their proportions. 
+
+> [!NOTE]
+> **Disk usage of the merged references.** Before mapping, the references are merged into a single FASTA: everything from `--host`, `--control`, `--own` and `--rm_rrna` becomes `intermediate/host.fa.gz`, and everything from `--keep` becomes `intermediate/keep.fa.gz`. Each is a *new* file about as large as all of its inputs together, and the mapper index built on top of it is larger again — for multi-genome references this reaches tens of gigabytes. Plan for that in the work directory, and in the output directory unless you pass `--no_intermediate`, which only suppresses publishing; the files are still written to the work directory.
 
 ## Acknowledgements
 

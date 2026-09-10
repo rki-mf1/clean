@@ -2,6 +2,7 @@ include { clean as keep_map } from './clean_wf'
 
 include { get_read_names; get_read_names_fastx; filter_fastq_by_name } from '../modules/utils'
 include { idxstats_from_bam ; flagstats_from_bam } from '../modules/alignment_processing'
+include { concat_contamination as concat_keep } from '../modules/prepare_contamination'
 
 workflow keep {
     take:
@@ -11,7 +12,13 @@ workflow keep {
         un_mapped_clean_fastq
 
     main:
-        keep_map(input, keep_reference, dcs_ends_bed, 'map-to-keep')
+        // The mappers read a single reference, so several --keep FASTAs have to
+        // be merged first. Passing the list on would silently use only the first
+        // one and drop the reads of all the others from the cleaned output. This
+        // is the same merge the contamination references go through.
+        concat_keep(keep_reference, 'keep')
+
+        keep_map(input, concat_keep.out.fa, dcs_ends_bed, 'map-to-keep')
 
         if ( params.bbduk ) {
           keep_reads_fastx = keep_map.out.out_reads.filter{ it[1] == 'mapped' }
