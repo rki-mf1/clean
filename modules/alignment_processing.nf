@@ -1,3 +1,5 @@
+include { lib_pairedness } from './functions'
+
 process split_bam {
   label 'minimap2'
 
@@ -10,17 +12,17 @@ process split_bam {
 
   script:
   // includes supplementary alignments included (chimeric alignment, sometimes also not linear )
-  if ( params.lib_pairedness == 'paired' ){
+  if ( lib_pairedness() == 'paired' ){
     """
     samtools view -h -@ ${task.cpus} -f 2 ${bam} | samtools sort -o ${name}.mapped.bam -@ ${task.cpus}
     samtools view -h -@ ${task.cpus} -F 2 ${bam} | samtools sort -o ${name}.unmapped.bam -@ ${task.cpus}
     """
-  } else if ( params.lib_pairedness == 'single' ) {
+  } else if ( lib_pairedness() == 'single' ) {
     """
     samtools view -h -@ ${task.cpus} -F 4 ${bam} | samtools sort -o ${name}.mapped.bam -@ ${task.cpus}
     samtools view -h -@ ${task.cpus} -f 4 ${bam} | samtools sort -o ${name}.unmapped.bam -@ ${task.cpus}
     """
-  } else { error "Invalid pairedness: ${params.lib_pairedness}" }
+  } else { error "Invalid pairedness: ${lib_pairedness()}" }
   stub:
   """
   touch ${name}.mapped.bam ${name}.unmapped.bam
@@ -53,7 +55,10 @@ process filter_soft_clipped_alignments {
   publishDir (
     path: "${params.output}/intermediate",
     mode: params.publish_dir_mode,
-    pattern: "${name}*.bam{,.bai}",
+    // `pattern` cannot reference process inputs (Nextflow >=26.04 does not
+    // resolve them) and takes no closure. All outputs of this process are
+    // prefixed with the sample name, so matching all of them is the same.
+    pattern: "*.bam{,.bai}",
     enabled: !params.no_intermediate,
     saveAs: { fn ->
           fn.startsWith("keep_") ? "map-to-keep/soft-clipped/${fn.replaceAll(~'^keep_', '')}" : "map-to-remove/soft-clipped/${fn}"
@@ -89,9 +94,14 @@ process filter_true_dcs_alignments {
   publishDir (
     path: "${params.output}/intermediate",
     mode: params.publish_dir_mode,
-    pattern: "${name}*.bam{,.bai}",
+    // `pattern` cannot reference process inputs (Nextflow >=26.04 does not
+    // resolve them) and takes no closure. This process also emits dcs.bam and
+    // dcs.bam.bai, which were never published, so saveAs filters them out
+    // instead -- a closure does get the process inputs.
+    pattern: "*.bam{,.bai}",
     enabled: !params.no_intermediate,
     saveAs: { fn ->
+          !fn.startsWith(name) ? null :
           fn.startsWith("keep_") ? "map-to-keep/strict-dcs/${fn.replaceAll(~'^keep_', '')}" : "map-to-remove/strict-dcs/${fn}"
     }
   )
@@ -167,17 +177,17 @@ process fastq_from_bam {
   tuple val(name), val(type), path('*.fast*.gz')
 
   script:
-  if ( params.lib_pairedness == 'paired' ) {
+  if ( lib_pairedness() == 'paired' ) {
     """
     samtools fastq -@ ${task.cpus} -c 6 -1 ${bam.baseName}_1.fastq.gz -2 ${bam.baseName}_2.fastq.gz -s ${bam.baseName}_singleton.fastq.gz ${bam}
     """
-  } else if ( params.lib_pairedness == 'single' ) {
+  } else if ( lib_pairedness() == 'single' ) {
     dtype = (params.input_type == 'fasta') ? 'a' : 'q'
     """
     samtools fast${dtype} -@ ${task.cpus} -c 6 -0 ${bam.baseName}.fast${dtype}.gz ${bam}
     """
   } else {
-    error "Invalid pairedness: ${params.lib_pairedness}"
+    error "Invalid pairedness: ${lib_pairedness()}"
   }
   stub:
   dtype = (params.input_type == 'fasta') ? 'a' : 'q'
