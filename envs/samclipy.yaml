@@ -4,5 +4,10 @@ channels:
   - bioconda
   - nodefaults
 dependencies:
-  - samtools=1.11
-  - python=3.9.5
+  - samtools==1.24
+  - htslib==1.24
+  # Fuzzy on purpose: conda-forge has no package versioned exactly "3.14",
+  # only 3.14.0, 3.14.1, ... A single '=' matches 3.14.*, which is what we
+  # want here - samclipy just needs a 3.14 interpreter.
+  - python=3.14
+  - git

@@ -2,6 +2,22 @@
 
 ## unreleased
 
+### Changed
+
+- replaced `bwa mem` with [`bwa-mem2`](https://github.com/bwa-mem2/bwa-mem2) as short-read mapper alternative; the `--bwa` parameter is unchanged
+  - faster index building, which mainly helps for large indices combining several eukaryotic genomes
+  - note that a `bwa-mem2` index is about 4x larger than a `bwa` index and is held in memory during mapping, so the memory requirements went up
+
+- all containers and conda environments now ship the same `samtools`/`htslib` version (1.24); this also updates `minimap2` 2.26 -> 2.31, `bedtools` 2.30.0 -> 2.31.1, `seqkit` 2.6.1 -> 2.13.0 and `pigz` 2.3.4 -> 2.8
+  - the conda environments pin their packages with `==` instead of `=`, which is a fuzzy match allowing any patch release of the given version; the containers are pinned to an exact tag, so the two profiles would otherwise drift apart
+
+### Fixed
+
+- the short-read mapper alternative now also gets an environment with the `conda`/`mamba` profiles and CPUs/memory with the `local`/`standard` profiles
+- `samclipy` gets its own container (the `samtools` one, it has `python` and `git`) instead of implicitly using the one of the `smallTask` label, and `git` was added to its conda environment
+- syntax that the strict parser of Nextflow >=25.10 rejects: the variable declaration in `nextflow.config`, typed `for` loops, `if` blocks around `publishDir`/`storeDir` directives, `env(VAR)` outputs and `addParams()` on `include` statements
+  - the CI matrix is pinned to Nextflow 25.10.0 instead of `latest`, because the top-level statements in `clean.nf` still need to move into the entry workflow before the pipeline runs on Nextflow >=26.04
+
 ## [v1.1.0] - 2024-11-08
 
 ### Added

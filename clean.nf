@@ -10,7 +10,7 @@ Author: hoelzer.martin@gmail.com
 
 // Parameters sanity checking
 
-Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'input', 'input_type', 'list', 'host', 'own', 'control', 'keep', 'rm_rrna', 'bwa', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'min_clip', 'dcs_strict', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'cleanup_work_dir','condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process', 'publish_dir_mode', 'no_intermediate', 'skip_qc'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
+Set valid_params = ['max_cores', 'cores', 'max_memory', 'memory', 'profile', 'help', 'input', 'input_type', 'list', 'host', 'own', 'control', 'keep', 'rm_rrna', 'bwa', 'bbduk', 'bbduk_kmer', 'bbduk_qin', 'reads_rna', 'min_clip', 'dcs_strict', 'output', 'multiqc_dir', 'nf_runinfo_dir', 'databases', 'cleanup_work_dir','condaCacheDir', 'singularityCacheDir', 'singularityCacheDir', 'cloudProcess', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process', 'publish_dir_mode', 'no_intermediate', 'skip_qc', 'trace_timestamp'] // don't ask me why there is also 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
 def parameter_diff = params.keySet() - valid_params
 if (parameter_diff.size() != 0){
     exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
@@ -87,9 +87,9 @@ if ( params.input == '' || !params.input_type == '' ) { exit 1, "Missing require
 
 if ( params.input_type ) { if ( ! (params.input_type in input_types ) ) { exit 1, "Choose one of the the input types with --input_type: " + input_types } }
 
-if ( params.control ) { for( String ctr : params.control.split(',') ) if ( ! (ctr in controls ) ) { exit 1, "Wrong control defined (" + ctr + "), use one of these: " + controls } }
+if ( params.control ) { params.control.split(',').each { ctr -> if ( ! (ctr in controls ) ) { exit 1, "Wrong control defined (" + ctr + "), use one of these: " + controls } } }
 if ( params.input_type == 'nano' && params.control && 'dcs' in params.control.split(',') && 'eno' in params.control.split(',') ) { exit 1, "Please choose either eno (for ONT dRNA-Seq) or dcs (for ONT DNA-Seq)." }
-if ( params.host ) { for( String hst : params.host.split(',') ) if ( ! (hst in hosts ) ) { exit 1, "Wrong host defined (" + hst + "), use one of these: " + hosts } }
+if ( params.host ) { params.host.split(',').each { hst -> if ( ! (hst in hosts ) ) { exit 1, "Wrong host defined (" + hst + "), use one of these: " + hosts } } }
 if ( !params.host && !params.own && !params.control && !params.rm_rrna ) { exit 1, "Please provide a control (--control), a host tag (--host), a FASTA file (--own) or set --rm_rrna for rRNA removal for the clean up."}
 
 /**************************
@@ -114,6 +114,16 @@ if ( params.input_type == 'illumina' ) {
     .fromPath( params.input, checkIfExists: true)
     .map { file -> tuple(file.simpleName, file) }
   }
+}
+
+// Without this an empty input channel leaves every process without a task and
+// the run reports success without having cleaned anything. checkIfExists does
+// not catch it: the glob can match files and still not pair them up.
+input_ch = input_ch.ifEmpty {
+  def hint = ( params.input_type == 'illumina' && !params.list )
+    ? " Paired-end reads are collected with fromFilePairs, so the glob needs the read pair group, e.g. '*_R{1,2}.fastq.gz'. For single reads use --input_type illumina_single_end."
+    : ''
+  error "No input reads found for --input '${params.input}'.${hint}"
 }
 
 // load control fasta sequence
@@ -172,17 +182,18 @@ if ( params.keep && params.list ) {
 
 multiqc_config = Channel.fromPath( workflow.projectDir + '/assets/multiqc_config.yml', checkIfExists: true )
 
-tool = params.bbduk ? 'bbduk' : 'minimap2'
-lib_pairedness = params.input_type == 'illumina' ? 'paired' : 'single'
+// `addParams()` on include statements was removed with the strict syntax of
+// Nextflow >=25.10, so the modules read this from the params scope directly
+params.lib_pairedness = params.input_type == 'illumina' ? 'paired' : 'single'
 
 /**************************
 * MODULES
 **************************/
 
-include { prepare_contamination } from './workflows/prepare_contamination_wf' addParams( tool: tool )
+include { prepare_contamination } from './workflows/prepare_contamination_wf'
 include { check_own as prepare_keep } from './modules/prepare_contamination'
-include { clean } from './workflows/clean_wf' addParams( tool: tool, lib_pairedness: lib_pairedness )
-include { keep } from './workflows/keep_wf' addParams( tool: tool, lib_pairedness: lib_pairedness )
+include { clean } from './workflows/clean_wf'
+include { keep } from './workflows/keep_wf'
 include { summarize } from './workflows/summarize_wf'
 include { qc } from './workflows/qc_wf'
 
@@ -235,7 +246,7 @@ def helpMSG() {
 
     Clean your Illumina, Nanopore, PacBio or any FASTA-formated sequence date. The output are the clean
     and as contaminated identified sequences. Per default minimap2 is used for aligning your sequences
-    to a host but we recommend using BWA for mapping short reads ${c_dim}--bwa${c_reset} or the ${c_dim}--bbduk${c_reset} flag 
+    to a host but we recommend using BWA-MEM2 for mapping short reads ${c_dim}--bwa${c_reset} or the ${c_dim}--bbduk${c_reset} flag
     to switch to bbduk to clean short-read data.
 
     Use the ${c_dim}--host${c_reset} and ${c_dim}--control${c_reset} flag to download a host database or specify your ${c_dim}--own${c_reset} FASTA.
@@ -277,7 +288,7 @@ def helpMSG() {
                                         Reads are assigned to a combined index for decontamination and keeping. The use of this parameter can prevent
                                         false positive hits and the accidental removal of reads due to (poor quality) mappings.
     ${c_green}--rm_rrna ${c_reset}      Clean your data from rRNA [default: $params.rm_rrna]
-    ${c_green}--bwa${c_reset}           Add this flag to use BAW MEM instead of minimap2 for decontamination of short reads [default: $params.bwa]
+    ${c_green}--bwa${c_reset}           Add this flag to use BWA-MEM2 instead of minimap2 for decontamination of short reads [default: $params.bwa]
     ${c_green}--bbduk${c_reset}         Add this flag to use bbduk instead of minimap2 for decontamination of short reads [default: $params.bbduk]
     ${c_green}--bbduk_kmer${c_reset}    Set kmer for bbduk [default: $params.bbduk_kmer]
     ${c_green}--bbduk_qin${c_reset}     Set quality ASCII encoding for bbduk [default: $params.bbduk_qin; options are: 64, 33, auto]

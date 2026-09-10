@@ -12,9 +12,9 @@
 
   > Quinlan AR, Hall IM. BEDTools: a flexible suite of utilities for comparing genomic features. Bioinformatics. 2010 Mar 15;26(6):841-2. doi: 10.1093/bioinformatics/btq033. Epub 2010 Jan 28. PubMed PMID: 20110278; PubMed Central PMCID: PMC2832824.
 
-- [BWA](https://arxiv.org/abs/1303.3997)
+- [BWA-MEM2](https://ieeexplore.ieee.org/document/8820962)
 
-  > Li H. (2013) Aligning sequence reads, clone sequences and assembly contigs with BWA-MEM. arXiv:1303.3997v2 [q-bio.GN]
+  > Vasimuddin Md, Misra S, Li H, Aluru S. (2019) Efficient Architecture-Aware Acceleration of BWA-MEM for Multicore Systems. IEEE International Parallel and Distributed Processing Symposium (IPDPS). doi: 10.1109/IPDPS.2019.00041
 
 - [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
 

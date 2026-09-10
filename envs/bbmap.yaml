@@ -4,5 +4,5 @@ channels:
   - bioconda
   - nodefaults
 dependencies:
-  - bbmap=38.79
-  - pigz=2.3.4
+  - bbmap==38.79
+  - pigz==2.3.4

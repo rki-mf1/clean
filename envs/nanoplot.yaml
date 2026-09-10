@@ -4,7 +4,7 @@ channels:
   - bioconda
   - nodefaults
 dependencies:
-  - nanoplot=1.32.1
+  - nanoplot==1.32.1
   - seaborn==0.10.1
   - matplotlib<3.6.0
   - numpy<1.24.0

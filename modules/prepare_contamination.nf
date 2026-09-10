@@ -1,12 +1,14 @@
 process download_host {
   label 'minimap2'
 
-  if (params.cloudProcess) {
-    publishDir "${params.databases}/hosts", mode: params.publish_dir_mode, pattern: "*.fa.gz"
-  }
-  else {
-    storeDir "${params.databases}/hosts"
-  }
+  // in the cloud we cannot store the downloaded genomes, so we publish them
+  publishDir (
+    path: "${params.databases}/hosts",
+    mode: params.publish_dir_mode,
+    pattern: "*.fa.gz",
+    enabled: params.cloudProcess
+  )
+  storeDir ( params.cloudProcess ? null : "${params.databases}/hosts" )
 
   input:
   val host
@@ -62,15 +64,17 @@ process check_own {
   path fasta
 
   output:
-  path 'checked.fa.gz'
+  path "${fasta.baseName}.checked.fa.gz"
 
   script:
+  // the output is named after the input: with more than one --own/--keep FASTA
+  // a fixed name would collide when the checked files are staged together
   """
-  seqkit seq ${fasta} -o checked.fa.gz
+  seqkit seq ${fasta} -o ${fasta.baseName}.checked.fa.gz
   """
   stub:
   """
-  touch checked.fa.gz
+  touch ${fasta.baseName}.checked.fa.gz
   """
 }
 
