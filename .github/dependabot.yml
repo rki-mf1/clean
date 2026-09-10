@@ -1,0 +1,20 @@
+version: 2
+
+updates:
+  # The workflows pin their actions to a major tag, which does not pick up new
+  # majors and silently keeps running an old runtime once one is released.
+  # Dependabot opens a PR per action instead, against dev like every other PR.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "dev"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "ci"
+    groups:
+      # One PR per month for the routine bumps; a major lands on its own so it
+      # can be reviewed and tested by itself.
+      actions-minor:
+        update-types:
+          - "minor"
+          - "patch"
